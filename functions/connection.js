@@ -6,7 +6,7 @@ mongoose.set('useCreateIndex', true);
 
 mongoose.connect('mongodb://localhost/event_system',{
 	auth: {
-		user: 'admin',
+		user: 'UniAdmin2019',
 		password: 'Uni@Liverpool@2019'
 	},
 	useNewUrlParser: true
