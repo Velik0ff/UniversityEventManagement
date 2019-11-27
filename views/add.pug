@@ -1,0 +1,25 @@
+extends layout
+
+block content
+    h3.title=title
+    form
+        each field in fields
+            div.form-group
+                label(for=field.identifier)=field.name
+                input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name)
+        center
+            if customFields
+                p
+                    a.btn.btn-primary(href="#") Add Custom Field
+            if equipmentFields
+                p
+                    a.btn.btn-primary(href="#") Add Equipment
+            if staffFields
+                p
+                    a.btn.btn-primary(href="#") Add Staff
+            if visitorFields
+                p
+                    a.btn.btn-primary(href="#") Add Visitor
+    center
+        a.btn.btn-primary(href="#") Add
+        a.btn.btn-danger(href=cancelLink) Cancel

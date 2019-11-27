@@ -4,11 +4,14 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const mongoose = require('./functions/connection');
+const express_session = require('express-session');
 const MongoStore = require('connect-mongo')(express_session);
-
 
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
+const eventsRouter = require('./routes/events');
+const visitorsRouter = require('./routes/visitors');
+const equipmentRouter = require('./routes/equipment');
 
 const app = express();
 
@@ -27,6 +30,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/events', eventsRouter);
+app.use('/visitors', visitorsRouter);
+app.use('/equipment', equipmentRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -45,7 +51,5 @@ app.use(function(err, req, res, next) {//
 });//
 
 // module.exports = app;
-
-app.get('/', (req, res) => res.send('Hello World!'))
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))

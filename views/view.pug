@@ -1,0 +1,14 @@
+extends layout
+
+block content
+    h3.title=title
+    table.table
+        tbody
+            each info,index in item
+                tr
+                    td(style="font-weight:bold")=index
+                    td=info
+    center
+        a.btn.btn-warning(href=editLink) Edit
+        a.btn.btn-danger(href="#") Delete
+        a.btn.btn-primary(href=listLink) Go to list

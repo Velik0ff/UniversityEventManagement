@@ -1,0 +1,26 @@
+extends layout
+
+block content
+    h3.title=title
+    a.btn.btn-success(href=addLink style="margin:5px;") Add New
+    table.table
+        thead
+            tr
+                each column in columns
+                    th(scope='col')=column
+        tbody
+            each item in list
+                tr
+                    each info,index in item
+                        if index=="id"
+                            th(scope='row')=info
+                        else if index == "name"
+                            td
+                                a(href=viewLink+"?id="+item.id)=info
+                        else
+                            td=info
+                    td
+                        a.options-btn(href=editLink+"?id="+item.id)
+                            i.material-icons.md-18 edit
+                        a.options-btn(href="#")
+                            i.material-icons.md-18 delete

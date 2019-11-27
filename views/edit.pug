@@ -1,0 +1,12 @@
+extends layout
+
+block content
+    h3.title=title
+    form
+        each info,index in item
+            div.form-group
+                label(for=index)=index
+                input.form-control(id=index type="text" placeholder="Enter " + index value=info)
+    center
+        a.btn.btn-primary(href=editLink) Save
+        a.btn.btn-danger(href=cancelLink) Cancel
