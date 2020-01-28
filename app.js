@@ -3,8 +3,9 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
-const mongoose = require('./functions/connection');
 const express_session = require('express-session');
+const mongoose = require('./functions/connection');
+
 const MongoStore = require('connect-mongo')(express_session);
 
 const indexRouter = require('./routes/index');
