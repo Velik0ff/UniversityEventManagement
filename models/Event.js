@@ -1,14 +1,14 @@
 const mongoose = require("mongoose");
 
 var EventSchema = new mongoose.Schema({
-	eventName:{ type: String, required: true },
+	eventName:{ type: String, required: [true, "Event name must be provided"] },
 	equipment:[
 		{
 			equipID: { type: String, required: true },
 			reqQty: { type: Number }
 		}],
-	eventSpaces:{ type: Number, required: true },
-	eventTypeID:{ type: String, required: true },
+	eventSpaces:{ type: Number, required: [true, "Available spaces must be stated"] },
+	eventTypeID:{ type: String, required: [true, "Event type must be chosen"] },
 	staffRequired:[
 		{
 			roleName: { type: String, required: true },
