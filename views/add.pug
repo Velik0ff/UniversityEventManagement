@@ -2,11 +2,17 @@ extends layout
 
 block content
     h3.title=title
-    form
+
+    if message
+        div.alert.alert-success(role="alert")=message
+    if error
+        div.alert.alert-danger(role="alert")=error
+
+    form(method="POST" action=addLink)
         each field in fields
             div.form-group
                 label(for=field.identifier)=field.name
-                input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name)
+                input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.name)
         center
             if customFields
                 p
@@ -20,6 +26,6 @@ block content
             if visitorFields
                 p
                     a.btn.btn-primary(href="#") Add Visitor
-    center
-        a.btn.btn-primary(href="#") Add
-        a.btn.btn-danger(href=cancelLink) Cancel
+        center
+            button.btn.btn-primary(type="submit") Add
+            a.btn.btn-danger(href=cancelLink) Cancel

@@ -1,8 +1,9 @@
 const mongoose = require("mongoose");
+const uniqueValidator = require('mongoose-unique-validator'); // check if a row has a unique value
 const bcrypt = require('bcryptjs'); // required for encryption of the password
 
 function validateEmail(email) { // validate email
-	const email_regex=/^([a-z0-9]+)[-_.]?([a-z0-9]+)@([a-z0-9]{2,}).([a-z0-9]{2,})$/i;
+	const email_regex=/^([a-z0-9]+)[-_.]?([a-z0-9]+)@([a-z0-9]{2,}).(.([a-z0-9]{2,}))+$/i;
 	console.log(email);
 	return email_regex.test(email);
 }
@@ -12,9 +13,14 @@ function validatePassword(password) { // validate password
 	return password_regex.test(password);
 }
 
+function validateName(name) { // validate full name (can include title)
+	const name_regex=/^([a-zA-Z_-\s.]){2,}$/i;
+	return name_regex.test(name);
+}
+
 var StaffSchema = new mongoose.Schema({
-	fullName:{ type: String },
-	email:{ type: String, required: [true, "Email must be provided"], validate: [{ validator: value => validateEmail(value), msg:"Email entered is not valid"}] },
+	fullName:{ type: String, required: [true, "Full name must be provided"], validate: [{ validator: value => validateName(value), msg:"Full name entered is not valid"}] },
+	email:{ type: String, required: [true, "Email must be provided"], validate: [{ validator: value => validateEmail(value), msg:"Email entered is not valid"}], unique: [true, "Email already exists."] },
 	password:{ type: String, required: true, validate: [{ validator: value => validatePassword(value), msg: "Password is not valid, it must contain 1 lowercase letter, 1 uppercase letter and one number and it must be at least 6 characters long."}] },
 	phone:{ type: String },
 	role:{ type: String, required: [true, "Role must be stated"] }

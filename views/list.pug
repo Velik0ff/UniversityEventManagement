@@ -9,6 +9,9 @@ block content
                 each column in columns
                     th(scope='col')=column
         tbody
+            if error
+                tr
+                    td=error
             each item in list
                 tr
                     each info,index in item

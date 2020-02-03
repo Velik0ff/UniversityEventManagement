@@ -1,12 +1,22 @@
 extends layout
 
 block content
-    h3.title=title
-    form
-        each info,index in item
-            div.form-group
-                label(for=index)=index
-                input.form-control(id=index type="text" placeholder="Enter " + index value=info)
-    center
-        a.btn.btn-primary(href=editLink) Save
-        a.btn.btn-danger(href=cancelLink) Cancel
+    if !errorCritical
+        h3.title=title
+
+        if message
+            div.alert.alert-success(role="alert")=message
+        if error
+            div.alert.alert-danger(role="alert")=error
+
+        form(method="POST" action=editLink)
+            each info,index in item
+                div.form-group
+                    label(for=index)=index
+                    input.form-control(id=index type="text" placeholder="Enter " + index value=info name=index)
+            center
+                button.btn.btn-primary(type="submit") Save
+                a.btn.btn-danger(href=cancelLink) Cancel
+    else
+        div.alert.alert-danger(role="alert")=error
+        a.btn.btn-primary(href=listLink) Go to list
