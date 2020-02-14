@@ -1,6 +1,30 @@
 extends layout
 
 block content
+    if customFields
+        script.
+            var field_count = 0;
+            function addCustomField(){
+              $('<div>').attr('class','row form-group').attr('id','row'+field_count).appendTo('#fields');
+
+              $('<div>').attr('class','col').attr('id','nameCol'+field_count).appendTo('#row'+field_count);
+              $('<label>').attr('for','fieldName'+field_count).appendTo('#nameCol'+field_count).text('Custom Field '+field_count+' Name');
+              $('<input>')
+                .attr('type','text')
+                .attr('class','form-control')
+                .attr('name','fieldName'+field_count)
+                .appendTo('#nameCol'+field_count);
+
+              $('<div>').attr('class','col').attr('id','valueCol'+field_count).appendTo('#row'+field_count);
+              $('<label>').attr('for', 'fieldValue' + field_count).appendTo('#valueCol'+field_count).text('Custom Field ' + field_count + ' Value');
+              $('<input>')
+                .attr('type', 'text')
+                .attr('class', 'form-control')
+                .attr('name', 'fieldValue' + field_count)
+                .appendTo('#valueCol'+field_count);
+
+              field_count++;
+            }
     h3.title=title
 
     if message
@@ -9,14 +33,15 @@ block content
         div.alert.alert-danger(role="alert")=error
 
     form(method="POST" action=addLink)
-        each field in fields
-            div.form-group
-                label(for=field.identifier)=field.name
-                input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.name)
+        div#fields
+            each field in fields
+                div.form-group
+                    label(for=field.identifier)=field.name
+                    input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.name)
         center
             if customFields
                 p
-                    a.btn.btn-primary(href="#") Add Custom Field
+                    a.btn.btn-primary(href="#" onclick="addCustomField()") Add Custom Field
             if equipmentFields
                 p
                     a.btn.btn-primary(href="#") Add Equipment

@@ -2,16 +2,26 @@ extends layout
 
 block content
     if !error
-        h3.title=title
-        table.table
-            tbody
-                each info,index in item
-                    tr
-                        td(style="font-weight:bold")=index
-                        td=info
-        center
-            a.btn.btn-warning(href=editLink) Edit
-            a.btn.btn-danger(href="#") Delete
+        if !deleteMsg
+            h3.title=title
+            table.table
+                tbody
+                    each info,index in item
+                        if index === 'customFields'
+                            each fieldValue in info
+                                tr
+                                    td(style="font-weight:bold")=fieldValue['fieldName']
+                                    td=fieldValue['fieldValue']
+                        else
+                            tr
+                                td(style="font-weight:bold")=index
+                                td=info
+            center
+                a.btn.btn-warning(href=editLink) Edit
+                a.btn.btn-danger(href=deleteLink+"?id="+item.ID onclick="return confirm('Are you sure you want to delete this entity?')") Delete
+                a.btn.btn-primary(href=listLink) Go to list
+        else
+            div.alert.alert-success(role="alert")=deleteMsg
             a.btn.btn-primary(href=listLink) Go to list
     else
         div.alert.alert-danger(role="alert")=error

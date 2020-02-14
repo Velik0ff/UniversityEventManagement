@@ -25,5 +25,5 @@ block content
                     td
                         a.options-btn(href=editLink+"?id="+item.id)
                             i.material-icons.md-18 edit
-                        a.options-btn(href="#")
+                        a.options-btn(href=deleteLink+"?id="+item.id onclick="return confirm('Are you sure you want to delete this entity?')")
                             i.material-icons.md-18 delete

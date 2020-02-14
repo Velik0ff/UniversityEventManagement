@@ -13,6 +13,8 @@ const list = [{id:1234,name:"User Name",email:"john.doe@email.com"},{id:1235,nam
 const viewLink = "view-user";
 const editLink = "edit-user";
 const addLink = "add-user";
+const deleteLink = "delete-user";
+const listLink = "list-users";
 /* End Links */
 
 /* Functions */
@@ -88,7 +90,7 @@ async function sendInvitationEmail(email, password, role){
 }
 /* End Functions */
 
-router.get('/list-users', function(req, res, next) {
+router.get('/'+listLink, function(req, res, next) {
   let columns = ["ID", "Full Name", "Email", "Options"];
   var error = "";
 
@@ -112,6 +114,7 @@ router.get('/list-users', function(req, res, next) {
       editLink: editLink,
       viewLink: viewLink,
       addLink: addLink,
+      deleteLink: deleteLink,
       error:error
     });
   });
@@ -131,17 +134,34 @@ router.get('/'+viewLink, function(req, res, next) {
           Email:user.email,
           Role:user.role
         },
-        listLink: 'list-users',
+        listLink: listLink,
+        deleteLink: deleteLink,
         editLink: editLink+'?id='+user._id
       });
     } else {
       res.render('view', {
         error:"User not found!",
-        listLink: 'list-users'
+        listLink: listLink
       });
     }
   });
   /* End Logic to get info from database */
+});
+
+router.get('/'+addLink, function(req, res, next) {
+  let fields = [{name:"Name",type:"text",identifier:"name"},
+    {name:"Email",type:"email",identifier:"email"},
+    {name:"Role",type:"text",identifier:"role"}]
+
+  res.render('add', {
+    title: 'Add New Staff Member',
+    fields:fields,
+    cancelLink: listLink,
+    addLink: '/users/'+addLink,
+    customFields:false,
+    error: null,
+    message: null
+  });
 });
 
 router.get('/'+editLink, function(req, res, next) {
@@ -162,7 +182,24 @@ router.get('/'+editLink, function(req, res, next) {
     } else {
       res.render('edit', {
         error:"User not found!",
-        listLink: 'list-users'
+        listLink: listLink
+      });
+    }
+  });
+});
+
+router.get('/'+deleteLink, function(req, res, next) {
+  User.deleteOne({_id:req.query.id}, function(err, deleteResult){
+    if(!err){
+      res.render('view', {
+        deleteMsg:"Successfully deleted user!",
+        listLink: listLink
+      });
+    } else {
+      console.log(err); // console log the error
+      res.render('view', {
+        error:"User not found!",
+        listLink: listLink
       });
     }
   });
@@ -191,7 +228,7 @@ router.post('/'+editLink, function(req, res, next) {
       res.render('edit', {
         error:"User not found!",
         errorCritical: true,
-        listLink: 'list-users'
+        listLink: listLink
       });
     } else {
       let error = validationErr(err);
@@ -234,7 +271,7 @@ router.post('/'+addLink, function(req, res, next) {
       title: 'Add New Staff Member',
       // rows: rows,
       fields:fields,
-      cancelLink: 'list-users',
+      cancelLink: listLink,
       addLink: '/users/'+addLink,
       customFields:false,
       error: error_msg,
@@ -255,22 +292,6 @@ router.post('/'+addLink, function(req, res, next) {
     renderScreen();
   });
   /* End Insert new user */
-});
-
-router.get('/'+addLink, function(req, res, next) {
-  let fields = [{name:"Name",type:"text",identifier:"name"},
-    {name:"Email",type:"email",identifier:"email"},
-    {name:"Role",type:"text",identifier:"role"}]
-
-  res.render('add', {
-    title: 'Add New Staff Member',
-    fields:fields,
-    cancelLink: 'list-users',
-    addLink: '/users/'+addLink,
-    customFields:false,
-    error: null,
-    message: null
-  });
 });
 
 module.exports = router;
