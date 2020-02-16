@@ -2,30 +2,26 @@ const express = require('express');
 const router = express.Router();
 
 /* Model */
-const Equipment = require('../models/EqInventory');
+const EventType = require('../models/EventType');
 /* End Model */
 
-const editLink = "edit-equipment";
-const viewLink = "view-equipment";
-const addLink = "add-equipment";
-const deleteLink = "delete-equipment";
-const listLink = "list-equipment";
+const editLink = "edit-event-type";
+const viewLink = "view-event-type";
+const addLink = "add-event-type";
+const deleteLink = "delete-event-type";
+const listLink = "list-event-type";
 
 function validationErr(error){
 	var error_msg = "";
 
 	if(error.name === "ValidationError"){ // check if the error is from the validator
-		if (typeof error.errors.typeName !== "undefined" &&
-			error.errors.typeName !== null) {
-			error_msg = error.errors.typeName.message
-		}
-		if (typeof error.errors.quantity !== "undefined" &&
-			error.errors.quantity !== null) {
-			error_msg = error.errors.quantity.message
+		if (typeof error.errors.eventTypeName !== "undefined" &&
+			error.errors.eventTypeName !== null) {
+			error_msg = error.errors.eventTypeName.message
 		}
 		console.log(error_msg);
 	} else {
-		error_msg = "Unknown error has occurred during adding equipment. Please try again later.";
+		error_msg = "Unknown error has occurred during adding event type. Please try again later.";
 		console.log(error);
 	}
 
@@ -33,25 +29,24 @@ function validationErr(error){
 }
 
 router.get('/'+listLink, function(req, res, next) {
-	let columns = ["ID", "Name", "Quantity", "Options"];
+	let columns = ["ID", "Name", "Options"];
 	var error = "";
 
-	Equipment.find({}, function (err, equipment) {
-		var equipmentList = [];
+	EventType.find({}, function (err, eventType) {
+		var eventTypeList = [];
 
-		equipment.forEach(function (equip) {
-			equipmentList.push({
-				id:equip._id,
-				name:equip.typeName,
-				quantity:equip.quantity
+		eventType.forEach(function (evType) {
+			eventTypeList.push({
+				id:evType._id,
+				name:evType.eventTypeName,
 			});
 		});
 
-		error = equipmentList.length === 0 ? "No results to show" : ""
+		error = eventTypeList.length === 0 ? "No results to show" : ""
 
 		res.render('list', {
-			title: 'Equipment List',
-			list:equipmentList,
+			title: 'Event Type List',
+			list:eventTypeList,
 			columns:columns,
 			editLink: editLink,
 			viewLink: viewLink,
@@ -64,25 +59,24 @@ router.get('/'+listLink, function(req, res, next) {
 
 router.get('/'+viewLink, function(req, res, next) {
 	/* Logic to get info from database */
-	Equipment.findOne({_id:req.query.id}, function (err, equipment) {
-		if(!err && equipment){
+	EventType.findOne({_id:req.query.id}, function (err, eventType) {
+		if(!err && eventType){
 			res.render('view', {
-				title: 'Viewing equipment: '+equipment.typeName,
+				title: 'Viewing event type: '+eventType.eventTypeName,
 				error:null,
 				// rows: rows,
 				item:{
-					ID:equipment._id,
-					Name:equipment.typeName,
-					Quantity:equipment.quantity,
-					customFields:equipment.customFields
+					ID:eventType._id,
+					Name:eventType.eventTypeName,
+					customFields:eventType.customFields
 				},
 				listLink: listLink,
 				deleteLink: deleteLink,
-				editLink: editLink+'?id='+equipment._id
+				editLink: editLink+'?id='+eventType._id
 			});
 		} else {
 			res.render('view', {
-				error:"Equipment not found!",
+				error:"Event Type not found!",
 				listLink: listLink
 			});
 		}
@@ -91,25 +85,25 @@ router.get('/'+viewLink, function(req, res, next) {
 });
 
 router.get('/'+editLink, function(req, res, next) {
-	Equipment.findOne({_id:req.query.id}, function (err, equipment) {
-		if(!err && equipment){
+	EventType.findOne({_id:req.query.id}, function (err, eventType) {
+		if(!err && eventType){
 			res.render('edit', {
-				title: 'Editing equipment: '+equipment.typeName,
+				title: 'Editing event type: '+eventType.eventTypeName,
 				error:null,
 				// rows: rows,
 				item:{
-					ID:equipment._id,
-					Name:equipment.typeName,
-					Quantity:equipment.quantity,
-					customFieldsValues:equipment.customFields
+					ID:eventType._id,
+					Name:eventType.eventTypeName,
+					Quantity:eventType.quantity,
+					customFieldsValues:eventType.customFields
 				},
 				customFields:true,
-				editLink: '/equipment/'+editLink,
-				cancelLink: viewLink+'?id='+equipment._id
+				editLink: '/event-types/'+editLink,
+				cancelLink: viewLink+'?id='+eventType._id
 			});
 		} else {
 			res.render('edit', {
-				error:"Equipment not found!",
+				error:"Event type not found!",
 				listLink: listLink
 			});
 		}
@@ -117,11 +111,10 @@ router.get('/'+editLink, function(req, res, next) {
 });
 
 router.get('/'+addLink, function(req, res, next) {
-	let fields = [{name:"Name",type:"text",identifier:"Name"},
-								{name:"Quantity",type:"number",identifier:"Quantity"}];
+	let fields = [{name:"Name",type:"text",identifier:"Name"}];
 
 	res.render('add', {
-		title: 'Add New Equipment',
+		title: 'Add New Event Type',
 		fields:fields,
 		cancelLink: listLink,
 		customFields:true
@@ -129,16 +122,16 @@ router.get('/'+addLink, function(req, res, next) {
 });
 
 router.get('/'+deleteLink, function(req, res, next) {
-	Equipment.deleteOne({_id:req.query.id}, function(err, deleteResult){
+	EventType.deleteOne({_id:req.query.id}, function(err, deleteResult){
 		if(!err){
 			res.render('view', {
-				deleteMsg:"Successfully deleted equipment!",
+				deleteMsg:"Successfully deleted event type!",
 				listLink: listLink
 			});
 		} else {
 			console.log(err); // console log the error
 			res.render('view', {
-				error:"Equipment not found!",
+				error:"Event type not found!",
 				listLink: listLink
 			});
 		}
@@ -150,81 +143,7 @@ router.post('/'+editLink, function(req, res, next) {
 
 	for(const [ field_post_key, field_post_value ] of Object.entries(req.body)) {
 		if(req.body.hasOwnProperty(field_post_key)) {
-			if(field_post_key !== "ID" && field_post_key !== "Name" && field_post_key !== "Quantity"){
-				if(field_post_key.includes('fieldName')) {
-					custom_fields.push({
-						fieldName: field_post_value,
-						fieldValue: ""
-					});
-				} else {
-					custom_fields[custom_fields.length-1]['fieldValue'] = field_post_value;
-				}
-			}
-		}
-	}
-
-	let updates = {$set: {typeName: req.body.Name, quantity:req.body.Quantity, customFields:custom_fields}}
-
-	Equipment.updateOne({_id:req.body.ID}, updates, {runValidators: true}, function (err, update) {
-		if(!err && update){
-			res.render('edit', {
-				title: 'Editing equipment: '+req.body.Name,
-				error:null,
-				errorCritical: false,
-				message:"Successfully updated equipment: "+req.body.Name,
-				item:{
-					ID:req.body.ID,
-					Name:req.body.Name,
-					Quantity:req.body.Quantity,
-					customFieldsValues:custom_fields
-				},
-				customFields:true,
-				editLink: '/equipment/'+editLink,
-				cancelLink: viewLink+'?id='+req.body.ID
-			});
-		} else if(!update){
-			res.render('edit', {
-				error:"Equipment not found!",
-				errorCritical: true,
-				listLink: listLink
-			});
-		} else {
-			let error = validationErr(err);
-
-			res.render('edit', {
-				title: 'Editing equipment: '+req.body.Name,
-				error:error,
-				errorCritical: false,
-				message:null,
-				item:{
-					ID:req.body.ID,
-					Name:req.body.Name,
-					Quantity:req.body.Quantity,
-					customFieldsValues:custom_fields
-				},
-				customFields:true,
-				editLink: '/equipment/'+editLink,
-				cancelLink: viewLink+'?id='+req.body.ID
-			});
-		}
-	});
-});
-
-router.post('/'+addLink, function(req, res, next) {
-	var error_msg = "";
-	var message = "";
-	let fields = [{name:"Name",type:"text",identifier:"Name"},
-		{name:"Quantity",type:"number",identifier:"Quantity"}]
-
-	var equipment_object = {};
-	var custom_fields = [];
-
-	equipment_object['typeName'] = req.body.Name;
-	equipment_object['quantity'] = req.body.Quantity;
-
-	for(const [ field_post_key, field_post_value ] of Object.entries(req.body)) {
-		if(req.body.hasOwnProperty(field_post_key)) {
-			if(field_post_key !== "Name" && field_post_key !== "Quantity"){
+			if(field_post_key !== "ID" && field_post_key !== "Name"){
 				if(field_post_key.includes('fieldName')) {
 					custom_fields.push({
 						fieldName: field_post_value,
@@ -237,26 +156,96 @@ router.post('/'+addLink, function(req, res, next) {
 		}
 	}
 
-	equipment_object['customFields'] = custom_fields;
+	let updates = {$set: {eventTypeName: req.body.Name, customFields:custom_fields}}
 
-	let new_equipment = new Equipment(equipment_object);
+	EventType.updateOne({_id:req.body.ID}, updates, {runValidators: true}, function (err, update) {
+		if(!err && update){
+			res.render('edit', {
+				title: 'Editing event type: '+req.body.Name,
+				error:null,
+				errorCritical: false,
+				message:"Successfully updated event type: "+req.body.Name,
+				item:{
+					ID:req.body.ID,
+					Name:req.body.Name,
+					customFieldsValues:custom_fields
+				},
+				customFields:true,
+				editLink: '/event-types/'+editLink,
+				cancelLink: viewLink+'?id='+req.body.ID
+			});
+		} else if(!update){
+			res.render('edit', {
+				error:"Event type not found!",
+				errorCritical: true,
+				listLink: listLink
+			});
+		} else {
+			let error = validationErr(err);
+
+			res.render('edit', {
+				title: 'Editing event type: '+req.body.Name,
+				error:error,
+				errorCritical: false,
+				message:null,
+				item:{
+					ID:req.body.ID,
+					Name:req.body.Name,
+					customFieldsValues:custom_fields
+				},
+				customFields:true,
+				editLink: '/event-types/'+editLink,
+				cancelLink: viewLink+'?id='+req.body.ID
+			});
+		}
+	});
+});
+
+router.post('/'+addLink, function(req, res, next) {
+	var error_msg = "";
+	var message = "";
+	let fields = [{name:"Name",type:"text",identifier:"Name"}]
+
+	var eventType_object = {};
+	var custom_fields = [];
+
+	eventType_object['eventTypeName'] = req.body.Name;
+
+	for(const [ field_post_key, field_post_value ] of Object.entries(req.body)) {
+		if(req.body.hasOwnProperty(field_post_key)) {
+			if(field_post_key !== "Name" && field_post_key !== "Quantity"){
+				if(field_post_key.includes('fieldName')) {
+					custom_fields.push({
+						fieldName: field_post_value,
+						fieldValue: ""
+					});
+				} else {
+					custom_fields[custom_fields.length-1]['fieldValue'] = field_post_value;
+				}
+			}
+		}
+	}
+
+	eventType_object['customFields'] = custom_fields;
+
+	let new_eventType = new EventType(eventType_object);
 
 	function renderScreen(){
 		res.render('add', {
-			title: 'Add New Equipment',
+			title: 'Add New Event Type',
 			fields:fields,
 			cancelLink: listLink,
-			addLink: '/equipment/'+addLink,
+			addLink: '/event-types/'+addLink,
 			customFields:true,
 			error: error_msg,
 			message: message
 		});
 	}
 
-	/* Insert new equipment */
-	new_equipment.save(function (error, equipmentDoc) {
+	/* Insert new event type */
+	new_eventType.save(function (error, eventTypeDoc) {
 		if (!error) {
-			message = "Successfully added new equipment: " + req.body.Name;
+			message = "Successfully added new event type: " + req.body.Name;
 			console.log(message);
 		} else {
 			error_msg = validationErr(error);
@@ -264,7 +253,7 @@ router.post('/'+addLink, function(req, res, next) {
 
 		renderScreen();
 	});
-	/* End Insert new equipment */
+	/* End Insert new event type */
 });
 
 module.exports = router;

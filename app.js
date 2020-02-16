@@ -16,6 +16,7 @@ const usersRouter = require('./routes/users');
 const eventsRouter = require('./routes/events');
 const visitorsRouter = require('./routes/visitors');
 const equipmentRouter = require('./routes/equipment');
+const eventTypesRouter = require('./routes/eventTypes');
 /* End Routes */
 
 const app = express();
@@ -52,6 +53,7 @@ app.use('/users', usersRouter);
 app.use('/events', eventsRouter);
 app.use('/visitors', visitorsRouter);
 app.use('/equipment', equipmentRouter);
+app.use('/event-types', eventTypesRouter);
 
 /* Access the API only via the domain */
 app.use(function(req,res,next){

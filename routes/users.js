@@ -7,8 +7,6 @@ const nodemailer = require('nodemailer');
 const User = require('../models/staff_user');
 /* End Model */
 
-const list = [{id:1234,name:"User Name",email:"john.doe@email.com"},{id:1235,name:"User Name",email:"john.doe@email.com"},{id:1236,name:"User Name",email:"john.doe@email.com"}];
-
 /* Links */
 const viewLink = "view-user";
 const editLink = "edit-user";

@@ -1,12 +1,22 @@
 const mongoose = require("mongoose");
 const bcrypt = require('bcryptjs'); // required for encryption of the password
 
+function validateEmail(email) { // validate email
+	const email_regex=/^([a-z0-9]+)[-_.]?([a-z0-9]+)@([a-z0-9]{2,}).(.([a-z0-9]{2,}))+$/i;
+	console.log(email);
+	return email_regex.test(email);
+}
+
+function validateName(name) { // validate full name (can include title)
+	const name_regex=/^([a-zA-Z_-\s.]){2,}$/i;
+	return name_regex.test(name);
+}
+
 var VisitorSchema = new mongoose.Schema({
-	username:{ type: String, required: [true, "Username must be provided"] },
-	password:{ type: String, required: true },
-	leadTeacherName:{ type: String, required: [true, "Lead teacher name must be provided"] },
-	contactEmail: { type: String, validate: [this.validateEmail, "Email entered is not valid"] },
+	leadTeacherName:{ type: String, required: [true, "Lead teacher name must be provided"], validate: [{ validator: value => validateName(value), msg:"Full name entered is not valid"}] },
+	contactEmail: { type: String, required: [true, "Email must be provided"], validate: [{ validator: value => validateEmail(value), msg:"Email entered is not valid"}], unique: [true, "Email already exists."] },
 	contactPhone:{ type: String },
+	password:{ type: String, required: true },
 	expiryDate:{ type: Date }
 });
 
@@ -17,10 +27,6 @@ VisitorSchema.methods = {
 	},
 	hashPassword: plainTextPassword => {
 		return bcrypt.hashSync(plainTextPassword, 10)
-	},
-	validateEmail: function (email) { // va
-		const email_regex=/^([a-z0-9]+)[-_.]?([a-z0-9]+)@([a-z0-9]{2,}).([a-z0-9]{2,})$/i;
-		return email_regex.test(email);
 	}
 };
 /* End Methods to Compare and Hash Password and validate email */

@@ -60,8 +60,8 @@ block content
                             input.form-control(id=index type="text" placeholder="Enter " + index readonly value=info name=index)
                 else
                     p='Custom Fields:'
-                    each fieldValue in info
-                        div#fields
+                    div#fields
+                        each fieldValue in info
                             div.row.form-group
                                 div.col
                                     label(for=fieldValue['fieldName'])='Custom Field ' + field_count + ' Name'
@@ -76,7 +76,7 @@ block content
             center
                 if customFields
                     p
-                        a.btn.btn-primary(href="#" onclick=field_count = "addCustomField()") Add Custom Field
+                        a.btn.btn-primary(href="#" onclick="addCustomField()") Add Custom Field
                 button.btn.btn-primary(type="submit") Save
                 a.btn.btn-danger(href=cancelLink) Cancel
     else
