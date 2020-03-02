@@ -17,7 +17,11 @@ var VisitorSchema = new mongoose.Schema({
 	contactEmail: { type: String, required: [true, "Email must be provided"], validate: [{ validator: value => validateEmail(value), msg:"Email entered is not valid"}], unique: [true, "Email already exists."] },
 	contactPhone:{ type: String },
 	password:{ type: String, required: true },
-	expiryDate:{ type: Date }
+	expiryDate:{ type: Date },
+	groupSize:{ type: Number, required: [true, "Group size must be provided"] },
+	attendingEvents:[{
+		eventID: { type: String, required:true }
+	}]
 });
 
 /* Methods to Compare and Hash Password and validate email */

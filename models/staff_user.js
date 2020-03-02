@@ -23,7 +23,11 @@ var StaffSchema = new mongoose.Schema({
 	email:{ type: String, required: [true, "Email must be provided"], validate: [{ validator: value => validateEmail(value), msg:"Email entered is not valid"}], unique: [true, "Email already exists."] },
 	password:{ type: String, required: true, validate: [{ validator: value => validatePassword(value), msg: "Password is not valid, it must contain 1 lowercase letter, 1 uppercase letter and one number and it must be at least 6 characters long."}] },
 	phone:{ type: String },
-	role:{ type: String, required: [true, "Role must be stated"] }
+	role:{ type: String, required: [true, "Role must be stated"] },
+	attendingEvents:[{
+		eventID: {type: String, required: true},
+		role: {type: String, required: true}
+	}]
 });
 
 /* Methods to Compare and Hash Password */

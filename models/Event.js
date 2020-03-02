@@ -7,7 +7,7 @@ var EventSchema = new mongoose.Schema({
 			equipID: { type: String, required: true },
 			reqQty: { type: Number }
 		}],
-	eventSpaces:{ type: Number, required: [true, "Available spaces must be stated"] },
+	// eventSpaces:{ type: Number, required: [true, "Available spaces must be stated"] },
 	eventTypeID:{ type: String, required: [true, "Event type must be chosen"] },
 	// staffRequired:[
 	// 	{
@@ -19,9 +19,12 @@ var EventSchema = new mongoose.Schema({
 			staffMemberID: { type: String, required: true },
 			role: { type: String, required: true }
 		}],
-	date:{ type: Date },
-	location: { type: String },
-	numberOfVisitors: { type: Number }
+	date:{ type: Date, required: [true, "Event date must be provided"] },
+	location: { type: String, required: [true, "Location of the event must be provided"] },
+	visitors: [{
+		visitorID: { type: String, required: true }
+	}]
+	// numberOfVisitors: { type: Number }
 });
 
 module.exports = mongoose.model("Event",EventSchema);

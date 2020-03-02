@@ -7,7 +7,39 @@ block content
             table.table
                 tbody
                     each info,index in item
-                        if index === 'customFields'
+                        if index === 'Equipment'
+                            tr
+                                td(style="font-weight:bold")=index
+                                td
+                                    each equip in info
+                                        p
+                                            span="Name: " + equip.typeName
+                                            br
+                                            span="Quantity: " + equip.quantity
+                                            br
+                                            each field in equip.customFields
+                                                span=field.fieldName + ": " + field.fieldValue
+                        else if index === 'Event Type'
+                            tr
+                                td(style="font-weight:bold")=index
+                                td
+                                    span=info.eventTypeName
+                                    br
+                                    each field in info.customFields
+                                        span=field.fieldName + ": " + field.fieldValue
+                        else if index === 'Staff Chosen'
+                            tr
+                                td(style="font-weight:bold")=index
+                                td
+                                    each staff_member in info
+                                        p
+                                            span="Name: " + staff_member.fullName
+                                            br
+                                            span="E-mail: " + staff_member.email
+                                            br
+                                            span="Role: " + staff_member.role
+                                            br
+                        else if index === 'customFields'
                             each fieldValue in info
                                 tr
                                     td(style="font-weight:bold")=fieldValue['fieldName']

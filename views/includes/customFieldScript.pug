@@ -1,0 +1,36 @@
+script.
+	function addCustomField() {
+		$('<div>').attr('class', 'row form-group').attr('id', 'row' + field_count).appendTo('#fields');
+
+		$('<div>').attr('class', 'col').attr('id', 'nameCol' + field_count).appendTo('#row' + field_count);
+		$('<label>').attr('for', 'fieldName' + field_count).appendTo('#nameCol' + field_count).text('Custom Field ' + field_count + ' Name');
+		$('<input>')
+				.attr('type', 'text')
+				.attr('class', 'form-control')
+				.attr('name', 'fieldName' + field_count)
+				.appendTo('#nameCol' + field_count);
+
+		$('<div>').attr('class', 'col').attr('id', 'valueCol' + field_count).appendTo('#row' + field_count);
+		$('<label>').attr('for', 'fieldValue' + field_count).appendTo('#valueCol' + field_count).text('Custom Field ' + field_count + ' Value');
+		$('<input>')
+				.attr('type', 'text')
+				.attr('class', 'form-control')
+				.attr('name', 'fieldValue' + field_count)
+				.appendTo('#valueCol' + field_count);
+
+		$('<div>')
+				.attr('class', 'col')
+				.attr('id', 'removeCol' + field_count)
+				.attr('style', 'flex-grow:0;position:relative;')
+				.appendTo('#row' + field_count);
+		$('<a>')
+				.attr('class', 'options-btn')
+				.attr('href', '#')
+				.attr('id', 'removeIcon' + field_count)
+				.attr('style', 'position:absolute;bottom:0;left:0')
+				.attr('onclick', '$(this).parent().parent().remove()')
+				.appendTo('#removeCol' + field_count);
+		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeIcon' + field_count);
+
+		field_count++;
+	}
