@@ -1,141 +1,142 @@
 extends layout
 
 block content
-    - var field_count = 0
-    - var visitor_count = 0
-    - var equipment_count = 0
-    - var staff_count = 0
+    .container
+        - var field_count = 0
+        - var visitor_count = 0
+        - var equipment_count = 0
+        - var staff_count = 0
 
-    if customFields
-        include includes/customFieldScript
-    if staffFields
-        include includes/staffFieldScript
-    if visitorFields
-        include includes/visitorFieldScript
-    if equipmentFields
-        include includes/equipmentFieldScript
-
-    h3.title=title
-
-    if message
-        div.alert.alert-success(role="alert")=message
-    if error
-        div.alert.alert-danger(role="alert")=error
-
-    form(method="POST" action=addLink)
-        div#fields
-            each field in fields
-                if field.type !== "select"
-                    div.form-group
-                        label(for=field.identifier)=field.name
-                        input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.name)
-                else if field.type === "select"
-                    div.form-group
-                        if field.identifier === "eventType"
-                            label(for=field.identifier)=field.name
-                            select.form-control(name=field.name)
-                                each option in eventTypes
-                                    if selectedEventType === option._id
-                                        option(value=option._id selected)=option.eventTypeName
-                                    else
-                                        option(value=option._id)=option.eventTypeName
-
-        if equipmentFields
-            div#equipment
-                p
-                    b="Equipment:"
-                    a.btn.btn-primary(href="#" onclick="addEquipmentField()") Add Equipment
-
-                if selectedEquip && selectedEquip.length > 0
-                    each equip in selectedEquip
-                        div.row.form-group(id="rowEquipment" + equipment_count)
-                            div.col(id="equipmentNameCol" + equipment_count)
-                                label(for="equipmentName" + equipment_count)='Equipment ' + equipment_count + ' Name'
-                                select.form-control(id="selectEquipment" + equipment_count name='equipmentID' + equipment_count onChange='selectedEquipment(this)')
-                                    each option in equipment
-                                        if equip.equipID === option._id
-                                            option(value=equip.equipID selected)=option.typeName
-                                        else
-                                            option(value=option._id)=option.typeName
-                            div.col(id="equipmentQuantityCol" + equipment_count)
-                                label(for="quantity" + equipment_count)="Quantity " + equipment_count
-                                input.form-control(type="number" name="quantity" + equipment_count min="1" max=equip.quantity value=equip.reqQty)
-
-                            div.col(id="removeEquipmentCol" + equipment_count style="flex-grow:0;position:relative;")
-                                a.options-btn(href="#" id="removeEquipmentIcon" + equipment_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
-                                    i.material-icons.md-18="delete"
-                        - equipment_count++
-
+        if customFields
+            include includes/customFieldScript
         if staffFields
-            div#staff
-                p
-                    b="Staff:"
-                    a.btn.btn-primary(href="#" onclick="addStaffField()") Add Staff
-
-                if selectedStaff && selectedStaff.length > 0
-                    each staff in selectedStaff
-                        div.row.form-group(id="rowStaff" + staff_count)
-                            div.col(id="staffNameCol" + staff_count)
-                                label(for="staffID" + staff_count)='Staff Member ' + staff_count + ' Email'
-                                select.form-control(id="selectStaff" + staff_count name='staffID' + staff_count)
-                                    each option in staff
-                                        if staff.staffMemberID === option._id
-                                            option(value=staff.staffMemberID selected)=option.fullName
-                                        else
-                                            option(value=option._id)=option.fullName
-                            div.col(id="staffRoleCol" + staff_count)
-                                label(for="staffRole" + staff_count)='Staff Member ' + staff_count + ' Role'
-                                if staff.role
-                                    input.form-control(type="text" name="staffRole" + staff_count value=staff.role)
-                                else
-                                    input.form-control(type="text" name="staffRole" + staff_count)
-
-                            div.col(id="removeStaffCol" + staff_count style="flex-grow:0;position:relative;")
-                                a.options-btn(href="#" id="removeStaffIcon" + staff_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
-                                    i.material-icons.md-18="delete"
-                        - staff_count++
+            include includes/staffFieldScript
         if visitorFields
-            div#visitors
-                p
-                    b="Visitors:"
-                    a.btn.btn-primary(href="#" onclick="addVisitorField()") Add Visitor
+            include includes/visitorFieldScript
+        if equipmentFields
+            include includes/equipmentFieldScript
 
-                if selectedVisitors && selectedVisitors.length > 0
-                    each visitor in selectedVisitors
-                        div.row.form-group(id="visitorCol" + visitor_count)
-                            div.col(id="visitorCol" + visitor_count)
-                                label(for="visitorID" + visitor_count)='Visitor ' + visitor_count + ' Name'
-                                select.form-control(id="selectStaff" + visitor_count name='staffID' + visitor_count)
-                                    each option in visitors
-                                        if visitor.visitorID === option._id
-                                            option(value=visitor.visitorID selected)=option.leadTeacherName
+        h3.title=title
+
+        if message
+            div.alert.alert-success(role="alert")=message
+        if error
+            div.alert.alert-danger(role="alert")=error
+
+        form(method="POST" action=addLink)
+            div#fields
+                each field in fields
+                    if field.type !== "select"
+                        div.form-group
+                            label(for=field.identifier)=field.name
+                            input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.name)
+                    else if field.type === "select"
+                        div.form-group
+                            if field.identifier === "eventType"
+                                label(for=field.identifier)=field.name
+                                select.form-control(name=field.name)
+                                    each option in eventTypes
+                                        if selectedEventType === option._id
+                                            option(value=option._id selected)=option.eventTypeName
                                         else
-                                            option(value=option._id)=option.leadTeacherName
+                                            option(value=option._id)=option.eventTypeName
 
-                            div.col(id="removeVisitorCol" + visitor_count style="flex-grow:0;position:relative;")
-                                a.options-btn(href="#" id="removeVisitorIcon" + visitor_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
-                                    i.material-icons.md-18="delete"
-                        - visitor_count++
-        center
-            if customFields
-                p
-                    a.btn.btn-primary(href="#" onclick="addCustomField()") Add Custom Field
+            if equipmentFields
+                div#equipment
+                    p
+                        b="Equipment:"
+                        a.btn.btn-primary(href="#" onclick="addEquipmentField()") Add Equipment
+
+                    if selectedEquip && selectedEquip.length > 0
+                        each equip in selectedEquip
+                            div.row.form-group(id="rowEquipment" + equipment_count)
+                                div.col(id="equipmentNameCol" + equipment_count)
+                                    label(for="equipmentName" + equipment_count)='Equipment ' + equipment_count + ' Name'
+                                    select.form-control(id="selectEquipment" + equipment_count name='equipmentID' + equipment_count onChange='selectedEquipment(this)')
+                                        each option in equipment
+                                            if equip.equipID === option._id
+                                                option(value=equip.equipID selected)=option.typeName
+                                            else
+                                                option(value=option._id)=option.typeName
+                                div.col(id="equipmentQuantityCol" + equipment_count)
+                                    label(for="quantity" + equipment_count)="Quantity " + equipment_count
+                                    input.form-control(type="number" name="quantity" + equipment_count min="1" max=equip.quantity value=equip.reqQty)
+
+                                div.col(id="removeEquipmentCol" + equipment_count style="flex-grow:0;position:relative;")
+                                    a.options-btn(href="#" id="removeEquipmentIcon" + equipment_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
+                                        i.material-icons.md-18="delete"
+                            - equipment_count++
+
+            if staffFields
+                div#staff
+                    p
+                        b="Staff:"
+                        a.btn.btn-primary(href="#" onclick="addStaffField()") Add Staff
+
+                    if selectedStaff && selectedStaff.length > 0
+                        each staff in selectedStaff
+                            div.row.form-group(id="rowStaff" + staff_count)
+                                div.col(id="staffNameCol" + staff_count)
+                                    label(for="staffID" + staff_count)='Staff Member ' + staff_count + ' Email'
+                                    select.form-control(id="selectStaff" + staff_count name='staffID' + staff_count)
+                                        each option in staff
+                                            if staff.staffMemberID === option._id
+                                                option(value=staff.staffMemberID selected)=option.fullName
+                                            else
+                                                option(value=option._id)=option.fullName
+                                div.col(id="staffRoleCol" + staff_count)
+                                    label(for="staffRole" + staff_count)='Staff Member ' + staff_count + ' Role'
+                                    if staff.role
+                                        input.form-control(type="text" name="staffRole" + staff_count value=staff.role)
+                                    else
+                                        input.form-control(type="text" name="staffRole" + staff_count)
+
+                                div.col(id="removeStaffCol" + staff_count style="flex-grow:0;position:relative;")
+                                    a.options-btn(href="#" id="removeStaffIcon" + staff_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
+                                        i.material-icons.md-18="delete"
+                            - staff_count++
+            if visitorFields
+                div#visitors
+                    p
+                        b="Visitors:"
+                        a.btn.btn-primary(href="#" onclick="addVisitorField()") Add Visitor
+
+                    if selectedVisitors && selectedVisitors.length > 0
+                        each visitor in selectedVisitors
+                            div.row.form-group(id="visitorCol" + visitor_count)
+                                div.col(id="visitorCol" + visitor_count)
+                                    label(for="visitorID" + visitor_count)='Visitor ' + visitor_count + ' Name'
+                                    select.form-control(id="selectStaff" + visitor_count name='staffID' + visitor_count)
+                                        each option in visitors
+                                            if visitor.visitorID === option._id
+                                                option(value=visitor.visitorID selected)=option.leadTeacherName
+                                            else
+                                                option(value=option._id)=option.leadTeacherName
+
+                                div.col(id="removeVisitorCol" + visitor_count style="flex-grow:0;position:relative;")
+                                    a.options-btn(href="#" id="removeVisitorIcon" + visitor_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
+                                        i.material-icons.md-18="delete"
+                            - visitor_count++
+            center
+                if customFields
+                    p
+                        a.btn.btn-primary(href="#" onclick="addCustomField()") Add Custom Field
 
 
 
-        center
-            button.btn.btn-primary(type="submit") Add
-            a.btn.btn-danger(href=cancelLink) Cancel
+            center
+                button.btn.btn-primary(type="submit") Add
+                a.btn.btn-danger(href=cancelLink) Cancel
 
-    if customFields
-        script.
-            var field_count = !{field_count};
-    if staffFields
-        script.
-            var staff_count = !{staff_count};
-    if visitorFields
-        script.
-            var visitor_count = !{visitor_count};
-    if equipmentFields
-        script.
-            var equipment_count = !{equipment_count};
+        if customFields
+            script.
+                var field_count = !{field_count};
+        if staffFields
+            script.
+                var staff_count = !{staff_count};
+        if visitorFields
+            script.
+                var visitor_count = !{visitor_count};
+        if equipmentFields
+            script.
+                var equipment_count = !{equipment_count};

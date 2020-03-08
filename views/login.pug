@@ -1,0 +1,12 @@
+extends layout
+
+block content
+    .container(style="max-width:500px")
+        h3.title=title
+        center
+            form(method="POST" action="/authorize")
+                div.form-group
+                    input.form-control(type="email" name="username" placeholder="Enter E-mail")
+                div.form-group
+                    input.form-control(type="password" name="password" placeholder="Enter Password")
+                button.btn.btn-primary(type="submit") Login

@@ -1,60 +1,63 @@
 extends layout
 
 block content
-    if !error
-        if !deleteMsg
-            h3.title=title
-            table.table
-                tbody
-                    each info,index in item
-                        if index === 'Equipment'
-                            tr
-                                td(style="font-weight:bold")=index
-                                td
-                                    each equip in info
-                                        p
-                                            span="Name: " + equip.typeName
-                                            br
-                                            span="Quantity: " + equip.quantity
-                                            br
-                                            each field in equip.customFields
-                                                span=field.fieldName + ": " + field.fieldValue
-                        else if index === 'Event Type'
-                            tr
-                                td(style="font-weight:bold")=index
-                                td
-                                    span=info.eventTypeName
-                                    br
-                                    each field in info.customFields
-                                        span=field.fieldName + ": " + field.fieldValue
-                        else if index === 'Staff Chosen'
-                            tr
-                                td(style="font-weight:bold")=index
-                                td
-                                    each staff_member in info
-                                        p
-                                            span="Name: " + staff_member.fullName
-                                            br
-                                            span="E-mail: " + staff_member.email
-                                            br
-                                            span="Role: " + staff_member.role
-                                            br
-                        else if index === 'customFields'
-                            each fieldValue in info
+    .container
+        if !error
+            if !deleteMsg
+                h3.title=title
+                table.table
+                    tbody
+                        each info,index in item
+                            if index === 'Equipment'
                                 tr
-                                    td(style="font-weight:bold")=fieldValue['fieldName']
-                                    td=fieldValue['fieldValue']
-                        else
-                            tr
-                                td(style="font-weight:bold")=index
-                                td=info
-            center
-                a.btn.btn-warning(href=editLink) Edit
-                a.btn.btn-danger(href=deleteLink+"?id="+item.ID onclick="return confirm('Are you sure you want to delete this entity?')") Delete
+                                    td(style="font-weight:bold")=index
+                                    td
+                                        each equip in info
+                                            p
+                                                span="Name: " + equip.typeName
+                                                br
+                                                span="Quantity: " + equip.quantity
+                                                br
+                                                each field in equip.customFields
+                                                    span=field.fieldName + ": " + field.fieldValue
+                            else if index === 'Event Type'
+                                tr
+                                    td(style="font-weight:bold")=index
+                                    td
+                                        span=info.eventTypeName
+                                        br
+                                        each field in info.customFields
+                                            span=field.fieldName + ": " + field.fieldValue
+                            else if index === 'Staff Chosen'
+                                tr
+                                    td(style="font-weight:bold")=index
+                                    td
+                                        each staff_member in info
+                                            p
+                                                span="Name: " + staff_member.fullName
+                                                br
+                                                span="E-mail: " + staff_member.email
+                                                br
+                                                span="Role: " + staff_member.role
+                                                br
+                            else if index === 'customFields'
+                                each fieldValue in info
+                                    tr
+                                        td(style="font-weight:bold")=fieldValue['fieldName']
+                                        td=fieldValue['fieldValue']
+                            else
+                                tr
+                                    td(style="font-weight:bold")=index
+                                    td=info
+                center
+                    if editLink
+                        a.btn.btn-warning(href=editLink) Edit
+                    if deleteLink
+                        a.btn.btn-danger(href=deleteLink+"?id="+item.ID onclick="return confirm('Are you sure you want to delete this entity?')") Delete
+                    a.btn.btn-primary(href=listLink) Go to list
+            else
+                div.alert.alert-success(role="alert")=deleteMsg
                 a.btn.btn-primary(href=listLink) Go to list
         else
-            div.alert.alert-success(role="alert")=deleteMsg
+            div.alert.alert-danger(role="alert")=error
             a.btn.btn-primary(href=listLink) Go to list
-    else
-        div.alert.alert-danger(role="alert")=error
-        a.btn.btn-primary(href=listLink) Go to list

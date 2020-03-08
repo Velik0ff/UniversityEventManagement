@@ -1,29 +1,33 @@
 extends layout
 
 block content
-    h3.title=title
-    a.btn.btn-success(href=addLink style="margin:5px;") Add New
-    table.table
-        thead
-            tr
-                each column in columns
-                    th(scope='col')=column
-        tbody
-            if error
+    .container
+        h3.title=title
+        a.btn.btn-success(href=addLink style="margin:5px;") Add New
+        table.table
+            thead
                 tr
-                    td=error
-            each item in list
-                tr
-                    each info,index in item
-                        if index=="id"
-                            th(scope='row')=info
-                        else if index == "name"
+                    each column in columns
+                        th(scope='col')=column
+            tbody
+                if error
+                    tr
+                        td=error
+                each item in list
+                    tr
+                        each info,index in item
+                            if index==="id"
+                                th(scope='row')=info
+                            else if index==="name"
+                                td
+                                    a(href=viewLink+"?id="+item.id)=info
+                            else
+                                td=info
+                        if deleteLink || editLink
                             td
-                                a(href=viewLink+"?id="+item.id)=info
-                        else
-                            td=info
-                    td
-                        a.options-btn(href=editLink+"?id="+item.id)
-                            i.material-icons.md-18 edit
-                        a.options-btn(href=deleteLink+"?id="+item.id onclick="return confirm('Are you sure you want to delete this entity?')")
-                            i.material-icons.md-18 delete
+                                if editLink
+                                    a.options-btn(href=editLink+"?id="+item.id)
+                                        i.material-icons.md-18 edit
+                                if deleteLink
+                                    a.options-btn(href=deleteLink+"?id="+item.id onclick="return confirm('Are you sure you want to delete this entity?')")
+                                        i.material-icons.md-18 delete

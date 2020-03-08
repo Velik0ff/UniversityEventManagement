@@ -84,219 +84,257 @@ async function sendInvitationEmail(email, password){
 /* End Functions */
 
 router.get('/'+listLink, function(req, res, next) {
-	let columns = ["ID", "Lead Teacher", "Email", "Options"];
-	var error = "";
+	if(req.user && req.user.permission === 0) {
+		let columns = ["ID", "Lead Teacher", "Email", "Options"];
+		var error = "";
 
-	User.find({}, function (err, users) {
-		var userList = [];
+		User.find({}, function (err, users) {
+			var userList = [];
 
-		users.forEach(function (user) {
-			userList.push({
-				id:user._id,
-				name:user.leadTeacherName,
-				email:user.contactEmail
+			users.forEach(function (user) {
+				userList.push({
+					id: user._id,
+					name: user.leadTeacherName,
+					email: user.contactEmail
+				});
+			});
+
+			error = userList.length === 0 ? "No results to show" : ""
+
+			res.render('list', {
+				title: 'Visitor List',
+				list: userList,
+				columns: columns,
+				editLink: editLink,
+				viewLink: viewLink,
+				addLink: addLink,
+				deleteLink: deleteLink,
+				error: error,
+				user:req.user
 			});
 		});
-
-		error = userList.length === 0 ? "No results to show" : ""
-
-		res.render('list', {
-			title: 'Visitor List',
-			list:userList,
-			columns:columns,
-			editLink: editLink,
-			viewLink: viewLink,
-			addLink: addLink,
-			deleteLink: deleteLink,
-			error:error
-		});
-	});
+	} else {
+		res.redirect('/');
+	}
 });
 
 router.get('/'+viewLink, function(req, res, next) {
-	/* Logic to get info from database */
-	User.findOne({_id:req.query.id}, function (err, user) {
-		if(!err && user){
-			res.render('view', {
-				title: 'Viewing staff member: '+user.leadTeacherName,
-				error:null,
-				// rows: rows,
-				item:{
-					ID:user._id,
-					"Lead Teacher":user.leadTeacherName,
-					Email:user.contactEmail,
-					"Group Size":user.groupSize
-				},
-				listLink: listLink,
-				deleteLink: deleteLink,
-				editLink: editLink+'?id='+user._id
-			});
-		} else {
-			res.render('view', {
-				error:"User not found!",
-				listLink: listLink
-			});
-		}
-	});
-	/* End Logic to get info from database */
+	if(req.user && req.user.permission === 0) {
+		/* Logic to get info from database */
+		User.findOne({_id: req.query.id}, function (err, user) {
+			if (!err && user) {
+				res.render('view', {
+					title: 'Viewing staff member: ' + user.leadTeacherName,
+					error: null,
+					// rows: rows,
+					item: {
+						ID: user._id,
+						"Lead Teacher": user.leadTeacherName,
+						Email: user.contactEmail,
+						"Group Size": user.groupSize
+					},
+					listLink: listLink,
+					deleteLink: deleteLink,
+					editLink: editLink + '?id=' + user._id,
+					user:req.user
+				});
+			} else {
+				res.render('view', {
+					error: "User not found!",
+					listLink: listLink
+				});
+			}
+		});
+		/* End Logic to get info from database */
+	} else {
+		res.redirect('/');
+	}
 });
 
 router.get('/'+addLink, function(req, res, next) {
-	let fields = [{name:"Lead Teacher Full Name",type:"text",identifier:"name"},
-		{name:"Contact Email",type:"email",identifier:"email"},
-		{name:"Contact Phone",type:"phone",identifier:"phone"},
-		{name:"Group Size",type:"number",identifier:"groupSize"},
-		{name:"Expiry Date",type:"date",identifier:"expiryDate"}];
+	if(req.user && req.user.permission === 0) {
+		let fields = [{name: "Lead Teacher Full Name", type: "text", identifier: "name"},
+			{name: "Contact Email", type: "email", identifier: "email"},
+			{name: "Contact Phone", type: "phone", identifier: "phone"},
+			{name: "Group Size", type: "number", identifier: "groupSize"},
+			{name: "Expiry Date", type: "date", identifier: "expiryDate"}];
 
-	res.render('add', {
-		title: 'Add New Visitor',
-		fields:fields,
-		cancelLink: listLink,
-		addLink: '/visitors/'+addLink,
-		customFields:false,
-		error: null,
-		message: null
-	});
+		res.render('add', {
+			title: 'Add New Visitor',
+			fields: fields,
+			cancelLink: listLink,
+			addLink: '/visitors/' + addLink,
+			customFields: false,
+			error: null,
+			message: null
+		});
+	} else {
+		res.redirect('/');
+	}
 });
 
 router.get('/'+editLink, function(req, res, next) {
-	User.findOne({_id:req.query.id}, function (err, user) {
-		if(!err && user){
-			res.render('edit', {
-				title: 'Editing visitor: '+user.leadTeacherName,
-				error:null,
-				item:{
-					ID:req.query.id,
-					leadTeacherName: user.leadTeacherName,
-					contactEmail: user.contactEmail,
-					contactPhone: user.contactPhone,
-					groupSize: user.groupSize,
-					expiryDate: user.expiryDate
-				},
-				editLink: '/visitor/'+editLink,
-				cancelLink: viewLink+'?id='+user._id
-			});
-		} else {
-			res.render('edit', {
-				error:"Visitor not found!",
-				listLink: listLink
-			});
-		}
-	});
+	if(req.user && req.user.permission === 0) {
+		User.findOne({_id: req.query.id}, function (err, user) {
+			if (!err && user) {
+				res.render('edit', {
+					title: 'Editing visitor: ' + user.leadTeacherName,
+					error: null,
+					item: {
+						ID: req.query.id,
+						leadTeacherName: user.leadTeacherName,
+						contactEmail: user.contactEmail,
+						contactPhone: user.contactPhone,
+						groupSize: user.groupSize,
+						expiryDate: user.expiryDate
+					},
+					editLink: '/visitor/' + editLink,
+					cancelLink: viewLink + '?id=' + user._id,
+					user:req.user
+				});
+			} else {
+				res.render('edit', {
+					error: "Visitor not found!",
+					listLink: listLink,
+					user:req.user
+				});
+			}
+		});
+	} else {
+		res.redirect('/');
+	}
 });
 
 router.get('/'+deleteLink, function(req, res, next) {
-	User.deleteOne({_id:req.query.id}, function(err, deleteResult){
-		if(!err){
-			res.render('view', {
-				deleteMsg:"Successfully deleted visitor!",
-				listLink: listLink
-			});
-		} else {
-			console.log(err); // console log the error
-			res.render('view', {
-				error:"Visitor not found!",
-				listLink: listLink
-			});
-		}
-	});
+	if(req.user && req.user.permission === 0) {
+		User.deleteOne({_id: req.query.id}, function (err, deleteResult) {
+			if (!err) {
+				res.render('view', {
+					deleteMsg: "Successfully deleted visitor!",
+					listLink: listLink,
+					user:req.user
+				});
+			} else {
+				console.log(err); // console log the error
+				res.render('view', {
+					error: "Visitor not found!",
+					listLink: listLink,
+					user:req.user
+				});
+			}
+		});
+	} else {
+		res.redirect('/');
+	}
 });
 
 router.post('/'+editLink, function(req, res, next) {
-	let updates = {$set: {fullName: req.body.Name, email:req.body.Email, role:req.body.Role}}
+	if(req.user && req.user.permission === 0) {
+		let updates = {$set: {fullName: req.body.Name, email: req.body.Email, role: req.body.Role}}
 
-	User.updateOne({_id:req.body.ID}, updates, {runValidators: true}, function (err, update) {
-		if(!err && update){
-			res.render('edit', {
-				title: 'Editing visitor: '+req.body.Name,
-				error:null,
-				errorCritical: false,
-				message:"Successfully updated visitor: "+req.body.Email,
-				item:{
-					ID:req.body.ID,
-					leadTeacherName: req.body['Lead Teacher Full Name'],
-					contactEmail: req.body['Contact Email'],
-					contactPhone: req.body['Contact Phone'],
-					groupSize: req.body['Group Size'],
-					expiryDate: req.body['Expiry Date']
-				},
-				editLink: '/visitor/'+editLink,
-				cancelLink: viewLink+'?id='+req.body.ID
-			});
-		} else if(!update){
-			res.render('edit', {
-				error:"User not found!",
-				errorCritical: true,
-				listLink: listLink
-			});
-		} else {
-			let error = validationErr(err);
+		User.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
+			if (!err && update) {
+				res.render('edit', {
+					title: 'Editing visitor: ' + req.body.Name,
+					error: null,
+					errorCritical: false,
+					message: "Successfully updated visitor: " + req.body.Email,
+					item: {
+						ID: req.body.ID,
+						leadTeacherName: req.body['Lead Teacher Full Name'],
+						contactEmail: req.body['Contact Email'],
+						contactPhone: req.body['Contact Phone'],
+						groupSize: req.body['Group Size'],
+						expiryDate: req.body['Expiry Date']
+					},
+					editLink: '/visitor/' + editLink,
+					cancelLink: viewLink + '?id=' + req.body.ID,
+					user:req.user
+				});
+			} else if (!update) {
+				res.render('edit', {
+					error: "User not found!",
+					errorCritical: true,
+					listLink: listLink,
+					user:req.user
+				});
+			} else {
+				let error = validationErr(err);
 
-			res.render('edit', {
-				title: 'Editing visitor: '+req.body.Name,
-				error:error,
-				errorCritical: false,
-				message:null,
-				item:{
-					ID:req.body.ID,
-					leadTeacherName: req.body['Lead Teacher Full Name'],
-					contactEmail: req.body['Contact Email'],
-					contactPhone: req.body['Contact Phone'],
-					groupSize: req.body['Group Size'],
-					expiryDate: req.body['Expiry Date']
-				},
-				editLink: '/visitor/'+editLink,
-				cancelLink: viewLink+'?id='+req.body.ID
-			});
-		}
-	});
+				res.render('edit', {
+					title: 'Editing visitor: ' + req.body.Name,
+					error: error,
+					errorCritical: false,
+					message: null,
+					item: {
+						ID: req.body.ID,
+						leadTeacherName: req.body['Lead Teacher Full Name'],
+						contactEmail: req.body['Contact Email'],
+						contactPhone: req.body['Contact Phone'],
+						groupSize: req.body['Group Size'],
+						expiryDate: req.body['Expiry Date']
+					},
+					editLink: '/visitor/' + editLink,
+					cancelLink: viewLink + '?id=' + req.body.ID,
+					user:req.user
+				});
+			}
+		});
+	} else {
+		res.redirect('/');
+	}
 });
 
 router.post('/'+addLink, function(req, res, next) {
-	var error_msg = "";
-	var message = "";
-	let password_to_insert = short().new();
-	let fields = [{name:"Lead Teacher Full Name",type:"text",identifier:"name"},
-		{name:"Contact Email",type:"email",identifier:"email"},
-		{name:"Contact Phone",type:"phone",identifier:"phone"},
-		{name:"Group Size",type:"number",identifier:"groupSize"},
-		{name:"Expiry Date",type:"date",identifier:"expiryDate"}];
+	if(req.user && req.user.permission === 0) {
+		var error_msg = "";
+		var message = "";
+		let password_to_insert = short().new();
+		let fields = [{name: "Lead Teacher Full Name", type: "text", identifier: "name"},
+			{name: "Contact Email", type: "email", identifier: "email"},
+			{name: "Contact Phone", type: "phone", identifier: "phone"},
+			{name: "Group Size", type: "number", identifier: "groupSize"},
+			{name: "Expiry Date", type: "date", identifier: "expiryDate"}];
 
-	let new_user = new User({ // new user object to be inserted
-		leadTeacherName: req.body['Lead Teacher Full Name'],
-		contactEmail: req.body['Contact Email'],
-		password: password_to_insert,
-		contactPhone: req.body['Contact Phone'],
-		groupSize: req.body['Group Size'],
-		expiryDate: req.body['Expiry Date']
-	});
-
-	function renderScreen(){
-		res.render('add', {
-			title: 'Add New Visitor',
-			// rows: rows,
-			fields:fields,
-			cancelLink: listLink,
-			addLink: '/visitors/'+addLink,
-			customFields:false,
-			error: error_msg,
-			message: message
+		let new_user = new User({ // new user object to be inserted
+			leadTeacherName: req.body['Lead Teacher Full Name'],
+			contactEmail: req.body['Contact Email'],
+			password: password_to_insert,
+			contactPhone: req.body['Contact Phone'],
+			groupSize: req.body['Group Size'],
+			expiryDate: req.body['Expiry Date']
 		});
-	}
 
-	/* Insert new user */
-	new_user.save(function (error, userDoc) {
-		if (!error) {
-			message = "Successfully added new visitor with email: " + req.body['Contact Email'];
-			console.log(message);
-			sendInvitationEmail(req.body['Contact Email'], password_to_insert);
-		} else {
-			error_msg = validationErr(error);
+		function renderScreen() {
+			res.render('add', {
+				title: 'Add New Visitor',
+				// rows: rows,
+				fields: fields,
+				cancelLink: listLink,
+				addLink: '/visitors/' + addLink,
+				customFields: false,
+				error: error_msg,
+				message: message,
+				user:req.user
+			});
 		}
 
-		renderScreen();
-	});
-	/* End Insert new user */
+		/* Insert new user */
+		new_user.save(function (error, userDoc) {
+			if (!error) {
+				message = "Successfully added new visitor with email: " + req.body['Contact Email'];
+				console.log(message);
+				sendInvitationEmail(req.body['Contact Email'], password_to_insert);
+			} else {
+				error_msg = validationErr(error);
+			}
+
+			renderScreen();
+		});
+		/* End Insert new user */
+	} else {
+		res.redirect('/');
+	}
 });
 
 module.exports = router;

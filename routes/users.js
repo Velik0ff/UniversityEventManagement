@@ -89,207 +89,251 @@ async function sendInvitationEmail(email, password, role){
 /* End Functions */
 
 router.get('/'+listLink, function(req, res, next) {
-  let columns = ["ID", "Full Name", "Email", "Options"];
-  var error = "";
+  if(req.user && req.user.permission === 0) {
+    let columns = ["ID", "Full Name", "Email", "Options"];
+    var error = "";
 
-  User.find({}, function (err, users) {
-    var userList = [];
+    User.find({}, function (err, users) {
+      var userList = [];
 
-    users.forEach(function (user) {
-      userList.push({
-        id:user._id,
-        name:user.fullName,
-        email:user.email
+      users.forEach(function (user) {
+        userList.push({
+          id: user._id,
+          name: user.fullName,
+          email: user.email
+        });
+      });
+
+      error = userList.length === 0 ? "No results to show" : ""
+
+      res.render('list', {
+        title: 'Staff List',
+        list: userList,
+        columns: columns,
+        editLink: editLink,
+        viewLink: viewLink,
+        addLink: addLink,
+        deleteLink: deleteLink,
+        error: error
       });
     });
-
-    error = userList.length === 0 ? "No results to show" : ""
-
-    res.render('list', {
-      title: 'Staff List',
-      list:userList,
-      columns:columns,
-      editLink: editLink,
-      viewLink: viewLink,
-      addLink: addLink,
-      deleteLink: deleteLink,
-      error:error
-    });
-  });
+  } else {
+    res.redirect('/');
+  }
 });
 
 router.get('/'+viewLink, function(req, res, next) {
-  /* Logic to get info from database */
-  User.findOne({_id:req.query.id}, function (err, user) {
-    if(!err && user){
-      res.render('view', {
-        title: 'Viewing staff member: '+user.fullName,
-        error:null,
-        // rows: rows,
-        item:{
-          ID:user._id,
-          Name:user.fullName,
-          Email:user.email,
-          Role:user.role
-        },
-        listLink: listLink,
-        deleteLink: deleteLink,
-        editLink: editLink+'?id='+user._id
-      });
-    } else {
-      res.render('view', {
-        error:"User not found!",
-        listLink: listLink
-      });
-    }
-  });
-  /* End Logic to get info from database */
+  if(req.user && req.user.permission === 0) {
+    /* Logic to get info from database */
+    User.findOne({_id: req.query.id}, function (err, user) {
+      if (!err && user) {
+        res.render('view', {
+          title: 'Viewing staff member: ' + user.fullName,
+          error: null,
+          // rows: rows,
+          item: {
+            ID: user._id,
+            Name: user.fullName,
+            Email: user.email,
+            Role: user.role
+          },
+          listLink: listLink,
+          deleteLink: deleteLink,
+          editLink: editLink + '?id=' + user._id,
+          user:req.user
+        });
+      } else {
+        res.render('view', {
+          error: "User not found!",
+          listLink: listLink,
+          user:req.user
+        });
+      }
+    });
+    /* End Logic to get info from database */
+  } else {
+    res.redirect('/');
+  }
 });
 
 router.get('/'+addLink, function(req, res, next) {
-  let fields = [{name:"Name",type:"text",identifier:"name"},
-    {name:"Email",type:"email",identifier:"email"},
-    {name:"Role",type:"text",identifier:"role"}]
+  if(req.user && req.user.permission === 0) {
+    let fields = [{name: "Name", type: "text", identifier: "name"},
+      {name: "Email", type: "email", identifier: "email"},
+      {name: "Role", type: "text", identifier: "role"}]
 
-  res.render('add', {
-    title: 'Add New Staff Member',
-    fields:fields,
-    cancelLink: listLink,
-    addLink: '/users/'+addLink,
-    customFields:false,
-    error: null,
-    message: null
-  });
+    res.render('add', {
+      title: 'Add New Staff Member',
+      fields: fields,
+      cancelLink: listLink,
+      addLink: '/users/' + addLink,
+      customFields: false,
+      error: null,
+      message: null,
+      user:req.user
+    });
+  } else {
+    res.redirect('/');
+  }
 });
 
 router.get('/'+editLink, function(req, res, next) {
-  User.findOne({_id:req.query.id}, function (err, user) {
-    if(!err && user){
-      res.render('edit', {
-        title: 'Editing staff member: '+user.fullName,
-        error:null,
-        item:{
-          ID:user._id,
-          Name:user.fullName,
-          Email:user.email,
-          Role:user.role
-        },
-        editLink: '/users/'+editLink,
-        cancelLink: viewLink+'?id='+user._id
-      });
-    } else {
-      res.render('edit', {
-        error:"User not found!",
-        listLink: listLink
-      });
-    }
-  });
+  if(req.user && req.user.permission === 0) {
+    User.findOne({_id: req.query.id}, function (err, user) {
+      if (!err && user) {
+        res.render('edit', {
+          title: 'Editing staff member: ' + user.fullName,
+          error: null,
+          item: {
+            ID: user._id,
+            Name: user.fullName,
+            Email: user.email,
+            Role: user.role
+          },
+          editLink: '/users/' + editLink,
+          cancelLink: viewLink + '?id=' + user._id,
+          user:req.user
+        });
+      } else {
+        res.render('edit', {
+          error: "User not found!",
+          listLink: listLink,
+          user:req.user
+        });
+      }
+    });
+  } else {
+    res.redirect('/');
+  }
 });
 
 router.get('/'+deleteLink, function(req, res, next) {
-  User.deleteOne({_id:req.query.id}, function(err, deleteResult){
-    if(!err){
-      res.render('view', {
-        deleteMsg:"Successfully deleted user!",
-        listLink: listLink
-      });
-    } else {
-      console.log(err); // console log the error
-      res.render('view', {
-        error:"User not found!",
-        listLink: listLink
-      });
-    }
-  });
+  if(req.user && req.user.permission === 0) {
+    User.deleteOne({_id: req.query.id}, function (err, deleteResult) {
+      if (!err) {
+        res.render('view', {
+          deleteMsg: "Successfully deleted user!",
+          listLink: listLink,
+          user:req.user
+        });
+      } else {
+        console.log(err); // console log the error
+        res.render('view', {
+          error: "User not found!",
+          listLink: listLink,
+          user:req.user
+        });
+      }
+    });
+  } else {
+    res.redirect('/');
+  }
 });
 
 router.post('/'+editLink, function(req, res, next) {
-  let updates = {$set: {fullName: req.body.Name, email:req.body.Email, role:req.body.Role}}
+  if(req.user && req.user.permission === 0) {
+    let updates = {$set: {fullName: req.body.Name, email: req.body.Email, role: req.body.Role, phone: req.body.Phone}}
 
-  User.updateOne({_id:req.body.ID}, updates, {runValidators: true}, function (err, update) {
-    if(!err && update){
-      res.render('edit', {
-        title: 'Editing staff member: '+req.body.Name,
-        error:null,
-        errorCritical: false,
-        message:"Successfully updated user: "+req.body.Email,
-        item:{
-          ID:req.body.ID,
-          Name:req.body.Name,
-          Email:req.body.Email,
-          Role:req.body.Role
-        },
-        editLink: '/users/'+editLink,
-        cancelLink: viewLink+'?id='+req.body.ID
-      });
-    } else if(!update){
-      res.render('edit', {
-        error:"User not found!",
-        errorCritical: true,
-        listLink: listLink
-      });
-    } else {
-      let error = validationErr(err);
+    User.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
+      if (!err && update) {
+        res.render('edit', {
+          title: 'Editing staff member: ' + req.body.Name,
+          error: null,
+          errorCritical: false,
+          message: "Successfully updated user: " + req.body.Email,
+          item: {
+            ID: req.body.ID,
+            Name: req.body.Name,
+            Email: req.body.Email,
+            Phone: req.body.Phone,
+            Role: req.body.Role
+          },
+          editLink: '/users/' + editLink,
+          cancelLink: viewLink + '?id=' + req.body.ID,
+          user:req.user
+        });
+      } else if (!update) {
+        res.render('edit', {
+          error: "User not found!",
+          errorCritical: true,
+          listLink: listLink,
+          user:req.user
+        });
+      } else {
+        let error = validationErr(err);
 
-      res.render('edit', {
-        title: 'Editing staff member: '+req.body.Name,
-        error:error,
-        errorCritical: false,
-        message:null,
-        item:{
-          ID:req.body.ID,
-          Name:req.body.Name,
-          Email:req.body.Email,
-          Role:req.body.Role
-        },
-        editLink: '/users/'+editLink,
-        cancelLink: viewLink+'?id='+req.body.ID
-      });
-    }
-  });
+        res.render('edit', {
+          title: 'Editing staff member: ' + req.body.Name,
+          error: error,
+          errorCritical: false,
+          message: null,
+          item: {
+            ID: req.body.ID,
+            Name: req.body.Name,
+            Email: req.body.Email,
+            Phone: req.body.Phone,
+            Role: req.body.Role
+          },
+          editLink: '/users/' + editLink,
+          cancelLink: viewLink + '?id=' + req.body.ID,
+          user:req.user
+        });
+      }
+    });
+  } else {
+    res.redirect('/');
+  }
 });
 
 router.post('/'+addLink, function(req, res, next) {
-  var error_msg = "";
-  var message = "";
-  let password_to_insert = short().new();
-  let fields = [{name:"Name",type:"text",identifier:"name"},
-    {name:"Email",type:"email",identifier:"email"},
-    {name:"Role",type:"text",identifier:"role"}];
+  if(req.user && req.user.permission === 0) {
+    var error_msg = "";
+    var message = "";
+    let password_to_insert = short().new();
+    let fields = [{name: "Name", type: "text", identifier: "name"},
+      {name: "Email", type: "email", identifier: "email"},
+      {name: "Phone", type: "tel", identifier: "phone"},
+      {name: "Role", type: "text", identifier: "role"}];
 
-  let new_user = new User({ // new user object to be inserted
-    fullName: req.body.Name,
-    email: req.body.Email,
-    password: password_to_insert,
-    role: req.body.Role
-  });
-
-  function renderScreen(){
-    res.render('add', {
-      title: 'Add New Staff Member',
-      // rows: rows,
-      fields:fields,
-      cancelLink: listLink,
-      addLink: '/users/'+addLink,
-      customFields:false,
-      error: error_msg,
-      message: message
+    let new_user = new User({ // new user object to be inserted
+      fullName: req.body.Name,
+      email: req.body.Email,
+      password: password_to_insert,
+      role: req.body.Role,
+      permission: 0,
+      phone: req.body.Phone ? req.body.Phone : null
     });
-  }
 
-  /* Insert new user */
-  new_user.save(function (error, userDoc) {
-    if (!error) {
-      message = "Successfully added new user with email: " + req.body.Email;
-      console.log(message);
-      sendInvitationEmail(req.body.Email, password_to_insert, req.body.Role);
-    } else {
-      error_msg = validationErr(error);
+    function renderScreen() {
+      res.render('add', {
+        title: 'Add New Staff Member',
+        // rows: rows,
+        fields: fields,
+        cancelLink: listLink,
+        addLink: '/users/' + addLink,
+        customFields: false,
+        error: error_msg,
+        message: message,
+        user:req.user
+      });
     }
 
-    renderScreen();
-  });
-  /* End Insert new user */
+    /* Insert new user */
+    new_user.save(function (error, userDoc) {
+      if (!error) {
+        message = "Successfully added new user with email: " + req.body.Email;
+        console.log(message);
+        sendInvitationEmail(req.body.Email, password_to_insert, req.body.Role);
+      } else {
+        error_msg = validationErr(error);
+      }
+
+      renderScreen();
+    });
+    /* End Insert new user */
+  } else {
+    res.redirect('/');
+  }
 });
 
 module.exports = router;

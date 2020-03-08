@@ -24,6 +24,7 @@ var StaffSchema = new mongoose.Schema({
 	password:{ type: String, required: true, validate: [{ validator: value => validatePassword(value), msg: "Password is not valid, it must contain 1 lowercase letter, 1 uppercase letter and one number and it must be at least 6 characters long."}] },
 	phone:{ type: String },
 	role:{ type: String, required: [true, "Role must be stated"] },
+	permission:{ type: Number, required: true},
 	attendingEvents:[{
 		eventID: {type: String, required: true},
 		role: {type: String, required: true}
