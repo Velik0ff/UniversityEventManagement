@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const nodemailer = require('nodemailer');
 
 /* Model */
 const Event = require('../models/Event');
@@ -227,6 +228,75 @@ function getPostedVisitors(req){
 
 	return visitor_attending;
 }
+
+async function sendEmail(email,type){
+	// Generate test SMTP service account from ethereal.email
+	// Only needed if you don't have a real mail account for testing
+	let testAccount = await nodemailer.createTestAccount();
+
+	// create reusable transporter object using the default SMTP transport
+	let transporter = nodemailer.createTransport({
+		// host: "smtp.mailgun.org",
+		host:"smtp.ethereal.email",
+		port: 587,
+		secure: false, // true for 465, false for other ports
+		auth: {
+			user: testAccount.user,
+			pass: testAccount.pass
+			// user: 'postmaster@sandbox93442b8153754117ada8172d0ef1129f.mailgun.org', // generated ethereal user
+			// pass: 'd6b25d3e7711da468290a08b2c1db517-074fa10c-7dd01f0c' // generated ethereal password
+		}
+	});
+
+	var info = null; // store the callback email data
+	// send mail with defined transport object
+	switch(type){
+		case "added":
+			info = await transporter.sendMail({
+				from: '"University of Liverpool Event System" <no-reply@uol-events.co.uk>', // sender address
+				to: email, // list of receivers
+				subject: "You have been invited to participate in an event", // Subject line
+				html: "Hello,</br></br>" +
+					"You have been added as a participant to an event." +
+					"<p>Please visit the University of Liverpool Event System to view the list of events you are a participant.</p>" +
+					"Best regards,</br>" +
+					"UOL Computer Science outreach staff."
+			});
+			break;
+		case "edited":
+			info = await transporter.sendMail({
+				from: '"University of Liverpool Event System" <no-reply@uol-events.co.uk>', // sender address
+				to: email, // list of receivers
+				subject: "An event has been edited", // Subject line
+				html: "Hello,</br></br>" +
+					"An event that you are participating to has been updated." +
+					"<p>Please visit the University of Liverpool Event System to view the list of events you are a participant.</p>" +
+					"Best regards,</br>" +
+					"UOL Computer Science outreach staff."
+			});
+			break;
+		case "removed":
+			info = await transporter.sendMail({
+				from: '"University of Liverpool Event System" <no-reply@uol-events.co.uk>', // sender address
+				to: email, // list of receivers
+				subject: "You have been removed as a participant to an event.", // Subject line
+				html: "Hello,</br></br>" +
+					"You have been removed from an event that you were going to participate." +
+					"<p>Please visit the University of Liverpool Event System to view the list of events you are a participant.</p>" +
+					"Best regards,</br>" +
+					"UOL Computer Science outreach staff."
+			});
+			break;
+	}
+
+
+	console.log("Message sent: %s", info.messageId);
+	// Message sent: <b658f8ca-6296-ccf4-8306-87d57a0b4321@example.com>
+
+	// Preview only available when sending through an Ethereal account
+	console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+	// Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
+}
 /* End Functions */
 
 router.get('/participate-events-list', function(req, res, next){
@@ -255,7 +325,7 @@ router.get('/participate-events-list', function(req, res, next){
 					columns:columns,
 					editLink: editLink,
 					viewLink: viewLink,
-					addLink: addLink,
+					// addLink: addLink,
 					deleteLink: deleteLink,
 					error:error,
 					user:req.user
@@ -354,7 +424,7 @@ router.get('/view-event', function(req, res, next) {
 						equipment.forEach(function (equip) {
 							equip.customFields.forEach(function (field) {
 								if (field.fieldName === "Room Capacity" && parseInt(field.fieldValue)) {
-									numberOfSpaces = numberOfSpaces + parseInt(field.fieldValue)
+									numberOfSpaces = numberOfSpaces + (parseInt(field.fieldValue)*equip.quantity)
 								}
 							});
 						});
@@ -500,7 +570,29 @@ router.post('/edit-event', function(req, res, next) {
 
 						if (!staff_posted) {
 							Staff.updateOne({_id: prev_staff_member.staffMemberID}, {$pull: {attendingEvents: {eventID: event._id}}}, function (errorUpdateStaff, staffDoc) {
-								console.log(errorUpdateStaff);
+								if(!errorUpdateStaff){
+									sendEmail(staffDoc, "removed");
+								} else {
+									console.log(errorUpdateStaff);
+								}
+							});
+						}
+					});
+
+					posted_staff_use.forEach(function (posted_staff_member) {
+						var new_staff = true;
+
+						staff_use.forEach(function (prev_staff_member) {
+							if (posted_staff_member._id === prev_staff_member.staffMemberID) new_staff = false;
+						});
+
+						if(new_staff){
+							Staff.findOne({_id:posted_staff_member._id}, function(errorFindStaffEmail, staffDoc){
+								if(!errorFindStaffEmail){
+									sendEmail(staffDoc.email, "added");
+								} else {
+									console.log(errorFindStaffEmail);
+								}
 							});
 						}
 					});
@@ -515,6 +607,24 @@ router.post('/edit-event', function(req, res, next) {
 						if (!visitor_posted) {
 							Visitor.updateOne({_id: prev_visitor.visitorID}, {$pull: {attendingEvents: {eventID: event._id}}}, function (errorUpdateVisitor, visitorDoc) {
 								console.log(errorUpdateVisitor);
+							});
+						}
+					});
+
+					posted_visitors.forEach(function (posted_visitor) {
+						var new_visitor = true;
+
+						visitor_attending.forEach(function (prev_visitor) {
+							if (posted_visitor._id === prev_visitor.visitorID) new_visitor = false;
+						});
+
+						if (new_visitor) {
+							Staff.findOne({_id:posted_visitor._id}, function(errorFindVisitorEmail, visitorDoc){
+								if(!errorFindVisitorEmail){
+									sendEmail(visitorDoc.contactEmail, "added");
+								} else {
+									console.log(errorFindVisitorEmail);
+								}
 							});
 						}
 					});
@@ -555,6 +665,22 @@ router.post('/edit-event', function(req, res, next) {
 
 					Event.updateOne({_id: req.body.ID}, event_type_update, function (err, eventUpdateDoc) {
 						if (!err) {
+							posted_staff_use.forEach(function(staffMember){
+								Staff.findOne({_id:staffMember.staffMemberID}, function(errorStaffSendEmail, staffMemberDoc){
+									if(!errorStaffSendEmail){
+										sendEmail(staffMemberDoc.email,"edited");
+									}
+								});
+							});
+
+							posted_visitors.forEach(function(visitor){
+								Visitor.findOne({_id:visitor.visitorID}, function(errorVisitorSendEmail, visitorDoc){
+									if(!errorVisitorSendEmail){
+										sendEmail(visitorDoc.contactEmail,"edited");
+									}
+								});
+							});
+
 							res.render('edit', {
 								title: 'Editing event: ' + event.eventName,
 								error: null,
@@ -779,6 +905,8 @@ router.post('/add-event', async function (req, res, next) {
 							}, function (errUpdate, staffDoc) {
 								if (errUpdate) {
 									console.log(errUpdate);
+								} else {
+									sendEmail(staffDoc.email, "added");
 								}
 							});
 						} else { // staff not found or error with database
@@ -793,6 +921,8 @@ router.post('/add-event', async function (req, res, next) {
 							Visitor.updateOne({_id: visitor_attending.visitorID}, {$push: {attendingEvents: {eventID: eventDoc._id}}}, function (errUpdate, visitorDoc) {
 								if (errUpdate) {
 									console.log(errUpdate);
+								} else {
+									sendEmail(visitorDoc.contactEmail, "added");
 								}
 							});
 						} else { // visitor not found or error with database

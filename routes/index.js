@@ -32,7 +32,7 @@ passport.use(new LocalStrategy(
               _id: visitor._id,
               username: visitor.contactEmail,
               permission: 'visitor',
-              role: user.role
+              role: null
             });
           } else {
             return done(null, false, { message: 'Incorrect username.' });
@@ -61,24 +61,34 @@ passport.deserializeUser(function(id, done) {
       Visitor.findOne({ _id: id }, function(err, visitor){
         if(visitor) {
           done(err, {
-            _id: user._id,
-            username: user.contactEmail,
+            _id: visitor._id,
+            username: visitor.contactEmail,
             permission: 1
           });
         } else {
-          done(err,user);
+          done(err,visitor);
         }
       });
     }
   });
 });
 
-/* GET home page. */
+/* GET login page. */
 router.get('/', function(req, res, next) {
-  res.render('login', {
-    title:"Login"
-    // error: "Event not found!",
-    // listLink: listLink
+  if(req.user){
+    res.redirect('/welcome');
+  } else {
+    res.render('login', {
+      title: "Login",
+      user: req.user
+    });
+  }
+});
+
+router.get('/welcome', function(req, res, next) {
+  res.render('index', {
+    title: "University of Liverpool Outreach Events",
+    user: req.user
   });
 });
 
@@ -116,7 +126,7 @@ router.post('/authorize', function(req, res, next){
       }
 
       console.log(req.user)
-      return res.status(200).json({data: user});
+      res.redirect('/welcome')
     });
   })(req, res, next);
 });
