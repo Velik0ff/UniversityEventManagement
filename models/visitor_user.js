@@ -19,6 +19,7 @@ var VisitorSchema = new mongoose.Schema({
 	password:{ type: String, required: true },
 	expiryDate:{ type: Date },
 	groupSize:{ type: Number, required: [true, "Group size must be provided"] },
+	permission:{ type: Number, required: true },
 	attendingEvents:[{
 		eventID: { type: String, required:true }
 	}]

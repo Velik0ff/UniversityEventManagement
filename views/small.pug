@@ -1,0 +1,14 @@
+extends layout
+
+block content
+    .container(style="max-width:500px")
+        h3.title=title
+        center
+            form(method="POST" action=formAction)
+                each field in fields
+                    div.form-group
+                        if !field.value
+                            input.form-control(type=field.type name=field.identifier placeholder="Enter "+field.name )
+                        else
+                            input.form-control(type=field.type name=field.identifier placeholder="Enter " + field.name value=field.value)
+                button.btn.btn-primary(type="submit")=submitButton.title

@@ -302,6 +302,7 @@ router.post('/'+addLink, function(req, res, next) {
 			password: password_to_insert,
 			contactPhone: req.body['Contact Phone'],
 			groupSize: req.body['Group Size'],
+			permission: -2,
 			expiryDate: req.body['Expiry Date']
 		});
 

@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 
 /* Model */
 const User = require('../models/staff_user');
+const Visitor = require('../models/visitor_user');
 /* End Model */
 
 /* Links */
