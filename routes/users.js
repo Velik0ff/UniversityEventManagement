@@ -162,6 +162,7 @@ router.get('/'+addLink, function(req, res, next) {
   if(req.user && req.user.permission === 0) {
     let fields = [{name: "Name", type: "text", identifier: "name"},
       {name: "Email", type: "email", identifier: "email"},
+      {name: "Phone", type: "tel", identifier: "phone"},
       {name: "Role", type: "text", identifier: "role"}]
 
     res.render('add', {

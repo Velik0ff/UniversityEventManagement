@@ -3,12 +3,19 @@ extends layout
 block content
     .container(style="max-width:500px")
         h3.title=title
+        if error
+            div.alert.alert-danger(role="alert")=error
+        else if message
+            div.alert.alert-success(role="alert")=message
+
         center
             form(method="POST" action=formAction)
                 each field in fields
                     div.form-group
                         if !field.value
                             input.form-control(type=field.type name=field.identifier placeholder="Enter "+field.name )
+                            if field.name === 'password'
+                                a.btn.btn-link(href='/forgot-password')
                         else
                             input.form-control(type=field.type name=field.identifier placeholder="Enter " + field.name value=field.value)
                 button.btn.btn-primary(type="submit")=submitButton.title
