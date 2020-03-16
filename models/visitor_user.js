@@ -7,6 +7,11 @@ function validateEmail(email) { // validate email
 	return email_regex.test(email);
 }
 
+function validatePassword(password) { // validate password
+	const password_regex=/^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})/;
+	return password_regex.test(password);
+}
+
 function validateName(name) { // validate full name (can include title)
 	const name_regex=/^([a-zA-Z_-\s.]){2,}$/i;
 	return name_regex.test(name);
@@ -16,12 +21,14 @@ var VisitorSchema = new mongoose.Schema({
 	leadTeacherName:{ type: String, required: [true, "Lead teacher name must be provided"], validate: [{ validator: value => validateName(value), msg:"Full name entered is not valid"}] },
 	contactEmail: { type: String, required: [true, "Email must be provided"], validate: [{ validator: value => validateEmail(value), msg:"Email entered is not valid"}], unique: [true, "Email already exists."] },
 	contactPhone:{ type: String },
-	password:{ type: String, required: true },
+	password:{ type: String, required: [true, "Password must be provided"], validate: [{ validator: value => validatePassword(value), msg: "Password must contain 1 lowercase letter, 1 uppercase letter and one number and it must be at least 6 characters long."}] },
 	expiryDate:{ type: Date },
 	groupSize:{ type: Number, required: [true, "Group size must be provided"] },
+	permission:{ type: Number, required: true },
 	attendingEvents:[{
 		eventID: { type: String, required:true }
-	}]
+	}],
+	resetPassCode:{ type: String }
 });
 
 /* Methods to Compare and Hash Password and validate email */

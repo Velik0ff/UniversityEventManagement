@@ -45,7 +45,6 @@ router.get('/'+listLink, function(req, res, next) {
 					id: equip._id,
 					name: equip.typeName,
 					quantity: equip.quantity,
-					user:req.user
 				});
 			});
 

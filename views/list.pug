@@ -3,7 +3,8 @@ extends layout
 block content
     .container
         h3.title=title
-        a.btn.btn-success(href=addLink style="margin:5px;") Add New
+        if addLink
+            a.btn.btn-success(href=addLink style="margin:5px;") Add New
         table.table
             thead
                 tr

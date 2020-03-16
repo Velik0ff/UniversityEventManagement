@@ -302,6 +302,7 @@ router.post('/'+addLink, function(req, res, next) {
 			password: password_to_insert,
 			contactPhone: req.body['Contact Phone'],
 			groupSize: req.body['Group Size'],
+			permission: -2,
 			expiryDate: req.body['Expiry Date']
 		});
 
@@ -324,6 +325,7 @@ router.post('/'+addLink, function(req, res, next) {
 			if (!error) {
 				message = "Successfully added new visitor with email: " + req.body['Contact Email'];
 				console.log(message);
+				console.log(password_to_insert);
 				sendInvitationEmail(req.body['Contact Email'], password_to_insert);
 			} else {
 				error_msg = validationErr(error);

@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 
 /* Model */
 const User = require('../models/staff_user');
+const Visitor = require('../models/visitor_user');
 /* End Model */
 
 /* Links */
@@ -114,7 +115,8 @@ router.get('/'+listLink, function(req, res, next) {
         viewLink: viewLink,
         addLink: addLink,
         deleteLink: deleteLink,
-        error: error
+        error: error,
+        user:req.user
       });
     });
   } else {
@@ -160,6 +162,7 @@ router.get('/'+addLink, function(req, res, next) {
   if(req.user && req.user.permission === 0) {
     let fields = [{name: "Name", type: "text", identifier: "name"},
       {name: "Email", type: "email", identifier: "email"},
+      {name: "Phone", type: "tel", identifier: "phone"},
       {name: "Role", type: "text", identifier: "role"}]
 
     res.render('add', {
@@ -300,7 +303,7 @@ router.post('/'+addLink, function(req, res, next) {
       email: req.body.Email,
       password: password_to_insert,
       role: req.body.Role,
-      permission: 0,
+      permission: -1,
       phone: req.body.Phone ? req.body.Phone : null
     });
 

@@ -54,10 +54,9 @@ block content
                         a.btn.btn-warning(href=editLink) Edit
                     if deleteLink
                         a.btn.btn-danger(href=deleteLink+"?id="+item.ID onclick="return confirm('Are you sure you want to delete this entity?')") Delete
-                    a.btn.btn-primary(href=listLink) Go to list
             else
                 div.alert.alert-success(role="alert")=deleteMsg
-                a.btn.btn-primary(href=listLink) Go to list
         else
             div.alert.alert-danger(role="alert")=error
-            a.btn.btn-primary(href=listLink) Go to list
+
+        a.btn.btn-primary(href=listLink) Return to list

@@ -18,9 +18,13 @@ html
     .content
       #menu.collapse.navbar-collapse
         ul.navbar-nav.mr-auto
+          if user && user.permission >= 0
+            li.nav-item
+              a.nav-link(href='/welcome') Home
+
           if user && user.permission === 0
             li.nav-item
-              a.nav-link(href='/users/list-users') Users
+              a.nav-link(href='/users/list-users') Staff
             li.nav-item
               a.nav-link(href='/events/list-events') Events
             li.nav-item
@@ -30,11 +34,13 @@ html
             li.nav-item
               a.nav-link(href='/event-types/list-event-type') Event Types
 
-          if user
+          if user && user.permission >= 0
             li.nav-item
               a.nav-link(href='/events/participate-events-list') Attending Events
 
           if user
+            li.nav-item
+              a.nav-link(href='/change-password') Change Password
             li.nav-item
               a.nav-link(href='/logout') Log out
           else
