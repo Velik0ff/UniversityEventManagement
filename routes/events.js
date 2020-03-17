@@ -9,6 +9,7 @@ const EventType = require('../models/EventType');
 const Equipment = require('../models/EqInventory');
 const Staff = require('../models/staff_user');
 const Visitor = require('../models/visitor_user');
+const Room = require('../models/Room');
 /* End Model */
 
 const editLink = "edit-event";
@@ -76,6 +77,25 @@ function getEquipmentInfo(event_equipment){
 					});
 				});
 				resolve(equipment)
+			} else {
+				resolve([]);
+				console.log(err);
+			}
+		});
+	});
+}
+
+function getRoomInfo(event_rooms){
+	return new Promise((resolve,reject) => {
+		var event_room_ids_arr = [];
+
+		event_rooms.forEach((event_room)=>{
+			event_room_ids_arr.push(event_room.equipID);
+		});
+
+		Room.find({_id:{$in:event_room_ids_arr}}, function (err, rooms) {
+			if(!err){
+				resolve(rooms);
 			} else {
 				resolve([]);
 				console.log(err);
@@ -166,6 +186,19 @@ function getAllEquipment(){
 	});
 }
 
+function getAllRooms(){
+	return new Promise((resolve,reject) => {
+		Room.find({}, function (err, room) {
+			if(!err){
+				resolve(room)
+			} else {
+				resolve([]);
+				console.log(err);
+			}
+		});
+	});
+}
+
 function getAllVisitor(){
 	return new Promise((resolve,reject) => {
 		Visitor.find({}, function (err, visitors) {
@@ -206,6 +239,8 @@ function getPostedStaff(req){
 			} else if(field_post_key.includes('staffRole')){
 				staff_use[staff_use.length-1]['role'] = field_post_value;
 			}
+
+			delete req.body[field_post_key];
 		}
 	}
 
@@ -215,18 +250,39 @@ function getPostedStaff(req){
 function getPostedVisitors(req){
 	var visitor_attending = [];
 
-	for(const [ field_post_key, field_post_value ] of Object.entries(req.body)) {
+	for(let [ field_post_key, field_post_value ] of Object.entries(req.body)) {
 		if(req.body.hasOwnProperty(field_post_key)) {
 			if(field_post_key.includes('visitor')) {
 				visitor_attending.push({
 					_id: field_post_value,
 					visitorID: field_post_value
 				});
+
+				delete req.body[field_post_key];
 			}
 		}
 	}
 
 	return visitor_attending;
+}
+
+function getPostedRooms(req){
+	var rooms_used = [];
+
+	for(const [ field_post_key, field_post_value ] of Object.entries(req.body)) {
+		if(req.body.hasOwnProperty(field_post_key)) {
+			if(field_post_key.includes('roomID')) {
+				rooms_used.push({
+					_id: field_post_value,
+					roomID: field_post_value
+				});
+			}
+
+			delete req.body[field_post_key];
+		}
+	}
+
+	return rooms_used;
 }
 
 async function sendEmail(email,type){
@@ -414,19 +470,24 @@ router.get('/view-event', function(req, res, next) {
 
 				if(req.user.permission === 0 || attending) {
 					var equipment = await getEquipmentInfo(event.equipment);
+					var rooms = await getRoomInfo(event.rooms);
 					var event_type = await getEventType(event.eventTypeID);
 					var staff = await getStaffInfo(event.staffChosen);
-					var visitors = await getVisitorInfo(event.visitors)
+					var visitors = await getVisitorInfo(event.visitors);
 					var numberOfSpaces = 0;
 					var numberOfVisitors = 0;
 
-					Promise.all([equipment, event_type, staff]).then((result) => {
-						equipment.forEach(function (equip) {
-							equip.customFields.forEach(function (field) {
-								if (field.fieldName === "Room Capacity" && parseInt(field.fieldValue)) {
-									numberOfSpaces = numberOfSpaces + (parseInt(field.fieldValue)*equip.quantity)
-								}
-							});
+					Promise.all([equipment, rooms, event_type, staff]).then((result) => {
+						// equipment.forEach(function (equip) {
+						// 	equip.customFields.forEach(function (field) {
+						// 		if (field.fieldName === "Room Capacity" && parseInt(field.fieldValue)) {
+						// 			numberOfSpaces = numberOfSpaces + (parseInt(field.fieldValue)*equip.quantity)
+						// 		}
+						// 	});
+						// });
+
+						rooms.forEach(function(room){
+							numberOfSpaces = numberOfSpaces + room.capacity;
 						});
 
 						visitors.forEach(function (visitor) {
@@ -440,6 +501,7 @@ router.get('/view-event', function(req, res, next) {
 								ID: event._id,
 								Name: event.eventName,
 								Equipment: equipment,
+								Rooms: rooms,
 								"Event Spaces": numberOfSpaces,
 								"Event Type": event_type,
 								"Staff Chosen": staff,
@@ -474,19 +536,34 @@ router.get('/edit-event', function(req, res, next) {
 		Event.findOne({_id: req.query.id}, async function (err, event) {
 			if (!err && event) {
 				var equipment_use = await getEquipmentInfo(event.equipment);
+				var rooms_use = await getRoomInfo(event.rooms);
 				var event_type = await getEventType(event.eventTypeID);
 				var staff_use = await getStaffInfo(event.staffChosen);
 				var visitor_attending = await getVisitorInfo(event.visitors);
 				var visitors = await getAllVisitor();
 				var equipment = await getAllEquipment();
+				var rooms = await getAllRooms();
 				var staff = await getAllStaff();
 				var eventTypes = await getAllEventTypes();
 
 				Promise.all([equipment, equipment_use, event_type, staff, staff_use, visitors, visitor_attending, eventTypes]).then((result) => {
-					console.log(eventTypes)
+					var numberOfSpaces = 0;
+					var numberOfVisitors = 0;
+					var error = null;
+
+					rooms.forEach(function(room){
+						numberOfSpaces = numberOfSpaces + room.capacity;
+					});
+
+					visitors.forEach(function (visitor) {
+						visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
+					});
+
+					if(numberOfSpaces < numberOfVisitors) error = 'Not enough spaces are assigned for the event';
+
 					res.render('edit', {
 						title: 'Editing event: ' + event.eventName,
-						error: null,
+						error: error,
 						item: {
 							ID: event._id,
 							"Event Name": event.eventName,
@@ -494,12 +571,14 @@ router.get('/edit-event', function(req, res, next) {
 							Date: event.date,
 							"Event Type": event_type,
 							Equipment: equipment_use,
+							Rooms: rooms_use,
 							Staff: staff_use,
 							Visitors: visitor_attending
 						},
 						eventTypes: eventTypes,
 						staff: staff,
 						equipment: equipment,
+						rooms: rooms,
 						visitors: visitors,
 						customFields: false,
 						equipmentFields: true,
@@ -548,19 +627,36 @@ router.post('/edit-event', function(req, res, next) {
 		Event.findOne({_id: req.body.ID}, async function (err, event) {
 			if (!err && event) {
 				var equipment_use = await getEquipmentInfo(event.equipment);
+				var rooms_user = await getRoomInfo(event.rooms);
 				var event_type = await getEventType(event.eventTypeID);
 				var staff_use = await getStaffInfo(event.staffChosen);
 				var visitor_attending = await getVisitorInfo(event.visitors);
 				var visitors = await getAllVisitor();
 				var equipment = await getAllEquipment();
+				var rooms = await getAllRooms();
 				var staff = await getAllStaff();
 				var eventTypes = await getAllEventTypes();
 
 				var posted_staff_use = getPostedStaff(req);
 				var posted_visitors = getPostedVisitors(req);
 				var posted_equipment = getPostedEquipment(req);
+				var posted_rooms = getPostedRooms(req);
 
 				Promise.all([equipment, equipment_use, event_type, staff, staff_use, visitors, visitor_attending, eventTypes]).then((result) => {
+					var numberOfSpaces = 0;
+					var numberOfVisitors = 0;
+					var error = null;
+
+					posted_rooms.forEach(function(room){
+						numberOfSpaces = numberOfSpaces + room.capacity;
+					});
+
+					posted_visitors.forEach(function (visitor) {
+						visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
+					});
+
+					if(numberOfSpaces < numberOfVisitors) error = 'Not enough spaces are assigned for the event';
+
 					staff_use.forEach(function (prev_staff_member) {
 						var staff_posted = false;
 
@@ -655,6 +751,7 @@ router.post('/edit-event', function(req, res, next) {
 						$set: {
 							eventName: req.body['Event Name'],
 							equipment: posted_equipment,
+							rooms: posted_rooms,
 							eventTypeID: req.body['Event Type'],
 							staffChosen: posted_staff_use,
 							date: req.body.Date,
@@ -683,7 +780,7 @@ router.post('/edit-event', function(req, res, next) {
 
 							res.render('edit', {
 								title: 'Editing event: ' + event.eventName,
-								error: null,
+								error: error,
 								message: "Successfully updated event: " + event.eventName,
 								item: {
 									ID: event._id,
@@ -819,6 +916,7 @@ router.get('/add-event', async function (req, res, next) {
 
 		var visitors = await getAllVisitor();
 		var equipment = await getAllEquipment();
+		var rooms = await getAllRooms();
 		var staff = await getAllStaff();
 		var eventTypes = await getAllEventTypes();
 
@@ -833,6 +931,7 @@ router.get('/add-event', async function (req, res, next) {
 				visitorFields: true,
 				visitors: visitors,
 				equipment: equipment,
+				rooms:rooms,
 				eventTypes: eventTypes,
 				staff: staff,
 				user:req.user
@@ -854,11 +953,15 @@ router.post('/add-event', async function (req, res, next) {
 		var message = "";
 		var visitors = await getAllVisitor();
 		var equipment = await getAllEquipment();
+		var rooms = await getAllRooms();
 		var staff = await getAllStaff();
 		var eventTypes = await getAllEventTypes();
 		var equipment_use = [];
+		var rooms_use = getPostedRooms(req);
 		var staff_use = getPostedStaff(req);
 		var visitor_attending = getPostedVisitors(req);
+		var numberOfSpaces = 0;
+		var numberOfVisitors = 0;
 
 		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
 			if (req.body.hasOwnProperty(field_post_key)) {
@@ -880,9 +983,20 @@ router.post('/add-event', async function (req, res, next) {
 			}
 		}
 
+		rooms_use.forEach(function(room){
+			numberOfSpaces = numberOfSpaces + room.capacity;
+		});
+
+		visitor_attending.forEach(function (visitor) {
+			visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
+		});
+
+		if(numberOfSpaces < numberOfVisitors) error_msg = 'Not enough spaces are assigned for the event';
+
 		let new_event = new Event({
 			eventName: req.body['Event Name'],
 			equipment: equipment_use,
+			rooms: rooms_use,
 			eventTypeID: req.body['Event Type'],
 			staffChosen: staff_use,
 			date: req.body.Date,
@@ -948,7 +1062,7 @@ router.post('/add-event', async function (req, res, next) {
 				error_msg = validationErr(error);
 			}
 
-			Promise.all([equipment, eventTypes, visitors, staff]).then((result) => {
+			Promise.all([equipment, rooms, eventTypes, visitors, staff]).then((result) => {
 				res.render('add', {
 					title: 'Add New Event',
 					error: error_msg,
@@ -961,11 +1075,13 @@ router.post('/add-event', async function (req, res, next) {
 					visitorFields: true,
 					visitors: visitors,
 					equipment: equipment,
+					rooms:rooms,
 					eventTypes: eventTypes,
 					staff: staff,
 					selectedEventType: req.body['Event Type'],
 					selectedStaff: staff_use,
 					selectedEquip: equipment_use,
+					selectedRooms: rooms_use,
 					selectedVisitors: visitor_attending,
 					user:req.user
 				});

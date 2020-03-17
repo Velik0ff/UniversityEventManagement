@@ -13,6 +13,7 @@ const editLink = "edit-visitor";
 const addLink = "add-visitor";
 const deleteLink = "delete-visitor";
 const listLink = "list-visitors";
+const resetPassLink = "reset-password";
 /* End Links */
 
 /* Functions */
@@ -134,7 +135,7 @@ router.get('/'+viewLink, function(req, res, next) {
 						"Group Size": user.groupSize
 					},
 					listLink: listLink,
-					deleteLink: deleteLink,
+					deleteLink: deleteLink  + '?id=' + user._id,
 					editLink: editLink + '?id=' + user._id,
 					user:req.user
 				});
@@ -324,8 +325,6 @@ router.post('/'+addLink, function(req, res, next) {
 		new_user.save(function (error, userDoc) {
 			if (!error) {
 				message = "Successfully added new visitor with email: " + req.body['Contact Email'];
-				console.log(message);
-				console.log(password_to_insert);
 				sendInvitationEmail(req.body['Contact Email'], password_to_insert);
 			} else {
 				error_msg = validationErr(error);
@@ -336,6 +335,51 @@ router.post('/'+addLink, function(req, res, next) {
 		/* End Insert new user */
 	} else {
 		res.redirect('/');
+	}
+});
+
+router.get('/' + resetPassLink, function (req, res, next) {
+	if (req.user && req.user.permission === 0) {
+		if (req.query.id) {
+			User.findOne({_id: req.query.id}, function (errFind, user) {
+				if (!errFind) {
+					let password = short().new();
+
+					User.updateOne({_id: req.query.id}, {$set:{password:user.hashPassword(password)}}, function (err, userDoc) {
+						if (err) {
+							console.log(err);
+							res.render('view', {
+								error: "Unknown error has occurred please try again!",
+								listLink: listLink,
+								user: req.user
+							});
+						} else {
+							res.render('view', {
+								message: "Successfully reset password of the user.",
+								listLink: listLink,
+								user: req.user
+							});
+						}
+					});
+				} else {
+					console.log(errFind);
+					res.render('view', {
+						error: "Unknown error has occurred please try again!",
+						listLink: listLink,
+						user: req.user
+					});
+				}
+			});
+		} else {
+			console.log('No id is posted for reset password of the user.');
+			res.render('view', {
+				error: "Unknown error has occurred please try again!",
+				listLink: listLink,
+				user: req.user
+			});
+		}
+	} else {
+		res.redirect('/welcome');
 	}
 });
 

@@ -3,7 +3,7 @@
   <component name="WebServers">
     <option name="servers">
       <webServer id="b77b26ae-f9e4-4b7e-ae43-b2e05c1597fc" name="University" url="http://34.247.106.85">
-        <fileTransfer host="34.247.106.85" port="22" privateKey="C:\Users\sglvelik\.ssh\sglvelik.pem" accessType="SFTP" keyPair="true">
+        <fileTransfer host="34.247.106.85" port="22" privateKey="C:\Users\Velik0ff\WebstormProjects\EventManagementUni\sglvelik.pem" accessType="SFTP" keyPair="true">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
           </advancedOptions>

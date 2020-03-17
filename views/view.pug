@@ -52,8 +52,11 @@ block content
                 center
                     if editLink
                         a.btn.btn-warning(href=editLink) Edit
+                    if resetPassLink
+                        a.btn.btn-secondary(href=resetPassLink onclick="return confirm('Are you sure you want to reset the password for this user?')") Reset Password
                     if deleteLink
-                        a.btn.btn-danger(href=deleteLink+"?id="+item.ID onclick="return confirm('Are you sure you want to delete this entity?')") Delete
+                        a.btn.btn-danger(href=deleteLink onclick="return confirm('Are you sure you want to delete this entity?')") Delete
+
             else
                 div.alert.alert-success(role="alert")=deleteMsg
         else
