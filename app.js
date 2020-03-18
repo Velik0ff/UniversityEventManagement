@@ -1,3 +1,5 @@
+require('dotenv').config({path: '/home/ubuntu/public_html/variables.env'});
+
 const createError = require('http-errors');
 const express = require('express');
 const path = require('path');
@@ -11,8 +13,10 @@ const passport = require('passport'); // used for authentication
 const MongoStore = require('connect-mongo')(express_session);
 
 /* Routes */
+// const push = require('./routes/push');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
+// const subscribe = require('./routes/subscribe');
 const eventsRouter = require('./routes/events');
 const visitorsRouter = require('./routes/visitors');
 const equipmentRouter = require('./routes/equipment');
@@ -53,18 +57,6 @@ app.use('/events', eventsRouter);
 app.use('/visitors', visitorsRouter);
 app.use('/equipment', equipmentRouter);
 app.use('/event-types', eventTypesRouter);
-
-app.post("/subscribe", function(req, res){
-  const subscription = req.body;
-  res.status(201).json({});
-  const payload = JSON.stringify({ title: 'test' });
-
-  console.log(subscription);
-
-  webpush.sendNotification(subscription, payload).catch(error => {
-    console.error(error.stack);
-  });
-});
 
 /* Access the API only via the domain */
 app.use(function(req,res,next){

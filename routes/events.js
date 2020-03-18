@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
+const process = require('process');
+const webpush = require('web-push')
 
 /* Model */
 const Event = require('../models/Event');
@@ -10,6 +12,7 @@ const Equipment = require('../models/EqInventory');
 const Staff = require('../models/staff_user');
 const Visitor = require('../models/visitor_user');
 const Room = require('../models/Room');
+const SubNotification = require('../models/SubNotification');
 /* End Model */
 
 const editLink = "edit-event";
@@ -17,6 +20,12 @@ const viewLink = "view-event";
 const addLink = "add-event";
 const deleteLink = "delete-event";
 const listLink = "list-events";
+
+webpush.setVapidDetails(
+      "mailto:sglvelik@liv.ac.uk",
+      process.env.PUBLIC_VAPID_KEY,
+      process.env.PRIVATE_VAPID_KEY
+    );
 
 /* Functions */
 function validationErr(error){
@@ -283,6 +292,21 @@ function getPostedRooms(req){
 	}
 
 	return rooms_used;
+}
+
+function sendNotification(userID,title,body){
+	SubNotification.findOne({userID:userID},function(errFind,subNotifDoc){
+		if(!errFind && subNotifDoc){
+			const payload = JSON.stringify({
+        title: title,
+        body: body
+   		});
+
+			webpush.sendNotification(subNotifDoc.notification, payload);
+		} else {
+			console.log(errFind);
+		}
+	});
 }
 
 async function sendEmail(email,type){
@@ -668,7 +692,8 @@ router.post('/edit-event', function(req, res, next) {
 						if (!staff_posted) {
 							Staff.updateOne({_id: prev_staff_member.staffMemberID}, {$pull: {attendingEvents: {eventID: event._id}}}, function (errorUpdateStaff, staffDoc) {
 								if(!errorUpdateStaff){
-									sendEmail(staffDoc, "removed");
+									sendNotification(staffDoc._id, "Event Update", "You have been removed from an event.")
+									sendEmail(staffDoc.email, "removed");
 								} else {
 									console.log(errorUpdateStaff);
 								}
@@ -686,6 +711,7 @@ router.post('/edit-event', function(req, res, next) {
 						if(new_staff){
 							Staff.findOne({_id:posted_staff_member._id}, function(errorFindStaffEmail, staffDoc){
 								if(!errorFindStaffEmail){
+									sendNotification(staffDoc._id, "Event Participation", "You have been added to participate to an event.");
 									sendEmail(staffDoc.email, "added");
 								} else {
 									console.log(errorFindStaffEmail);
@@ -718,6 +744,7 @@ router.post('/edit-event', function(req, res, next) {
 						if (new_visitor) {
 							Staff.findOne({_id:posted_visitor._id}, function(errorFindVisitorEmail, visitorDoc){
 								if(!errorFindVisitorEmail){
+									sendNotification(visitorDoc._id, "Event Participation", "You have been added to participate to an event.");
 									sendEmail(visitorDoc.contactEmail, "added");
 								} else {
 									console.log(errorFindVisitorEmail);
@@ -766,6 +793,7 @@ router.post('/edit-event', function(req, res, next) {
 							posted_staff_use.forEach(function(staffMember){
 								Staff.findOne({_id:staffMember.staffMemberID}, function(errorStaffSendEmail, staffMemberDoc){
 									if(!errorStaffSendEmail){
+										sendNotification(staffMemberDoc._id, "Event Update", "An event that you are participating has been updated.");
 										sendEmail(staffMemberDoc.email,"edited");
 									}
 								});
@@ -774,6 +802,7 @@ router.post('/edit-event', function(req, res, next) {
 							posted_visitors.forEach(function(visitor){
 								Visitor.findOne({_id:visitor.visitorID}, function(errorVisitorSendEmail, visitorDoc){
 									if(!errorVisitorSendEmail){
+										sendNotification(visitorDoc._id, "Event Update", "An event that you are participating has been updated.")
 										sendEmail(visitorDoc.contactEmail,"edited");
 									}
 								});
@@ -1024,6 +1053,7 @@ router.post('/add-event', async function (req, res, next) {
 								if (errUpdate) {
 									console.log(errUpdate);
 								} else {
+									sendNotification(staffDoc._id, "Participating Event", "You are a participant to a new event.");
 									sendEmail(staffDoc.email, "added");
 								}
 							});
@@ -1040,6 +1070,7 @@ router.post('/add-event', async function (req, res, next) {
 								if (errUpdate) {
 									console.log(errUpdate);
 								} else {
+									sendNotification(visitorDoc._id, "Participating Event", "You are a participant to a new event.");
 									sendEmail(visitorDoc.contactEmail, "added");
 								}
 							});

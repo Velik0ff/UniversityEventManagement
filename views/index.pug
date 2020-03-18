@@ -23,3 +23,67 @@ block content
       b='For Administrators'
       br
       span='If you are a system administrator, you would be able to edit the different elements that are stored in the system and add new ones if needed.'
+
+  script.
+        //Start subscription
+        const publicVapidKey = "!{publicKey}";
+
+        // $(document).ready(function(){
+            if (window.Notification) {
+                if (Notification.permission !== 'granted') {
+                    Notification.requestPermission(function(){
+                        if (Notification.permission === 'granted') {
+                            getSubscriptionObject().then(subscribe)
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                } else {
+                    getSubscriptionObject().then(subscribe)
+                }
+            }
+        // });
+
+        //Generate subscription object
+        function getSubscriptionObject() {
+            return navigator.serviceWorker.register('/bower_components/js/worker.js')
+            .then(function(worker){
+                return worker.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+                }).catch(function(err) {
+                    console.log(err);
+                });
+            }).catch(function(err) {
+                console.log(err);
+            });
+        }
+
+        //Send subscription to server
+        function subscribe(subscription) {
+            return fetch(window.location.origin + '/subscribe', {
+                method: 'POST',
+                body: JSON.stringify({
+                    subscription: subscription,
+                }),
+                headers: {
+                    'content-type': 'application/json'
+                }
+            }).catch(function(err) {
+                console.log(err);
+            });
+        }
+
+        //Decoder base64 to uint8
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
