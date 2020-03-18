@@ -205,7 +205,8 @@ router.get('/', function(req, res, next) {
 router.get('/welcome', function(req, res, next) {
   res.render('index', {
     title: "University of Liverpool Outreach Events",
-    user: req.user
+    user: req.user,
+    publicKey: publicVapidKey
   });
 });
 
@@ -461,13 +462,13 @@ router.get("/logout", function(req, res){
 });
 /* End Logout */
 
-router.post("/fix-pass",function(req, res){
-  Staff.findOne({email:req.body.username},function(err, staff){
-    Staff.updateOne({email:req.body.username}, {$set:{password:staff.hashPassword(staff.password)}}, function(err, update){
-
-    });
-  });
-
-});
+// router.post("/fix-pass",function(req, res){
+//   Staff.findOne({email:req.body.username},function(err, staff){
+//     Staff.updateOne({email:req.body.username}, {$set:{password:staff.hashPassword(staff.password)}}, function(err, update){
+//
+//     });
+//   });
+//
+// });
 
 module.exports = router;

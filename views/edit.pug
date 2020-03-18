@@ -15,6 +15,8 @@ block content
             include includes/visitorFieldScript
         if equipmentFields
             include includes/equipmentFieldScript
+        if roomFields
+            include includes/roomsFieldScript
 
         if !errorCritical
 
@@ -36,6 +38,27 @@ block content
                                         option(value=option._id selected)=option.eventTypeName
                                     else
                                         option(value=option._id)=option.eventTypeName
+                    else if index === 'Rooms'
+                        div#rooms
+                            p
+                                b="Rooms:"
+                                a.btn.btn-primary(href="#" onclick="addRoomField()") Add Room
+
+                            each room in info
+                                div.row.form-group(id="rowRoom" + room_count)
+                                    div.col(id="roomNameCol" + room_count)
+                                        label(for="roomName" + room_count)='Room ' + room_count + ' Name'
+                                        select.form-control(id="selectRoom" + room_count name='roomID' + room_count)
+                                            each option in rooms
+                                                if room._id.toString() === option._id.toString()
+                                                    option(value=option._id selected)=option.roomName
+                                                else
+                                                    option(value=option._id)=option.roomName
+
+                                    div.col(id="removeRoomCol" + room_count style="flex-grow:0;position:relative;")
+                                        a.options-btn(href="#" id="removeRoomIcon" + room_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
+                                            i.material-icons.md-18="delete"
+                                    - room_count++
                     else if index === 'Equipment'
                         div#equipment
                             p
@@ -151,3 +174,6 @@ block content
         if equipmentFields
             script.
                 var equipment_count = !{equipment_count};
+        if roomFields
+            script.
+                var room_count = !{room_count};

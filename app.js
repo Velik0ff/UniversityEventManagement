@@ -23,7 +23,6 @@ const app = express();
 
 let port = 8081;
 
-
 app.use(bodyParser.json() ); // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({ limit:'150mb',extended: true }));
 app.use(express_session({
@@ -54,6 +53,18 @@ app.use('/events', eventsRouter);
 app.use('/visitors', visitorsRouter);
 app.use('/equipment', equipmentRouter);
 app.use('/event-types', eventTypesRouter);
+
+app.post("/subscribe", function(req, res){
+  const subscription = req.body;
+  res.status(201).json({});
+  const payload = JSON.stringify({ title: 'test' });
+
+  console.log(subscription);
+
+  webpush.sendNotification(subscription, payload).catch(error => {
+    console.error(error.stack);
+  });
+});
 
 /* Access the API only via the domain */
 app.use(function(req,res,next){

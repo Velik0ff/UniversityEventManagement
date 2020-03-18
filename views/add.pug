@@ -5,6 +5,7 @@ block content
         - var field_count = 0
         - var visitor_count = 0
         - var equipment_count = 0
+        - var room_count = 0
         - var staff_count = 0
 
         if customFields
@@ -15,6 +16,8 @@ block content
             include includes/visitorFieldScript
         if equipmentFields
             include includes/equipmentFieldScript
+        if roomFields
+            include includes/roomsFieldScript
 
         h3.title=title
 
@@ -40,6 +43,28 @@ block content
                                             option(value=option._id selected)=option.eventTypeName
                                         else
                                             option(value=option._id)=option.eventTypeName
+
+            if roomsFields
+                div#rooms
+                    p
+                        b="Rooms:"
+                        a.btn.btn-primary(href="#" onclick="addRoomField()") Add Room
+
+                    if selectedRooms && selectedRooms.length > 0
+                        each room in selectedRooms
+                            div.row.form-group(id="rowRoom" + room_count)
+                                div.col(id="roomNameCol" + room_count)
+                                    label(for="roomName" + room_count)='Room ' + room_count + ' Name'
+                                    select.form-control(id="selectRoom" + room_count name='roomID' + room_count)
+                                        each option in rooms
+                                            if room.roomID === option._id
+                                                option(value=room.roomID selected)=option.roomName
+                                            else
+                                                option(value=option._id)=option.roomName
+                                div.col(id="removeRoomCol" + room_count style="flex-grow:0;position:relative;")
+                                    a.options-btn(href="#" id="removeRoomIcon" + room_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
+                                        i.material-icons.md-18="delete"
+                            - room_count++
 
             if equipmentFields
                 div#equipment
@@ -140,3 +165,6 @@ block content
         if equipmentFields
             script.
                 var equipment_count = !{equipment_count};
+        if roomFields
+            script.
+                var room_count = !{room_count};

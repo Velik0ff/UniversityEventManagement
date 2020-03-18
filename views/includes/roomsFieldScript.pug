@@ -1,0 +1,36 @@
+script.
+	let all_rooms = !{JSON.stringify(rooms)};
+
+	function addRoomField() {
+		$('<div>').attr('class', 'row form-group').attr('id', 'rowRoom' + room_count).appendTo('#rooms');
+
+		$('<div>')
+			.attr('class', 'col')
+			.attr('id', 'roomNameCol' + room_count)
+			.appendTo('#rowRoom' + room_count);
+		$('<label>').attr('for', 'roomID' + room_count).appendTo('#roomNameCol' + room_count).text('Room ' + room_count + ' Name');
+		$('<select>')
+			.attr('class', 'form-control')
+			.attr('id', 'selectRoom' + room_count)
+			.attr('name', 'roomID' + room_count)
+			.appendTo('#roomNameCol' + room_count);
+		all_rooms.forEach(function (room) {
+			$('#selectRoom' + room_count).append(new Option(room.roomName, room._id));
+		});
+
+		$('<div>')
+			.attr('class', 'col')
+			.attr('id', 'removeRoomCol' + room_count)
+			.attr('style', 'flex-grow:0;position:relative;')
+			.appendTo('#rowRoom' + room_count);
+		$('<a>')
+			.attr('class', 'options-btn')
+			.attr('href', '#')
+			.attr('id', 'removeRoomIcon' + room_count)
+			.attr('style', 'position:absolute;bottom:0;left:0')
+			.attr('onclick', '$(this).parent().parent().remove()')
+			.appendTo('#removeRoomCol' + room_count);
+		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeRoomIcon' + room_count);
+
+		room_count++;
+	}
