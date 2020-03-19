@@ -249,7 +249,7 @@ function getPostedStaff(req){
 				staff_use[staff_use.length-1]['role'] = field_post_value;
 			}
 
-			delete req.body[field_post_key];
+			// delete req.body[field_post_key];
 		}
 	}
 
@@ -267,7 +267,7 @@ function getPostedVisitors(req){
 					visitorID: field_post_value
 				});
 
-				delete req.body[field_post_key];
+				// delete req.body[field_post_key];
 			}
 		}
 	}
@@ -287,7 +287,7 @@ function getPostedRooms(req){
 				});
 			}
 
-			delete req.body[field_post_key];
+			// delete req.body[field_post_key];
 		}
 	}
 
@@ -648,6 +648,7 @@ router.post('/'+editLink, function(req, res, next) {
 		return equipment_posted;
 	}
 
+console.log('req body end')
 	if(req.user && req.user.permission === 0) {
 		Event.findOne({_id: req.body.ID}, async function (err, event) {
 			if (!err && event) {
@@ -666,9 +667,6 @@ router.post('/'+editLink, function(req, res, next) {
 				var posted_visitors = getPostedVisitors(req);
 				var posted_equipment = getPostedEquipment(req);
 				var posted_rooms = getPostedRooms(req);
-
-				console.log(posted_staff_use)
-				console.log(event)
 
 				Promise.all([equipment, rooms, equipment_use, event_type, staff, staff_use, visitors, visitor_attending, eventTypes]).then((result) => {
 					var numberOfSpaces = 0;
@@ -803,8 +801,6 @@ router.post('/'+editLink, function(req, res, next) {
 							visitors: posted_visitors
 						}
 					};
-
-					console.log(event_type_update);
 
 					Event.updateOne({_id: req.body.ID}, event_type_update, function (err, eventUpdateDoc) {
 						if (!err) {
