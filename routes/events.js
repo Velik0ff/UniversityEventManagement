@@ -443,7 +443,7 @@ router.get('/participate-events-list', function(req, res, next){
 	}
 });
 
-router.get('/list-events', function(req, res, next) {
+router.get('/'+listLink, function(req, res, next) {
 	if(req.user && req.user.permission === 0) {
 		let columns = ["ID", "Event Name", "Options"];
 		var error = "";
@@ -477,7 +477,7 @@ router.get('/list-events', function(req, res, next) {
 	}
 });
 
-router.get('/view-event', function(req, res, next) {
+router.get('/'+viewLink, function(req, res, next) {
 	if(req.user && (req.user.permission === 0 || req.user.permission === 1)) {
 		/* Logic to get info from database */
 		Event.findOne({_id: req.query.id}, async function (err, event) {
@@ -555,7 +555,7 @@ router.get('/view-event', function(req, res, next) {
 	}
 });
 
-router.get('/edit-event', function(req, res, next) {
+router.get('/'+editLink, function(req, res, next) {
 	if(req.user && req.user.permission === 0) {
 		Event.findOne({_id: req.query.id}, async function (err, event) {
 			if (!err && event) {
@@ -627,7 +627,7 @@ router.get('/edit-event', function(req, res, next) {
 	}
 });
 
-router.post('/edit-event', function(req, res, next) {
+router.post('/'+editLink, function(req, res, next) {
 	function getPostedEquipment(req){
 		var equipment_posted = [];
 
@@ -667,7 +667,10 @@ router.post('/edit-event', function(req, res, next) {
 				var posted_equipment = getPostedEquipment(req);
 				var posted_rooms = getPostedRooms(req);
 
-				Promise.all([equipment, equipment_use, event_type, staff, staff_use, visitors, visitor_attending, eventTypes]).then((result) => {
+				console.log(posted_staff_use)
+				console.log(event)
+
+				Promise.all([equipment, rooms, equipment_use, event_type, staff, staff_use, visitors, visitor_attending, eventTypes]).then((result) => {
 					var numberOfSpaces = 0;
 					var numberOfVisitors = 0;
 					var error = null;
@@ -684,16 +687,27 @@ router.post('/edit-event', function(req, res, next) {
 
 					staff_use.forEach(function (prev_staff_member) {
 						var staff_posted = false;
+						console.log("User:"+prev_staff_member);
 
 						posted_staff_use.forEach(function (posted_staff_member) {
-							if (posted_staff_member._id === prev_staff_member.staffMemberID) staff_posted = true;
+							if (posted_staff_member.staffMemberID === prev_staff_member._id) staff_posted = true;
 						});
 
 						if (!staff_posted) {
-							Staff.updateOne({_id: prev_staff_member.staffMemberID}, {$pull: {attendingEvents: {eventID: event._id}}}, function (errorUpdateStaff, staffDoc) {
+							Staff.updateOne({_id: prev_staff_member._id}, {$pull: {attendingEvents: {eventID: event._id}}}, function (errorUpdateStaff, staffDoc) {
 								if(!errorUpdateStaff){
-									sendNotification(staffDoc._id, "Event Update", "You have been removed from an event.")
-									sendEmail(staffDoc.email, "removed");
+									Staff.findOne({_id:prev_staff_member._id}, function(errFind,staffMemberDoc){
+										if(!errFind){
+											if(staffMemberDoc) {
+												sendNotification(staffMemberDoc._id, "Event Update", "You have been removed from an event.")
+												sendEmail(staffMemberDoc.email, "removed");
+											} else {
+												console.log("Staff member not found.");
+											}
+										} else {
+											console.log(errFind);
+										}
+									});
 								} else {
 									console.log(errorUpdateStaff);
 								}
@@ -705,11 +719,11 @@ router.post('/edit-event', function(req, res, next) {
 						var new_staff = true;
 
 						staff_use.forEach(function (prev_staff_member) {
-							if (posted_staff_member._id === prev_staff_member.staffMemberID) new_staff = false;
+							if (posted_staff_member.staffMemberID === prev_staff_member._id) new_staff = false;
 						});
 
 						if(new_staff){
-							Staff.findOne({_id:posted_staff_member._id}, function(errorFindStaffEmail, staffDoc){
+							Staff.findOne({_id:posted_staff_member.staffMemberID}, function(errorFindStaffEmail, staffDoc){
 								if(!errorFindStaffEmail){
 									sendNotification(staffDoc._id, "Event Participation", "You have been added to participate to an event.");
 									sendEmail(staffDoc.email, "added");
@@ -724,12 +738,12 @@ router.post('/edit-event', function(req, res, next) {
 						var visitor_posted = false;
 
 						posted_visitors.forEach(function (posted_visitor) {
-							if (posted_visitor._id === prev_visitor.visitorID) visitor_posted = true;
+							if (posted_visitor.visitorID === prev_visitor._id) visitor_posted = true;
 						});
 
 						if (!visitor_posted) {
-							Visitor.updateOne({_id: prev_visitor.visitorID}, {$pull: {attendingEvents: {eventID: event._id}}}, function (errorUpdateVisitor, visitorDoc) {
-								console.log(errorUpdateVisitor);
+							Visitor.updateOne({_id: prev_visitor._id}, {$pull: {attendingEvents: {eventID: event._id}}}, function (errorUpdateVisitor, visitorDoc) {
+								if(errorUpdateVisitor) console.log(errorUpdateVisitor);
 							});
 						}
 					});
@@ -738,11 +752,11 @@ router.post('/edit-event', function(req, res, next) {
 						var new_visitor = true;
 
 						visitor_attending.forEach(function (prev_visitor) {
-							if (posted_visitor._id === prev_visitor.visitorID) new_visitor = false;
+							if (posted_visitor.visitorID === prev_visitor._id) new_visitor = false;
 						});
 
 						if (new_visitor) {
-							Staff.findOne({_id:posted_visitor._id}, function(errorFindVisitorEmail, visitorDoc){
+							Visitor.findOne({_id:posted_visitor.visitorID}, function(errorFindVisitorEmail, visitorDoc){
 								if(!errorFindVisitorEmail){
 									sendNotification(visitorDoc._id, "Event Participation", "You have been added to participate to an event.");
 									sendEmail(visitorDoc.contactEmail, "added");
@@ -758,7 +772,7 @@ router.post('/edit-event', function(req, res, next) {
 						var equip_qty = 0;
 
 						posted_equipment.forEach(function (posted_equip) {
-							if (posted_equip._id === prev_equip.equipID) {
+							if (posted_equip.equipID === prev_equip.equipID) {
 								equipment_posted = true;
 								equip_qty = prev_equip.reqQty - posted_equip.reqQty;
 							}
@@ -775,6 +789,8 @@ router.post('/edit-event', function(req, res, next) {
 						}
 					});
 
+					console.log(req.body['Event Name'])
+
 					var event_type_update = {
 						$set: {
 							eventName: req.body['Event Name'],
@@ -786,7 +802,9 @@ router.post('/edit-event', function(req, res, next) {
 							location: req.body.Location,
 							visitors: posted_visitors
 						}
-					}
+					};
+
+					console.log(event_type_update);
 
 					Event.updateOne({_id: req.body.ID}, event_type_update, function (err, eventUpdateDoc) {
 						if (!err) {
@@ -819,12 +837,14 @@ router.post('/edit-event', function(req, res, next) {
 									Date: event.date,
 									"Event Type": event_type,
 									Equipment: posted_equipment,
+									Rooms: rooms_user,
 									Staff: posted_staff_use,
 									Visitors: posted_visitors
 								},
 								eventTypes: eventTypes,
 								staff: staff,
 								equipment: equipment,
+								rooms: rooms,
 								visitors: visitors,
 								customFields: false,
 								equipmentFields: true,
@@ -847,12 +867,14 @@ router.post('/edit-event', function(req, res, next) {
 									Date: event.date,
 									"Event Type": event_type,
 									Equipment: posted_equipment,
+									Rooms: rooms_user,
 									Staff: posted_staff_use,
 									Visitors: posted_visitors
 								},
 								eventTypes: eventTypes,
 								staff: staff,
 								equipment: equipment,
+								rooms: rooms,
 								visitors: visitors,
 								customFields: false,
 								equipmentFields: true,
