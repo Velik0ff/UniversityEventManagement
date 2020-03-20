@@ -209,6 +209,7 @@ svg {
 
 table {
   border-collapse: collapse;
+  table-layout:fixed;
 }
 
 caption {
@@ -221,6 +222,7 @@ caption {
 
 th {
   text-align: inherit;
+  word-wrap:break-word;
 }
 
 label {
@@ -1529,6 +1531,7 @@ pre code {
   padding: 0.75rem;
   vertical-align: top;
   border-top: 1px solid #dee2e6;
+  word-wrap:break-word;
 }
 
 .table thead th {
@@ -10121,3 +10124,36 @@ a.text-dark:hover, a.text-dark:focus {
   }
 }
 /*# sourceMappingURL=bootstrap.css.map */
+#filter{
+  padding:10px;
+  -moz-box-shadow:    inset 0 0 10px #ECECEC;
+   -webkit-box-shadow: inset 0 0 10px #ECECEC;
+   box-shadow:         inset 0 0 10px #ECECEC;
+}
+
+.range{
+  -webkit-appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 5px;
+  background: #ECECEC;
+  outline: none;
+}
+
+.range::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #021F71;
+  cursor: pointer;
+}
+
+.range::-moz-range-thumb{
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #021F71;
+  cursor: pointer;
+}

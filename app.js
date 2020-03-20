@@ -9,14 +9,14 @@ const express_session = require('express-session'); // used to store the session
 const mongoose = require('./functions/connection'); // mongo connection
 const bodyParser = require('body-parser'); // body parser for POST/GET methods
 const passport = require('passport'); // used for authentication
+const process = require('process');
 
 const MongoStore = require('connect-mongo')(express_session);
 
 /* Routes */
-// const push = require('./routes/push');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
-// const subscribe = require('./routes/subscribe');
+const roomsRouter = require('./routes/rooms');
 const eventsRouter = require('./routes/events');
 const visitorsRouter = require('./routes/visitors');
 const equipmentRouter = require('./routes/equipment');
@@ -52,6 +52,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
+app.use('/rooms', roomsRouter);
 app.use('/users', usersRouter);
 app.use('/events', eventsRouter);
 app.use('/visitors', visitorsRouter);
@@ -60,7 +61,7 @@ app.use('/event-types', eventTypesRouter);
 
 /* Access the API only via the domain */
 app.use(function(req,res,next){
-  res.header("Access-Control-Allow-Origin", "http://34.247.106.85");
+  res.header("Access-Control-Allow-Origin", process.env.DOMAIN);
   res.header("Access-Control-Allow-Credentials", true);
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();

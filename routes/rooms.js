@@ -9,7 +9,7 @@ const editLink = "edit-room";
 const viewLink = "view-room";
 const addLink = "add-room";
 const deleteLink = "delete-room";
-const listLink = "list-room";
+const listLink = "list-rooms";
 
 function validationErr(error){
 	var error_msg = "";
@@ -48,7 +48,7 @@ router.get('/'+listLink, function(req, res, next) {
 				});
 			});
 
-			error = equipmentList.length === 0 ? "No results to show" : ""
+			error = rooms.length === 0 ? "No results to show" : ""
 
 			res.render('list', {
 				title: 'Rooms List',
@@ -117,7 +117,7 @@ router.get('/'+editLink, function(req, res, next) {
 					},
 					customFields: true,
 					editLink: '/equipment/' + editLink,
-					cancelLink: viewLink + '?id=' + equipment._id,
+					cancelLink: viewLink + '?id=' + room._id,
 					user:req.user
 				});
 			} else {

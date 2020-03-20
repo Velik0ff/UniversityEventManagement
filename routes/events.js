@@ -408,6 +408,7 @@ router.get('/participate-events-list', function(req, res, next){
 					// addLink: addLink,
 					deleteLink: deleteLink,
 					error:error,
+					filter:"Events",
 					user:req.user
 				});
 			});
@@ -434,6 +435,7 @@ router.get('/participate-events-list', function(req, res, next){
 					columns:columns,
 					viewLink: viewLink,
 					error:error,
+					filter:"Events",
 					user:req.user
 				});
 			});
@@ -452,6 +454,9 @@ router.get('/'+listLink, function(req, res, next) {
 			var eventList = [];
 
 			events.forEach(function (event) {
+
+
+
 				eventList.push({
 					id: event._id,
 					name: event.eventName,
@@ -469,12 +474,17 @@ router.get('/'+listLink, function(req, res, next) {
 				addLink: addLink,
 				deleteLink: deleteLink,
 				error: error,
+				filter:"Events",
 				user:req.user
 			});
 		});
 	} else {
 		res.redirect('/');
 	}
+});
+
+router.post('/'+filter, function(req,res,next){
+	
 });
 
 router.get('/'+viewLink, function(req, res, next) {
@@ -648,7 +658,6 @@ router.post('/'+editLink, function(req, res, next) {
 		return equipment_posted;
 	}
 
-console.log('req body end')
 	if(req.user && req.user.permission === 0) {
 		Event.findOne({_id: req.body.ID}, async function (err, event) {
 			if (!err && event) {
@@ -685,10 +694,9 @@ console.log('req body end')
 
 					staff_use.forEach(function (prev_staff_member) {
 						var staff_posted = false;
-						console.log("User:"+prev_staff_member);
 
 						posted_staff_use.forEach(function (posted_staff_member) {
-							if (posted_staff_member.staffMemberID === prev_staff_member._id) staff_posted = true;
+							if (posted_staff_member.staffMemberID == prev_staff_member._id) staff_posted = true;
 						});
 
 						if (!staff_posted) {
@@ -717,7 +725,7 @@ console.log('req body end')
 						var new_staff = true;
 
 						staff_use.forEach(function (prev_staff_member) {
-							if (posted_staff_member.staffMemberID === prev_staff_member._id) new_staff = false;
+							if (posted_staff_member.staffMemberID == prev_staff_member._id) new_staff = false;
 						});
 
 						if(new_staff){
@@ -736,7 +744,7 @@ console.log('req body end')
 						var visitor_posted = false;
 
 						posted_visitors.forEach(function (posted_visitor) {
-							if (posted_visitor.visitorID === prev_visitor._id) visitor_posted = true;
+							if (posted_visitor.visitorID == prev_visitor._id) visitor_posted = true;
 						});
 
 						if (!visitor_posted) {
@@ -750,7 +758,7 @@ console.log('req body end')
 						var new_visitor = true;
 
 						visitor_attending.forEach(function (prev_visitor) {
-							if (posted_visitor.visitorID === prev_visitor._id) new_visitor = false;
+							if (posted_visitor.visitorID == prev_visitor._id) new_visitor = false;
 						});
 
 						if (new_visitor) {
@@ -770,7 +778,7 @@ console.log('req body end')
 						var equip_qty = 0;
 
 						posted_equipment.forEach(function (posted_equip) {
-							if (posted_equip.equipID === prev_equip.equipID) {
+							if (posted_equip.equipID == prev_equip.equipID) {
 								equipment_posted = true;
 								equip_qty = prev_equip.reqQty - posted_equip.reqQty;
 							}
@@ -778,16 +786,14 @@ console.log('req body end')
 
 						if (!equipment_posted) {
 							Equipment.updateOne({_id: prev_equip.equipID}, {$inc: {quantity: prev_equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
-								console.log(errorUpdateEquip);
+								if(errorUpdateEquip) console.log(errorUpdateEquip);
 							});
 						} else if (equip_qty !== 0) {
 							Equipment.updateOne({_id: prev_equip.equipID}, {$inc: {quantity: equip_qty}}, function (errorUpdateEquip, equipDoc) {
-								console.log(errorUpdateEquip);
+								if(errorUpdateEquip) console.log(errorUpdateEquip);
 							});
 						}
 					});
-
-					console.log(req.body['Event Name'])
 
 					var event_type_update = {
 						$set: {
