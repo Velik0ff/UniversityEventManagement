@@ -57,6 +57,15 @@ block content
                 populateList(list.filter(filterOutResults));
             } else populateList(list);
         }
+
+        function applyFilter(){
+            $.post("../filter", {
+
+            }, function (data) {
+                $(".result").html(data);
+            });
+        }
+
     .container
         h3.title=title
         if addLink
@@ -76,7 +85,7 @@ block content
             h5="Filter Data"
             hr
 
-            if filter == "Events"
+            if filter == "events"
                 div#rangeSpaces
                     h6="Spaces Available"
                     div.row
@@ -110,7 +119,7 @@ block content
                             input.form-control(type="date")
                 hr
 
-            if filter == "Equipment"
+            if filter == "equipment"
                 div#rangeQuantity
                     h6="Quantity"
                     div.row
@@ -122,7 +131,7 @@ block content
                             input.form-control(type="number")
                 hr
 
-            if filter == "Rooms"
+            if filter == "rooms"
                 div#rangeCapacity
                     h6="Capacity"
                     div.row
@@ -136,7 +145,7 @@ block content
 
 
             center
-                button.btn.btn-primary()="Apply Filter"
+                button.btn.btn-primary(onclick="applyFilter()")="Apply Filter"
 
         table.table
             thead
