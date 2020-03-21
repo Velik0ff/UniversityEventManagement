@@ -483,8 +483,16 @@ router.get('/'+listLink, function(req, res, next) {
 	}
 });
 
-router.post('/'+filter, function(req,res,next){
-	
+router.post('/filter', function(req,res,next){
+	if(req.user && req.user.permission >= 0) {
+		if(req.body.type && req.body.type === 'participate' && req.body.events){
+
+		} else if (req.body.type && req.body.type === 'all' && req.user.permission === 0){
+			// Event.find
+		}
+	} else {
+		res.status(500).json({message:"Not authenticated"});
+	}
 });
 
 router.get('/'+viewLink, function(req, res, next) {
