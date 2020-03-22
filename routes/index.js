@@ -6,8 +6,11 @@ const nodemailer = require('nodemailer');
 const uuid = require('uuid');
 const webpush = require('web-push');
 const process = require('process');
+const mongoose = require('mongoose');
 
 /* Models */
+const Room = require('../models/Room');
+const Event = require('../models/Event');
 const Staff = require('../models/staff_user');
 const Visitor = require('../models/visitor_user');
 const SubNotification = require('../models/SubNotification');
@@ -541,6 +544,152 @@ router.post('/subscribe', (req, res) => {
 		}
 	} else {
 		res.status(500).json({message: "Permission for notifications is not granted."});
+	}
+});
+
+router.post('/filter', function (req, res, next) {
+	/* Filter functions */
+	function getVisitorInfo(visitors) {
+		return new Promise((resolve, reject) => {
+			var visitors_ids_arr = [];
+
+			visitors.forEach((visitor) => {
+				visitors_ids_arr.push(mongoose.Types.ObjectId(visitor.visitorID))
+			});
+
+			Visitor.find({_id: {$in: visitors_ids_arr}}, function (err, visitorsDoc) {
+				if (!err) {
+					resolve(visitorsDoc);
+				} else {
+					resolve(visitorsDoc);
+					console.log(err);
+				}
+			});
+		});
+	}
+
+	function getRoomInfo(event_rooms) {
+		return new Promise((resolve, reject) => {
+			var event_room_ids_arr = [];
+
+			event_rooms.forEach((event_room) => {
+				event_room_ids_arr.push(event_room.equipID);
+			});
+
+			Room.find({_id: {$in: event_room_ids_arr}}, function (err, rooms) {
+				if (!err) {
+					resolve(rooms);
+				} else {
+					resolve([]);
+					console.log(err);
+				}
+			});
+		});
+	}
+
+	/* End Filter functions */
+
+
+	if (req.user && req.user.permission >= 0) {
+		if (req.body.type && req.body.type !== "undefined" && req.body.list && req.body.list !== "undefined") {
+			switch (req.body.type) {
+				case "allList":
+
+				function filterEvent(list_element) {
+					return new Promise(function (resolve, reject) {
+						Event.findOne({_id: list_element.id}, async function (errFind, event) {
+							if (!errFind) {
+								var result = true;
+								let visitors = await getVisitorInfo(event.visitors);
+								let rooms = await getRoomInfo(event.rooms);
+								let numberOfVisitors = 0;
+								let numberOfSpaces = 0;
+
+								Promise.all([visitors, rooms]).then(function () {
+									rooms.forEach(function (room) {
+										numberOfSpaces = numberOfSpaces + room.capacity;
+									});
+
+									visitors.forEach(function (visitor) {
+										visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
+									});
+
+									if (req.body.spacesMin && !req.body.spacesMin <= numberOfSpaces) {
+										result = false;
+									}
+									if (req.body.spacesMax && !req.body.spacesMax >= numberOfSpaces) {
+										result = false;
+									}
+									if (req.body.visitorsMin && !req.body.visitorsMin <= numberOfVisitors) {
+										result = false;
+									}
+									if (req.body.visitorsMax && !req.body.visitorsMax >= numberOfVisitors) {
+										result = false;
+									}
+									if (req.body.dateFrom && event.date) {
+										let dateFrom = Date.parse(req.body.dateFrom);
+										let date = Date.parse(event.date);
+
+										if (dateFrom > date) result = false;
+									}
+									if (req.body.dateTo && event.date) {
+										let dateTo = Date.parse(req.body.dateTo);
+										let date = Date.parse(event.date);
+
+										if (dateTo > date) result = false;
+									}
+
+									resolve(result);
+								}).catch(function (err) {
+									console.log(err);
+									resolve(false);
+								});
+							} else {
+								resolve(result);
+							}
+						});
+					});
+				}
+
+					if (req.body.list) {
+						var list = [];
+						var promises = [];
+
+						req.body.list.forEach(function (list_element) {
+							promises.push(new Promise(function (resolve, reject) {
+								filterEvent(list_element).then(function (result) {
+									if (result) {
+										list.push(list_element);
+										resolve();
+									} else resolve();
+								});
+							}));
+						});
+
+						if(promises.length > 0) {
+							Promise.all(promises).then(function () {
+								res.status(200).json({list: list});
+							});
+						} else {
+							res.status(200).json({list: []});
+						}
+					} else {
+						res.status(200).json({list: []});
+					}
+					break;
+				case "participate":
+					break;
+			}
+		} else {
+			res.status(500).json({message: ""});
+		}
+		if (req.body.type && req.body.type === 'participate' && req.body.list) {
+
+		} else if (req.body.type && req.body.type === 'all' && req.user.permission === 0) {
+			// Event.find
+		}
+	} else {
+		res.status(500).json({message: "Not authenticated"});
 	}
 });
 

@@ -405,7 +405,6 @@ router.get('/participate-events-list', function(req, res, next){
 					columns:columns,
 					editLink: editLink,
 					viewLink: viewLink,
-					// addLink: addLink,
 					deleteLink: deleteLink,
 					error:error,
 					filter:"Events",
@@ -436,6 +435,7 @@ router.get('/participate-events-list', function(req, res, next){
 					viewLink: viewLink,
 					error:error,
 					filter:"Events",
+					type:"participate",
 					user:req.user
 				});
 			});
@@ -454,9 +454,6 @@ router.get('/'+listLink, function(req, res, next) {
 			var eventList = [];
 
 			events.forEach(function (event) {
-
-
-
 				eventList.push({
 					id: event._id,
 					name: event.eventName,
@@ -475,23 +472,12 @@ router.get('/'+listLink, function(req, res, next) {
 				deleteLink: deleteLink,
 				error: error,
 				filter:"Events",
+				type:"allList",
 				user:req.user
 			});
 		});
 	} else {
 		res.redirect('/');
-	}
-});
-
-router.post('/filter', function(req,res,next){
-	if(req.user && req.user.permission >= 0) {
-		if(req.body.type && req.body.type === 'participate' && req.body.events){
-
-		} else if (req.body.type && req.body.type === 'all' && req.user.permission === 0){
-			// Event.find
-		}
-	} else {
-		res.status(500).json({message:"Not authenticated"});
 	}
 });
 
@@ -971,7 +957,7 @@ router.get('/'+deleteLink, function(req, res, next) {
 	}
 });
 
-router.get('/add-event', async function (req, res, next) {
+router.get('/'+addLink, async function (req, res, next) {
 	if(req.user && req.user.permission === 0) {
 		let fields = [{name: "Event Name", type: "text", identifier: "name"},
 			{name: "Location", type: "text", identifier: "location"},
@@ -1007,7 +993,7 @@ router.get('/add-event', async function (req, res, next) {
 	}
 });
 
-router.post('/add-event', async function (req, res, next) {
+router.post('/'+addLink, async function (req, res, next) {
 	if(req.user && req.user.permission === 0) {
 		let fields = [{name: "Event Name", type: "text", identifier: "name"},
 			{name: "Location", type: "text", identifier: "location"},
