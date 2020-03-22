@@ -587,6 +587,90 @@ router.post('/filter', function (req, res, next) {
 		});
 	}
 
+	async function filterEvent(event) {
+		var result = true;
+		let visitors = await getVisitorInfo(event.visitors);
+		let rooms = await getRoomInfo(event.rooms);
+		let numberOfVisitors = 0;
+		let numberOfSpaces = 0;
+
+		Promise.all([visitors, rooms]).then(function () {
+			rooms.forEach(function (room) {
+				numberOfSpaces = numberOfSpaces + room.capacity;
+			});
+
+			visitors.forEach(function (visitor) {
+				visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
+			});
+
+			if (req.body.spacesMin && !req.body.spacesMin <= numberOfSpaces) {
+				result = false;
+			}
+			if (req.body.spacesMax && !req.body.spacesMax >= numberOfSpaces) {
+				result = false;
+			}
+			if (req.body.visitorsMin && !req.body.visitorsMin <= numberOfVisitors) {
+				result = false;
+			}
+			if (req.body.visitorsMax && !req.body.visitorsMax >= numberOfVisitors) {
+				result = false;
+			}
+			if (req.body.dateFrom && event.date) {
+				let dateFrom = Date.parse(req.body.dateFrom);
+				let date = Date.parse(event.date);
+
+				if (dateFrom > date) result = false;
+			}
+			if (req.body.dateTo && event.date) {
+				let dateTo = Date.parse(req.body.dateTo);
+				let date = Date.parse(event.date);
+
+				if (dateTo > date) result = false;
+			}
+
+			return result;
+		}).catch(function (err) {
+			console.log(err);
+			return false;
+		});
+	}
+
+	function filterEventAdmin(list_element) {
+		return new Promise(function (resolve, reject) {
+			Event.findOne({_id: list_element.id}, async function (errFind, event) {
+				if (!errFind) {
+
+				} else {
+					resolve(false);
+				}
+			});
+		});
+	}
+
+	function filterEventParticipant(list_element) {
+		return new Promise(function (resolve, reject) {
+			Event.findOne({_id: list_element.id}, async function (errFind, event) {
+				var participant = false;
+
+				if (req.user.permission === 0) {
+					event.staffChosen.forEach(function (staff_member) {
+						if (staff_member.staffID === req.user._id) participant = true;
+					});
+				} else if (req.user.permission === 1) {
+					event.visitors.forEach(function (visitor) {
+						if (visitor.visitorID === req.user._id) participant = true;
+					});
+				}
+
+				if (participant) {
+
+				} else {
+					resolve(false);
+				}
+			});
+		});
+	}
+
 	/* End Filter functions */
 
 
@@ -594,70 +678,13 @@ router.post('/filter', function (req, res, next) {
 		if (req.body.type && req.body.type !== "undefined" && req.body.list && req.body.list !== "undefined") {
 			switch (req.body.type) {
 				case "allList":
-
-				function filterEvent(list_element) {
-					return new Promise(function (resolve, reject) {
-						Event.findOne({_id: list_element.id}, async function (errFind, event) {
-							if (!errFind) {
-								var result = true;
-								let visitors = await getVisitorInfo(event.visitors);
-								let rooms = await getRoomInfo(event.rooms);
-								let numberOfVisitors = 0;
-								let numberOfSpaces = 0;
-
-								Promise.all([visitors, rooms]).then(function () {
-									rooms.forEach(function (room) {
-										numberOfSpaces = numberOfSpaces + room.capacity;
-									});
-
-									visitors.forEach(function (visitor) {
-										visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
-									});
-
-									if (req.body.spacesMin && !req.body.spacesMin <= numberOfSpaces) {
-										result = false;
-									}
-									if (req.body.spacesMax && !req.body.spacesMax >= numberOfSpaces) {
-										result = false;
-									}
-									if (req.body.visitorsMin && !req.body.visitorsMin <= numberOfVisitors) {
-										result = false;
-									}
-									if (req.body.visitorsMax && !req.body.visitorsMax >= numberOfVisitors) {
-										result = false;
-									}
-									if (req.body.dateFrom && event.date) {
-										let dateFrom = Date.parse(req.body.dateFrom);
-										let date = Date.parse(event.date);
-
-										if (dateFrom > date) result = false;
-									}
-									if (req.body.dateTo && event.date) {
-										let dateTo = Date.parse(req.body.dateTo);
-										let date = Date.parse(event.date);
-
-										if (dateTo > date) result = false;
-									}
-
-									resolve(result);
-								}).catch(function (err) {
-									console.log(err);
-									resolve(false);
-								});
-							} else {
-								resolve(result);
-							}
-						});
-					});
-				}
-
-					if (req.body.list) {
+					if (req.body.list && req.user.permission === 0) {
 						var list = [];
 						var promises = [];
 
 						req.body.list.forEach(function (list_element) {
 							promises.push(new Promise(function (resolve, reject) {
-								filterEvent(list_element).then(function (result) {
+								filterEventAdmin(list_element).then(function (result) {
 									if (result) {
 										list.push(list_element);
 										resolve();
@@ -666,7 +693,7 @@ router.post('/filter', function (req, res, next) {
 							}));
 						});
 
-						if(promises.length > 0) {
+						if (promises.length > 0) {
 							Promise.all(promises).then(function () {
 								res.status(200).json({list: list});
 							});
@@ -678,15 +705,11 @@ router.post('/filter', function (req, res, next) {
 					}
 					break;
 				case "participate":
+
 					break;
 			}
 		} else {
 			res.status(500).json({message: ""});
-		}
-		if (req.body.type && req.body.type === 'participate' && req.body.list) {
-
-		} else if (req.body.type && req.body.type === 'all' && req.user.permission === 0) {
-			// Event.find
 		}
 	} else {
 		res.status(500).json({message: "Not authenticated"});
