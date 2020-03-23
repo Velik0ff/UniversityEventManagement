@@ -587,51 +587,56 @@ router.post('/filter', function (req, res, next) {
 		});
 	}
 
-	async function filterEvent(event) {
-		var result = true;
-		let visitors = await getVisitorInfo(event.visitors);
-		let rooms = await getRoomInfo(event.rooms);
-		let numberOfVisitors = 0;
-		let numberOfSpaces = 0;
+	function filterEvent(event) {
+		return new Promise(async function (resolve, reject) {
+			var result = true;
+			let visitors = await getVisitorInfo(event.visitors);
+			let rooms = await getRoomInfo(event.rooms);
+			let numberOfVisitors = 0;
+			let numberOfSpaces = 0;
 
-		Promise.all([visitors, rooms]).then(function () {
-			rooms.forEach(function (room) {
-				numberOfSpaces = numberOfSpaces + room.capacity;
+			Promise.all([visitors, rooms]).then(function () {
+				rooms.forEach(function (room) {
+					numberOfSpaces = numberOfSpaces + room.capacity;
+				});
+
+				visitors.forEach(function (visitor) {
+					visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
+				});
+
+				if (req.body.spacesMin && !req.body.spacesMin <= numberOfSpaces) {
+					result = false;
+				}
+				if (req.body.spacesMax && !req.body.spacesMax >= numberOfSpaces) {
+					result = false;
+				}
+				if (req.body.visitorsMin && !req.body.visitorsMin <= numberOfVisitors) {
+					result = false;
+				}
+				if (req.body.visitorsMax && !req.body.visitorsMax >= numberOfVisitors) {
+					result = false;
+				}
+				if (req.body.dateFrom && event.date) {
+					let dateFrom = Date.parse(req.body.dateFrom);
+					let date = Date.parse(event.date);
+
+					if (dateFrom > date) result = false;
+				}
+				if (req.body.dateTo && event.date) {
+					let dateTo = Date.parse(req.body.dateTo);
+					let date = Date.parse(event.date);
+
+					if (dateTo > date) result = false;
+				}
+				if (req.body.eventTypeSelected && req.body.eventTypeSelected !== event.eventTypeID){
+					result = false;
+				}
+
+				resolve(result);
+			}).catch(function (err) {
+				console.log(err);
+				resolve(false);
 			});
-
-			visitors.forEach(function (visitor) {
-				visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
-			});
-
-			if (req.body.spacesMin && !req.body.spacesMin <= numberOfSpaces) {
-				result = false;
-			}
-			if (req.body.spacesMax && !req.body.spacesMax >= numberOfSpaces) {
-				result = false;
-			}
-			if (req.body.visitorsMin && !req.body.visitorsMin <= numberOfVisitors) {
-				result = false;
-			}
-			if (req.body.visitorsMax && !req.body.visitorsMax >= numberOfVisitors) {
-				result = false;
-			}
-			if (req.body.dateFrom && event.date) {
-				let dateFrom = Date.parse(req.body.dateFrom);
-				let date = Date.parse(event.date);
-
-				if (dateFrom > date) result = false;
-			}
-			if (req.body.dateTo && event.date) {
-				let dateTo = Date.parse(req.body.dateTo);
-				let date = Date.parse(event.date);
-
-				if (dateTo > date) result = false;
-			}
-
-			return result;
-		}).catch(function (err) {
-			console.log(err);
-			return false;
 		});
 	}
 
@@ -639,7 +644,9 @@ router.post('/filter', function (req, res, next) {
 		return new Promise(function (resolve, reject) {
 			Event.findOne({_id: list_element.id}, async function (errFind, event) {
 				if (!errFind) {
-
+					filterEvent(list_element).then(function(result){
+						resolve(result);
+					})
 				} else {
 					resolve(false);
 				}
@@ -663,7 +670,9 @@ router.post('/filter', function (req, res, next) {
 				}
 
 				if (participant) {
-
+					filterEvent(event).then(function(result){
+						resolve(result);
+					});
 				} else {
 					resolve(false);
 				}
@@ -679,8 +688,8 @@ router.post('/filter', function (req, res, next) {
 			switch (req.body.type) {
 				case "allList":
 					if (req.body.list && req.user.permission === 0) {
-						var list = [];
-						var promises = [];
+						let list = [];
+						let promises = [];
 
 						req.body.list.forEach(function (list_element) {
 							promises.push(new Promise(function (resolve, reject) {
@@ -705,7 +714,31 @@ router.post('/filter', function (req, res, next) {
 					}
 					break;
 				case "participate":
+					if(req.body.list && req.user.permission >= 0) {
+						let list = [];
+						let promises = [];
 
+						req.body.list.forEach(function (list_element) {
+							promises.push(new Promise(function (resolve, reject) {
+								filterEventParticipant(list_element).then(function (result) {
+									if (result) {
+										list.push(list_element);
+										resolve();
+									} else resolve();
+								});
+							}));
+						});
+
+						if (promises.length > 0) {
+							Promise.all(promises).then(function () {
+								res.status(200).json({list: list});
+							});
+						} else {
+							res.status(200).json({list: []});
+						}
+					} else {
+						res.status(200).json({list: []});
+					}
 					break;
 			}
 		} else {

@@ -382,6 +382,7 @@ async function sendEmail(email,type){
 router.get('/participate-events-list', function(req, res, next){
 	let columns = ["ID", "Event Name"];
 	var error = "";
+	let allEventTypes = getAllEventTypes();
 
 	if(req.user && req.user.permission === 0){
 		Staff.findOne({_id: req.user._id}, function(err, staffDoc){
@@ -408,6 +409,8 @@ router.get('/participate-events-list', function(req, res, next){
 					deleteLink: deleteLink,
 					error:error,
 					filter:"Events",
+					type:"participate",
+					eventTypes:allEventTypes,
 					user:req.user
 				});
 			});
@@ -436,6 +439,7 @@ router.get('/participate-events-list', function(req, res, next){
 					error:error,
 					filter:"Events",
 					type:"participate",
+					eventTypes:allEventTypes,
 					user:req.user
 				});
 			});
@@ -449,6 +453,7 @@ router.get('/'+listLink, function(req, res, next) {
 	if(req.user && req.user.permission === 0) {
 		let columns = ["ID", "Event Name", "Options"];
 		var error = "";
+		let allEventTypes = getAllEventTypes();
 
 		Event.find({}, function (err, events) {
 			var eventList = [];
@@ -473,6 +478,7 @@ router.get('/'+listLink, function(req, res, next) {
 				error: error,
 				filter:"Events",
 				type:"allList",
+				eventTypes:allEventTypes,
 				user:req.user
 			});
 		});

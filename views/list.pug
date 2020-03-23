@@ -2,7 +2,53 @@ extends layout
 
 block content
     script.
-        const list = !{JSON.stringify(list)};
+        var original_list = !{JSON.stringify(list)};
+        var list = !{JSON.stringify(list)};
+        var filter_applied = false;
+        var search_applied = false;
+
+        function populateList(list) {
+            $("tbody").empty();
+
+            if (list.length > 0) {
+                list.forEach(function (list_element) {
+                    let tr = $("<tr>").appendTo('tbody');
+
+                    for (let index in list_element) {
+                        if (index === "id") {
+                            $("<td>").attr('style', 'font-weight:bold').text(list_element[index]).appendTo(tr);
+                        } else if (index === "name") {
+                            let td = $("<td>").appendTo(tr);
+                            $("<a>").attr('href', "#{viewLink}?id=" + list_element.id).text(list_element[index]).appendTo(td);
+                        } else {
+                            $("<td>").text(list_element[index]).appendTo(tr);
+                        }
+                    }
+
+                    if("!{deleteLink}" !== "undefined" || "!{editLink}" !== "undefined"){
+                        let td = $("<td>").appendTo(tr);
+
+                        if ("!{editLink}" !== "undefined") {
+                            let edit_a = $("<a>")
+                                .attr("class", "options-btn")
+                                .attr("href", "#{editLink}?id=" + list_element.id)
+                                .attr("onclick", "return confirm('Are you sure you want to delete this entity?')").appendTo(td);
+                            $("<i>").attr("class", "material-icons md-18").text("edit").appendTo(edit_a)
+                        }
+                        if("!{deleteLink}" !== "undefined"){
+                            let delete_a = $("<a>")
+                              .attr("class","options-btn")
+                              .attr("href","#{deleteLink}?id="+list_element.id)
+                              .attr("onclick","return confirm('Are you sure you want to delete this entity?')").appendTo(td);
+                            $("<i>").attr("class","material-icons md-18").text("delete").appendTo(delete_a)
+                        }
+                    }
+                });
+            } else {
+                let tr = $("<tr>").appendTo('tbody');
+                $("<td>").attr('colspan', #{columns.length}).attr('align','center').text("No results to show").appendTo(tr);
+            }
+        }
 
         function searchFilter() {
             const input = $("#searchBox").val();
@@ -11,73 +57,144 @@ block content
                 return object.id.includes(input) || object.name.includes(input);
             }
 
-            function populateList(list) {
-                $("tbody").empty();
+            if (input !== "") {
+            	search_applied = true;
 
-                if (list.length > 0) {
-                    list.forEach(function (list_element) {
-                        let tr = $("<tr>").appendTo('tbody');
+            	list = list.filter(filterOutResults);
+                populateList(list);
+            } else populateList(list);
+        }
+    if filter == "Events"
+        script.
+            function applyFilter(){
+            	filter_applied = true;
 
-                        for (let index in list_element) {
-                            if (index === "id") {
-                                $("<td>").attr('style', 'font-weight:bold').text(list_element[index]).appendTo(tr);
-                            } else if (index === "name") {
-                                let td = $("<td>").appendTo(tr);
-                                $("<a>").attr('href', "#{viewLink}?id=" + list_element.id).text(list_element[index]).appendTo(td);
-                            } else {
-                                $("<td>").text(list_element[index]).appendTo(tr);
-                            }
-                        }
+            	let list_to_filter = list;
 
-                        if("!{deleteLink}" !== "undefined" || "!{editLink}" !== "undefined"){
-                        	let td = $("<td>").appendTo(tr);
+                if(!search_applied){
+                    list_to_filter = original_list;
+                }
 
-                            if ("!{editLink}" !== "undefined") {
-                                let edit_a = $("<a>")
-                                    .attr("class", "options-btn")
-                                    .attr("href", "#{editLink}?id=" + list_element.id)
-                                    .attr("onclick", "return confirm('Are you sure you want to delete this entity?')").appendTo(td);
-                                $("<i>").attr("class", "material-icons md-18").text("edit").appendTo(edit_a)
-                            }
-                            if("!{deleteLink}" !== "undefined"){
-                            	let delete_a = $("<a>")
-                                  .attr("class","options-btn")
-                                  .attr("href","#{deleteLink}?id="+list_element.id)
-                                  .attr("onclick","return confirm('Are you sure you want to delete this entity?')").appendTo(td);
-                            	$("<i>").attr("class","material-icons md-18").text("delete").appendTo(delete_a)
-                            }
-                        }
-                    });
+                $.post("../filter", {
+                    spacesMin:$("#rangeSpacesMin").val(),
+                    spacesMax:$("#rangeSpacesMax").val(),
+                    visitorsMin:$("#rangeVisitorsMin").val(),
+                    visitorsMax:$("#rangeVisitorsMax").val(),
+                    dateFrom:$("#rangeDateFrom").val(),
+                    dateTo:$("#rangeDateTo").val(),
+                    eventTypeSelected:$("#eventTypeSelectedFilter").val(),
+                    list:list_to_filter,
+                    type:!{JSON.stringify(type)}
+                }, function (data) {
+                    populateList(data.list);
+                    list = data.list;
+                });
+            }
+    else if filter == "Equipment"
+        script.
+            function applyFilter(){
+            	filter_applied = true;
+
+                function filterOutResults(object){
+                	var result = true;
+
+                	let qtyMin = $("#rangeQtyMin").val();
+                    let qtyMax = $("#rangeQtyMax").val();
+
+                	if(qtyMin && qtyMin >= object.quantity){
+                      result = false;
+                    }
+                	if(qtyMax && qtyMax <= object.quantity){
+                      result = false;
+                    }
+
+                	return result;
+                }
+
+                if(search_applied){
+                	list = list.filter(filterOutResults);
+                	populateList(list);
                 } else {
-                    let tr = $("<tr>").appendTo('tbody');
-                    $("<td>").attr('colspan', #{columns.length}).attr('align','center').text("No results to show").appendTo(tr);
+                	list = original_list.filter(filterOutResults);
+                	populateList(list);
+                }
+            }
+    else if filter == "Rooms"
+        script.
+            function applyFilter(){
+            	filter_applied = true;
+
+                function filterOutResults(object){
+                	var result = true;
+
+                	let capacityMin = $("#rangeCapacityMin").val();
+                    let capacityMax = $("#rangeCapacityMax").val();
+
+                	if(capacityMin && capacityMin >= object.capacity){
+                      result = false;
+                    }
+                	if(capacityMax && capacityMax <= object.capacity){
+                      result = false;
+                    }
+
+                	return result;
+                }
+
+                if(search_applied){
+                	list = list.filter(filterOutResults);
+                	populateList(list);
+                } else {
+                	list = original_list.filter(filterOutResults);
+                	populateList(list);
                 }
             }
 
-            if (input !== "") {
-                populateList(list.filter(filterOutResults));
-            } else populateList(list);
-        }
+    if filter == "Events"
+        script.
+            function resetFilter(){
+            	filter_applied = false;
 
-        function applyFilter(){
-        	console.log(list)
-            $.post("../filter", {
-                spacesMin:$("#rangeSpacesMin").val(),
-                spacesMax:$("#rangeSpacesMax").val(),
-                visitorsMin:$("#rangeVisitorsMin").val(),
-                visitorsMax:$("#rangeVisitorsMax").val(),
-                dateFrom:$("#rangeDateFrom").val(),
-                dateTo:$("#rangeDateTo").val(),
-                qtyMin:$("#rangeQtyMin").val(),
-                qtyMax:$("#rangeQtyMax").val(),
-                capacityMin:$("#rangeCapacityMin").val(),
-                capacityMax:$("#rangeCapacityMax").val(),
-                list:list,
-                type:!{JSON.stringify(type)}
-            }, function (data) {
-                console.log(data);
-            });
-        }
+                if(search_applied){
+                	searchFilter();
+                } else {
+                	populateList(original_list);
+                }
+
+                $("#rangeSpacesMin").val("");
+                $("#rangeSpacesMax").val("");
+                $("#rangeVisitorsMin").val("");
+                $("#rangeVisitorsMax").val("");
+                $("#rangeDateFrom").val("");
+                $("#rangeDateTo").val("");
+            }
+    else if filter == "Equipment"
+        script.
+            function resetFilter(){
+            	filter_applied = false;
+
+                if(search_applied){
+                	searchFilter();
+                } else {
+                	populateList(original_list);
+                }
+
+                $("#rangeQtyMin").val("");
+                $("#rangeQtyMax").val("");
+            }
+    else if filter == "Rooms"
+        script.
+            function resetFilter(){
+            	filter_applied = false;
+
+                if(search_applied){
+                	searchFilter();
+                } else {
+                	populateList(original_list);
+                }
+
+                $("#rangeCapacityMin").val("");
+                $("#rangeCapacityMax").val("");
+            }
 
     .container
         h3.title=title
@@ -132,7 +249,13 @@ block content
                             input.form-control#rangeDateTo(type="date")
                 hr
 
-            if filter == "equipment"
+                div#eventTypeFilter
+                    select#eventTypeSelectedFilter
+                        each event_type in eventTypes
+                            option(value=event_type._id)=event_type.typeName
+                hr
+
+            if filter == "Equipment"
                 div#rangeQuantity
                     h6="Quantity"
                     div.row
@@ -144,7 +267,7 @@ block content
                             input.form-control#rangeQtyMax(type="number")
                 hr
 
-            if filter == "rooms"
+            if filter == "Rooms"
                 div#rangeCapacity
                     h6="Capacity"
                     div.row
@@ -159,6 +282,7 @@ block content
 
             center
                 button.btn.btn-primary(onclick="applyFilter()")="Apply Filter"
+                button.btn.btn-primary(onclick="resetFilter()")="Reset Filter"
 
         table.table
             thead
