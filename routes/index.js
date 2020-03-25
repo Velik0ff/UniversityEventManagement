@@ -7,6 +7,7 @@ const uuid = require('uuid');
 const webpush = require('web-push');
 const process = require('process');
 const mongoose = require('mongoose');
+const json2csv = require('json2csv');
 
 /* Models */
 const Room = require('../models/Room');
@@ -746,6 +747,32 @@ router.post('/filter', function (req, res, next) {
 		}
 	} else {
 		res.status(500).json({message: "Not authenticated"});
+	}
+});
+
+router.get('/calendar', function(req, res, next){
+	res.render('calendar', {
+		title: "Calendar",
+		user: req.user
+	});
+});
+
+router.get('/export', function (req, res, next) {
+	if(req.user && req.user.permission === 0){
+		if(req.query.type){
+			switch(req.query.type){
+				case "all":
+
+					break;
+				case "only-events":
+
+					break;
+
+
+			}
+		}
+	} else {
+		//TODO: Error not authenticated
 	}
 });
 
