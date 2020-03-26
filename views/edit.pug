@@ -135,7 +135,10 @@ block content
                         div.form-group
                             label(for=index)=index
                             if index !== 'ID'
-                                input.form-control(id=index type="text" placeholder="Enter " + index value=info name=index)
+                                if index !== 'Date' && index !== 'End Date'
+                                    input.form-control(id=index type="text" placeholder="Enter " + index value=info name=index)
+                                else
+                                    input.form-control(id=index type="datetime-local" placeholder="Enter " + index value=info name=index)
                             else
                                 input.form-control(id=index type="text" placeholder="Enter " + index readonly value=info name=index)
                     else if index === 'customFieldsValues'

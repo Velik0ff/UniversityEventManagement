@@ -18,6 +18,7 @@ var EventSchema = new mongoose.Schema({
 			role: { type: String, required: true }
 		}],
 	date:{ type: Date, required: [true, "Event date must be provided"] },
+	endDate: { type: Date },
 	location: { type: String, required: [true, "Location of the event must be provided"] },
 	visitors: [{
 		visitorID: { type: String, required: true }

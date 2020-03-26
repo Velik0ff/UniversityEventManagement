@@ -3,7 +3,8 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
 const process = require('process');
-const webpush = require('web-push')
+const webpush = require('web-push');
+const moment = require('moment');
 
 /* Model */
 const Event = require('../models/Event');
@@ -540,6 +541,7 @@ router.get('/'+viewLink, function(req, res, next) {
 								"Event Type": event_type,
 								"Staff Chosen": staff,
 								Date: event.date,
+								"End Date": event.endDate ? event.endDate : "",
 								Location: event.location,
 								"Number of Visitors": numberOfVisitors
 							},
@@ -602,7 +604,8 @@ router.get('/'+editLink, function(req, res, next) {
 							ID: event._id,
 							"Event Name": event.eventName,
 							Location: event.location,
-							Date: event.date,
+							Date: moment(event.date).format('YYYY-MM-DDTHH:mm'),
+							"End Date": event.endDate ? moment(event.endDate).format('YYYY-MM-DDTHH:mm') : "",
 							"Event Type": event_type,
 							Equipment: equipment_use,
 							Rooms: rooms_use,
@@ -803,6 +806,7 @@ router.post('/'+editLink, function(req, res, next) {
 							eventTypeID: req.body['Event Type'],
 							staffChosen: posted_staff_use,
 							date: req.body.Date,
+							endDate: req.body['End Date'],
 							location: req.body.Location,
 							visitors: posted_visitors
 						}
@@ -834,12 +838,13 @@ router.post('/'+editLink, function(req, res, next) {
 								message: "Successfully updated event: " + event.eventName,
 								item: {
 									ID: event._id,
-									"Event Name": event.eventName,
-									Location: event.location,
-									Date: event.date,
-									"Event Type": event_type,
+									"Event Name": req.body['Event Name'],
+									Location: req.body.Location,
+									Date: moment(req.body.Date).format('YYYY-MM-DDTHH:mm'),
+									"End Date": req.body['End Date'] ? moment(req.body['End Date']).format('YYYY-MM-DDTHH:mm') : "",
+									"Event Type": req.body['Event Type'],
 									Equipment: posted_equipment,
-									Rooms: rooms_user,
+									Rooms: posted_rooms,
 									Staff: posted_staff_use,
 									Visitors: posted_visitors
 								},
@@ -864,12 +869,13 @@ router.post('/'+editLink, function(req, res, next) {
 								message: null,
 								item: {
 									ID: event._id,
-									"Event Name": event.eventName,
-									Location: event.location,
-									Date: event.date,
-									"Event Type": event_type,
+									"Event Name": req.body['Event Name'],
+									Location: req.body.Location,
+									Date: moment(req.body.Date).format('YYYY-MM-DDTHH:mm'),
+									"End Date": req.body['End Date'] ? moment(req.body['End Date']).format('YYYY-MM-DDTHH:mm') : "",
+									"Event Type": req.body['Event Type'],
 									Equipment: posted_equipment,
-									Rooms: rooms_user,
+									Rooms: posted_rooms,
 									Staff: posted_staff_use,
 									Visitors: posted_visitors
 								},
@@ -968,6 +974,7 @@ router.get('/'+addLink, async function (req, res, next) {
 		let fields = [{name: "Event Name", type: "text", identifier: "name"},
 			{name: "Location", type: "text", identifier: "location"},
 			{name: "Date", type: "datetime-local", identifier: "date"},
+			{name: "End Date", type: "datetime-local", identifier: "endDate"},
 			{name: "Event Type", type: "select", identifier: "eventType"}];
 
 		var visitors = await getAllVisitor();
@@ -1004,6 +1011,7 @@ router.post('/'+addLink, async function (req, res, next) {
 		let fields = [{name: "Event Name", type: "text", identifier: "name"},
 			{name: "Location", type: "text", identifier: "location"},
 			{name: "Date", type: "datetime-local", identifier: "date"},
+			{name: "End Date", type: "datetime-local", identifier: "endDate"},
 			{name: "Event Type", type: "select", identifier: "eventType"}];
 
 		var error_msg = "";
@@ -1057,6 +1065,7 @@ router.post('/'+addLink, async function (req, res, next) {
 			eventTypeID: req.body['Event Type'],
 			staffChosen: staff_use,
 			date: req.body.Date,
+			endDate: req.body['End Date'],
 			location: req.body.Location,
 			visitors: visitor_attending
 		});

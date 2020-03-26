@@ -629,7 +629,7 @@ router.post('/filter', function (req, res, next) {
 
 					if (dateTo > date) result = false;
 				}
-				if (req.body.eventTypeSelected && req.body.eventTypeSelected !== event.eventTypeID){
+				if (req.body.eventTypeSelected && req.body.eventTypeSelected !== event.eventTypeID) {
 					result = false;
 				}
 
@@ -645,7 +645,7 @@ router.post('/filter', function (req, res, next) {
 		return new Promise(function (resolve, reject) {
 			Event.findOne({_id: list_element.id}, async function (errFind, event) {
 				if (!errFind) {
-					filterEvent(list_element).then(function(result){
+					filterEvent(list_element).then(function (result) {
 						resolve(result);
 					})
 				} else {
@@ -671,7 +671,7 @@ router.post('/filter', function (req, res, next) {
 				}
 
 				if (participant) {
-					filterEvent(event).then(function(result){
+					filterEvent(event).then(function (result) {
 						resolve(result);
 					});
 				} else {
@@ -715,7 +715,7 @@ router.post('/filter', function (req, res, next) {
 					}
 					break;
 				case "participate":
-					if(req.body.list && req.user.permission >= 0) {
+					if (req.body.list && req.user.permission >= 0) {
 						let list = [];
 						let promises = [];
 
@@ -750,17 +750,101 @@ router.post('/filter', function (req, res, next) {
 	}
 });
 
-router.get('/calendar', function(req, res, next){
-	res.render('calendar', {
-		title: "Calendar",
-		user: req.user
-	});
+router.get('/calendar', function (req, res, next) {
+	function getAllEvents() {
+		return new Promise(function (resolve, reject) {
+			Event.find({}, function (errFind, eventsDoc) {
+				if (!errFind) {
+					let events = [];
+					eventsDoc.forEach(function (event) {
+						let participant = false;
+
+						event.staffChosen.forEach(function (staff_member) {
+							if(staff_member.staffMemberID == req.user._id) participant = true;
+						});
+
+						events.push({
+							title: event.eventName,
+							start: event.date,
+							end:event.endDate,
+							url: '/events/view-event?id=' + event._id,
+							backgroundColor: participant ? "#ff0000" : "#007bff"
+						});
+					});
+					resolve(events);
+				} else {
+					console.log(errFind);
+					resolve([]);
+				}
+			});
+		});
+	}
+
+	function getVisitorEvents() {
+		return new Promise(function (resolve, reject) {
+			Visitor.findOne({_id: req.user._id}, function (errFindVisitor, visitor) {
+				if (!errFindVisitor && visitor) {
+					let events = [];
+					let promises = [];
+
+					visitor.attendingEvents.forEach(function (attendingEvent) {
+						promises.push(new Promise(function (res, rej) {
+							Event.findOne({_id: attendingEvent.eventID}, function (errEventFind, event) {
+								if (!errEventFind && event) {
+									events.push({
+										title: event.eventName,
+										start: event.date,
+										end:event.endDate,
+										url: '/events/view-event?id=' + event._id,
+										backgroundColor:"#ff0000"
+									});
+								}
+
+								res();
+							});
+						}));
+					});
+
+					Promise.all(promises).then(function () {
+						resolve(events);
+					});
+				} else {
+					console.log(errFindVisitor);
+					resolve([]);
+				}
+			});
+		});
+	}
+
+	if (req.user && req.user.permission >= 0) {
+		let promise = null;
+
+		if (req.user.permission === 0) {
+			promise = getAllEvents();
+		} else if (req.user.permission === 1) {
+			promise = getVisitorEvents();
+		}
+
+		if (promise) {
+			promise.then(function (result) {
+				res.render('calendar', {
+					title: "Calendar",
+					events: result,
+					user: req.user
+				});
+			});
+		} else {
+			res.redirect('/welcome');
+		}
+	} else {
+		res.redirect('/login');
+	}
 });
 
 router.get('/export', function (req, res, next) {
-	if(req.user && req.user.permission === 0){
-		if(req.query.type){
-			switch(req.query.type){
+	if (req.user && req.user.permission === 0) {
+		if (req.query.type) {
+			switch (req.query.type) {
 				case "all":
 
 					break;
