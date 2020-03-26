@@ -204,10 +204,10 @@ block content
         button.btn.btn-link#filterBtn Filter
 
         p
-            div.row
+            div.row(style="flex-wrap:nowrap;")
                 div.col-sm(style="padding-right:0")
                     input.form-control#searchBox(type="text" placeholder="Search by typing name or ID..")
-                div.col-sm(style="flex-grow:0;padding-left:0")
+                div.col-sm(style="flex-grow:0;padding-left:0;width:unset")
                     button.btn.btn-primary(onclick="searchFilter()") Search
 
 
