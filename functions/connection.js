@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
 mongoose.set('useCreateIndex', true);
+mongoose.set('useUnifiedTopology', true);
 
 mongoose.connect('mongodb://localhost/event_system',{
 	auth: {

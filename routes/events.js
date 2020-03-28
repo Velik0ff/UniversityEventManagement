@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const process = require('process');
 const webpush = require('web-push');
 const moment = require('moment');
+const genFunctions = require('../functions/generalFunctions')
 
 /* Model */
 const Event = require('../models/Event');
@@ -71,170 +72,6 @@ function validationErr(error){
 	return error_msg;
 }
 
-function getEquipmentInfo(event_equipment){
-	return new Promise((resolve,reject) => {
-		var event_equip_ids_arr = [];
-
-		event_equipment.forEach((event_eq)=>{
-			event_equip_ids_arr.push(event_eq.equipID);
-		});
-
-		Equipment.find({_id:{$in:event_equip_ids_arr}}, function (err, equipment) {
-			if(!err){
-				event_equipment.forEach(function(equip_chosen){
-					equipment.forEach(function(equip){
-						equip.reqQty = equip_chosen.reqQty;
-					});
-				});
-				resolve(equipment)
-			} else {
-				resolve([]);
-				console.log(err);
-			}
-		});
-	});
-}
-
-function getRoomInfo(event_rooms){
-	return new Promise((resolve,reject) => {
-		var event_room_ids_arr = [];
-
-		event_rooms.forEach((event_room)=>{
-			event_room_ids_arr.push(event_room.equipID);
-		});
-
-		Room.find({_id:{$in:event_room_ids_arr}}, function (err, rooms) {
-			if(!err){
-				resolve(rooms);
-			} else {
-				resolve([]);
-				console.log(err);
-			}
-		});
-	});
-}
-
-function getEventType(event_type_id){
-	return new Promise((resolve,reject) => {
-		EventType.findOne({_id:event_type_id}, function (err, event_type) {
-			if(!err){
-				resolve(event_type);
-			} else {
-				resolve(event_type);
-				console.log(err);
-			}
-		});
-	});
-}
-
-function getStaffInfo(staff_chosen){
-	return new Promise((resolve,reject) => {
-		var staff_ids_arr = [];
-
-		staff_chosen.forEach((staff)=>{
-			staff_ids_arr.push(mongoose.Types.ObjectId(staff.staffMemberID));
-		});
-
-		Staff.find({_id:{$in:staff_ids_arr}}, function (err, staff) {
-			if(!err){
-				staff_chosen.forEach(function(staff_member_chosen){
-					staff.forEach(function(staff_member){
-						staff_member.role = staff_member_chosen.role
-					});
-				});
-				resolve(staff);
-			} else {
-				resolve([]);
-				console.log(err);
-			}
-		});
-	});
-}
-
-function getVisitorInfo(visitors){
-	return new Promise((resolve,reject) => {
-		var visitors_ids_arr = [];
-
-		visitors.forEach((visitor)=>{
-			visitors_ids_arr.push(mongoose.Types.ObjectId(visitor.visitorID))
-		});
-
-		Visitor.find({_id:{$in:visitors_ids_arr}}, function (err, visitorsDoc) {
-			if(!err){
-				resolve(visitorsDoc);
-			} else {
-				resolve(visitorsDoc);
-				console.log(err);
-			}
-		});
-	});
-}
-
-function getAllStaff(){
-	return new Promise((resolve,reject) => {
-		Staff.find({}, function (err, staff) {
-			if(!err){
-				resolve(staff)
-			} else {
-				resolve([]);
-				console.log(err);
-			}
-		});
-	});
-}
-
-function getAllEquipment(){
-	return new Promise((resolve,reject) => {
-		Equipment.find({}, function (err, equipment) {
-			if(!err){
-				resolve(equipment)
-			} else {
-				resolve([]);
-				console.log(err);
-			}
-		});
-	});
-}
-
-function getAllRooms(){
-	return new Promise((resolve,reject) => {
-		Room.find({}, function (err, room) {
-			if(!err){
-				resolve(room)
-			} else {
-				resolve([]);
-				console.log(err);
-			}
-		});
-	});
-}
-
-function getAllVisitor(){
-	return new Promise((resolve,reject) => {
-		Visitor.find({}, function (err, visitors) {
-			if(!err){
-				resolve(visitors);
-			} else {
-				resolve(visitors);
-				console.log(err);
-			}
-		});
-	});
-}
-
-function getAllEventTypes(){
-	return new Promise((resolve,reject) => {
-		EventType.find({}, function (err, event_types) {
-			if(!err){
-				resolve(event_types);
-			} else {
-				resolve(event_types);
-				console.log(err);
-			}
-		});
-	});
-}
-
 function getPostedStaff(req){
 	var staff_use = [];
 
@@ -293,21 +130,6 @@ function getPostedRooms(req){
 	}
 
 	return rooms_used;
-}
-
-function sendNotification(userID,title,body){
-	SubNotification.findOne({userID:userID},function(errFind,subNotifDoc){
-		if(!errFind && subNotifDoc){
-			const payload = JSON.stringify({
-        title: title,
-        body: body
-   		});
-
-			webpush.sendNotification(subNotifDoc.notification, payload);
-		} else {
-			console.log(errFind);
-		}
-	});
 }
 
 async function sendEmail(email,type){
@@ -383,7 +205,7 @@ async function sendEmail(email,type){
 router.get('/participate-events-list', function(req, res, next){
 	let columns = ["ID", "Event Name"];
 	var error = "";
-	let allEventTypes = getAllEventTypes();
+	let allEventTypes = genFunctions.getAllEventTypes();
 
 	if(req.user && req.user.permission === 0){
 		Staff.findOne({_id: req.user._id}, function(err, staffDoc){
@@ -454,7 +276,7 @@ router.get('/'+listLink, function(req, res, next) {
 	if(req.user && req.user.permission === 0) {
 		let columns = ["ID", "Event Name", "Options"];
 		var error = "";
-		let allEventTypes = getAllEventTypes();
+		let allEventTypes = genFunctions.getAllEventTypes();
 
 		Event.find({}, function (err, events) {
 			var eventList = [];
@@ -504,11 +326,11 @@ router.get('/'+viewLink, function(req, res, next) {
 				}
 
 				if(req.user.permission === 0 || attending) {
-					var equipment = await getEquipmentInfo(event.equipment);
-					var rooms = await getRoomInfo(event.rooms);
-					var event_type = await getEventType(event.eventTypeID);
-					var staff = await getStaffInfo(event.staffChosen);
-					var visitors = await getVisitorInfo(event.visitors);
+					var equipment = await genFunctions.getEquipmentInfo(event.equipment);
+					var rooms = await genFunctions.getRoomInfo(event.rooms);
+					var event_type = await genFunctions.getEventType(event.eventTypeID);
+					var staff = await genFunctions.getStaffInfo(event.staffChosen);
+					var visitors = await genFunctions.getVisitorInfo(event.visitors);
 					var numberOfSpaces = 0;
 					var numberOfVisitors = 0;
 
@@ -571,16 +393,16 @@ router.get('/'+editLink, function(req, res, next) {
 	if(req.user && req.user.permission === 0) {
 		Event.findOne({_id: req.query.id}, async function (err, event) {
 			if (!err && event) {
-				var equipment_use = await getEquipmentInfo(event.equipment);
-				var rooms_use = await getRoomInfo(event.rooms);
-				var event_type = await getEventType(event.eventTypeID);
-				var staff_use = await getStaffInfo(event.staffChosen);
-				var visitor_attending = await getVisitorInfo(event.visitors);
-				var visitors = await getAllVisitor();
-				var equipment = await getAllEquipment();
-				var rooms = await getAllRooms();
-				var staff = await getAllStaff();
-				var eventTypes = await getAllEventTypes();
+				var equipment_use = await genFunctions.getEquipmentInfo(event.equipment);
+				var rooms_use = await genFunctions.getRoomInfo(event.rooms);
+				var event_type = await genFunctions.getEventType(event.eventTypeID);
+				var staff_use = await genFunctions.getStaffInfo(event.staffChosen);
+				var visitor_attending = await genFunctions.getVisitorInfo(event.visitors);
+				var visitors = await genFunctions.getAllVisitor();
+				var equipment = await genFunctions.getAllEquipment();
+				var rooms = await genFunctions.getAllRooms();
+				var staff = await genFunctions.getAllStaff();
+				var eventTypes = await genFunctions.getAllEventTypes();
 
 				Promise.all([equipment, equipment_use, event_type, staff, staff_use, visitors, visitor_attending, eventTypes]).then((result) => {
 					var numberOfSpaces = 0;
@@ -664,16 +486,16 @@ router.post('/'+editLink, function(req, res, next) {
 	if(req.user && req.user.permission === 0) {
 		Event.findOne({_id: req.body.ID}, async function (err, event) {
 			if (!err && event) {
-				var equipment_use = await getEquipmentInfo(event.equipment);
-				var rooms_user = await getRoomInfo(event.rooms);
-				var event_type = await getEventType(event.eventTypeID);
-				var staff_use = await getStaffInfo(event.staffChosen);
-				var visitor_attending = await getVisitorInfo(event.visitors);
-				var visitors = await getAllVisitor();
-				var equipment = await getAllEquipment();
-				var rooms = await getAllRooms();
-				var staff = await getAllStaff();
-				var eventTypes = await getAllEventTypes();
+				var equipment_use = await genFunctions.getEquipmentInfo(event.equipment);
+				var rooms_user = await genFunctions.getRoomInfo(event.rooms);
+				var event_type = await genFunctions.getEventType(event.eventTypeID);
+				var staff_use = await genFunctions.getStaffInfo(event.staffChosen);
+				var visitor_attending = await genFunctions.getVisitorInfo(event.visitors);
+				var visitors = await genFunctions.getAllVisitor();
+				var equipment = await genFunctions.getAllEquipment();
+				var rooms = await genFunctions.getAllRooms();
+				var staff = await genFunctions.getAllStaff();
+				var eventTypes = await genFunctions.getAllEventTypes();
 
 				var posted_staff_use = getPostedStaff(req);
 				var posted_visitors = getPostedVisitors(req);
@@ -708,7 +530,7 @@ router.post('/'+editLink, function(req, res, next) {
 									Staff.findOne({_id:prev_staff_member._id}, function(errFind,staffMemberDoc){
 										if(!errFind){
 											if(staffMemberDoc) {
-												sendNotification(staffMemberDoc._id, "Event Update", "You have been removed from an event.")
+												genFunctions.sendNotification(staffMemberDoc._id, "Event Update", "You have been removed from an event.")
 												sendEmail(staffMemberDoc.email, "removed");
 											} else {
 												console.log("Staff member not found.");
@@ -734,7 +556,7 @@ router.post('/'+editLink, function(req, res, next) {
 						if(new_staff){
 							Staff.findOne({_id:posted_staff_member.staffMemberID}, function(errorFindStaffEmail, staffDoc){
 								if(!errorFindStaffEmail){
-									sendNotification(staffDoc._id, "Event Participation", "You have been added to participate to an event.");
+									genFunctions.sendNotification(staffDoc._id, "Event Participation", "You have been added to participate to an event.");
 									sendEmail(staffDoc.email, "added");
 								} else {
 									console.log(errorFindStaffEmail);
@@ -767,7 +589,7 @@ router.post('/'+editLink, function(req, res, next) {
 						if (new_visitor) {
 							Visitor.findOne({_id:posted_visitor.visitorID}, function(errorFindVisitorEmail, visitorDoc){
 								if(!errorFindVisitorEmail){
-									sendNotification(visitorDoc._id, "Event Participation", "You have been added to participate to an event.");
+									genFunctions.sendNotification(visitorDoc._id, "Event Participation", "You have been added to participate to an event.");
 									sendEmail(visitorDoc.contactEmail, "added");
 								} else {
 									console.log(errorFindVisitorEmail);
@@ -817,7 +639,7 @@ router.post('/'+editLink, function(req, res, next) {
 							posted_staff_use.forEach(function(staffMember){
 								Staff.findOne({_id:staffMember.staffMemberID}, function(errorStaffSendEmail, staffMemberDoc){
 									if(!errorStaffSendEmail){
-										sendNotification(staffMemberDoc._id, "Event Update", "An event that you are participating has been updated.");
+										genFunctions.sendNotification(staffMemberDoc._id, "Event Update", "An event that you are participating has been updated.");
 										sendEmail(staffMemberDoc.email,"edited");
 									}
 								});
@@ -826,7 +648,7 @@ router.post('/'+editLink, function(req, res, next) {
 							posted_visitors.forEach(function(visitor){
 								Visitor.findOne({_id:visitor.visitorID}, function(errorVisitorSendEmail, visitorDoc){
 									if(!errorVisitorSendEmail){
-										sendNotification(visitorDoc._id, "Event Update", "An event that you are participating has been updated.")
+										genFunctions.sendNotification(visitorDoc._id, "Event Update", "An event that you are participating has been updated.")
 										sendEmail(visitorDoc.contactEmail,"edited");
 									}
 								});
@@ -977,11 +799,11 @@ router.get('/'+addLink, async function (req, res, next) {
 			{name: "End Date", type: "datetime-local", identifier: "endDate"},
 			{name: "Event Type", type: "select", identifier: "eventType"}];
 
-		var visitors = await getAllVisitor();
-		var equipment = await getAllEquipment();
-		var rooms = await getAllRooms();
-		var staff = await getAllStaff();
-		var eventTypes = await getAllEventTypes();
+		var visitors = await genFunctions.getAllVisitor();
+		var equipment = await genFunctions.getAllEquipment();
+		var rooms = await genFunctions.getAllRooms();
+		var staff = await genFunctions.getAllStaff();
+		var eventTypes = await genFunctions.getAllEventTypes();
 
 		Promise.all([equipment, eventTypes, visitors, staff]).then((result) => {
 			res.render('add', {
@@ -1016,11 +838,11 @@ router.post('/'+addLink, async function (req, res, next) {
 
 		var error_msg = "";
 		var message = "";
-		var visitors = await getAllVisitor();
-		var equipment = await getAllEquipment();
-		var rooms = await getAllRooms();
-		var staff = await getAllStaff();
-		var eventTypes = await getAllEventTypes();
+		var visitors = await genFunctions.getAllVisitor();
+		var equipment = await genFunctions.getAllEquipment();
+		var rooms = await genFunctions.getAllRooms();
+		var staff = await genFunctions.getAllStaff();
+		var eventTypes = await genFunctions.getAllEventTypes();
 		var equipment_use = [];
 		var rooms_use = getPostedRooms(req);
 		var staff_use = getPostedStaff(req);
@@ -1086,7 +908,7 @@ router.post('/'+addLink, async function (req, res, next) {
 								if (errUpdate) {
 									console.log(errUpdate);
 								} else {
-									sendNotification(staffDoc._id, "Participating Event", "You are a participant to a new event.");
+									genFunctions.sendNotification(staffDoc._id, "Participating Event", "You are a participant to a new event.");
 									sendEmail(staffDoc.email, "added");
 								}
 							});
@@ -1103,7 +925,7 @@ router.post('/'+addLink, async function (req, res, next) {
 								if (errUpdate) {
 									console.log(errUpdate);
 								} else {
-									sendNotification(visitorDoc._id, "Participating Event", "You are a participant to a new event.");
+									genFunctions.sendNotification(visitorDoc._id, "Participating Event", "You are a participant to a new event.");
 									sendEmail(visitorDoc.contactEmail, "added");
 								}
 							});

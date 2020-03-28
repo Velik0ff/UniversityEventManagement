@@ -7,7 +7,8 @@ const uuid = require('uuid');
 const webpush = require('web-push');
 const process = require('process');
 const mongoose = require('mongoose');
-const json2csv = require('json2csv');
+const json2csv = require('json2csv').parse;
+const genFunctions = require('../functions/generalFunctions');
 
 /* Models */
 const Room = require('../models/Room');
@@ -760,13 +761,13 @@ router.get('/calendar', function (req, res, next) {
 						let participant = false;
 
 						event.staffChosen.forEach(function (staff_member) {
-							if(staff_member.staffMemberID == req.user._id) participant = true;
+							if (staff_member.staffMemberID == req.user._id) participant = true;
 						});
 
 						events.push({
 							title: event.eventName,
 							start: event.date,
-							end:event.endDate,
+							end: event.endDate,
 							url: '/events/view-event?id=' + event._id,
 							backgroundColor: participant ? "#ff0000" : "#007bff"
 						});
@@ -794,9 +795,9 @@ router.get('/calendar', function (req, res, next) {
 									events.push({
 										title: event.eventName,
 										start: event.date,
-										end:event.endDate,
+										end: event.endDate,
 										url: '/events/view-event?id=' + event._id,
-										backgroundColor:"#ff0000"
+										backgroundColor: "#ff0000"
 									});
 								}
 
@@ -841,21 +842,97 @@ router.get('/calendar', function (req, res, next) {
 	}
 });
 
+function getRoomInfo(event_rooms) {
+	return new Promise((resolve, reject) => {
+		var event_room_ids_arr = [];
+
+		event_rooms.forEach((event_room) => {
+			event_room_ids_arr.push(event_room.equipID);
+		});
+
+		Room.find({_id: {$in: event_room_ids_arr}}, function (err, rooms) {
+			if (!err) {
+				resolve(rooms);
+			} else {
+				resolve([]);
+				console.log(err);
+			}
+		});
+	});
+}
+
 router.get('/export', function (req, res, next) {
 	if (req.user && req.user.permission === 0) {
 		if (req.query.type) {
-			switch (req.query.type) {
-				case "all":
+			var json_array = [];
+			var fileName = 'error';
+			let today = new Date();
+			let date = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
 
-					break;
-				case "only-events":
+			new Promise(function (resolve, reject) {
+				switch (req.query.type) {
+					case "events":
+						Event.find({}, async function (errFindEvents, eventDoc) {
+							if (!errFindEvents) {
+								await Promise.all(eventDoc.map(async function (event) {
+									var event_type = await genFunctions.getEventType(event.eventTypeID);
+									var rooms = await genFunctions.getRoomInfo(event.rooms);
+									var visitors = await genFunctions.getVisitorInfo(event.visitors);
 
-					break;
+									Promise.all([event_type, visitors, rooms]).then(function () {
+										let numberOfSpaces = 0;
+										let numberOfVisitors = 0;
 
+										rooms.forEach(function (room) {
+											numberOfSpaces = numberOfSpaces + room.capacity;
+										});
 
-			}
+										visitors.forEach(function (visitor) {
+											visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
+										});
+
+										json_array.push({
+											ID: event._id,
+											Name: event.eventName,
+											'Event Type': event_type.eventTypeName,
+											'Event Spaces': numberOfSpaces,
+											'Number of Visitors': numberOfVisitors,
+											Date: event.date,
+											'End Date': event.endDate,
+											Location: event.location
+										});
+									});
+								}));
+							} else {
+								console.log(errFindEvents);
+							}
+
+							fileName = 'events' + date;
+							resolve();
+						});
+						break;
+					case "equipment":
+
+						break;
+					case "staff":
+
+						break;
+					case "rooms":
+						break;
+					case "visitors":
+						break;
+				}
+			}).then(function () {
+				const fields = ['ID', 'Name', 'Event Type', 'Event Spaces', 'Number of Visitors', 'Date', 'End Date', 'Location'];
+				let csv = json2csv(json_array, fields);
+
+				res.setHeader('Content-disposition', 'attachment; filename=' + fileName + '.csv');
+				res.set('Content-Type', 'text/csv');
+				res.status(200).send(csv);
+			});
 		}
 	} else {
+
 		//TODO: Error not authenticated
 	}
 });
