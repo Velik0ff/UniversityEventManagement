@@ -10,6 +10,7 @@ const viewLink = "view-room";
 const addLink = "add-room";
 const deleteLink = "delete-room";
 const listLink = "list-rooms";
+const exportLink = "../export?type=Rooms";
 
 function validationErr(error){
 	var error_msg = "";
@@ -58,6 +59,7 @@ router.get('/'+listLink, function(req, res, next) {
 				viewLink: viewLink,
 				addLink: addLink,
 				deleteLink: deleteLink,
+				exportLink: exportLink,
 				error: error,
 				user:req.user
 			});

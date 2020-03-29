@@ -10,6 +10,7 @@ const viewLink = "view-equipment";
 const addLink = "add-equipment";
 const deleteLink = "delete-equipment";
 const listLink = "list-equipment";
+const exportLink = "../export?type=Equipment";
 
 function validationErr(error){
 	var error_msg = "";
@@ -58,6 +59,7 @@ router.get('/'+listLink, function(req, res, next) {
 				viewLink: viewLink,
 				addLink: addLink,
 				deleteLink: deleteLink,
+				exportLink: exportLink,
 				error: error,
 				user:req.user
 			});

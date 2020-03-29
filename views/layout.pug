@@ -41,9 +41,13 @@ html
 
                     if user && user.permission >= 0
                         li.nav-item
+                            a.nav-link(href='/events/export') Export
+                        li.nav-item
                             a.nav-link(href='/events/participate-events-list') Attending Events
 
                     if user
+                        li.nav-item
+                            a.nav-link(href='/events/calendar') Calendar
                         li.nav-item
                             a.nav-link(href='/change-password') Change Password
                         li.nav-item

@@ -22,6 +22,7 @@ const viewLink = "view-event";
 const addLink = "add-event";
 const deleteLink = "delete-event";
 const listLink = "list-events";
+const exportLink = "../export?type=Events";
 
 webpush.setVapidDetails(
       "mailto:sglvelik@liv.ac.uk",
@@ -230,6 +231,7 @@ router.get('/participate-events-list', function(req, res, next){
 					editLink: editLink,
 					viewLink: viewLink,
 					deleteLink: deleteLink,
+					exportLink: exportLink,
 					error:error,
 					filter:"Events",
 					type:"participate",
@@ -259,6 +261,7 @@ router.get('/participate-events-list', function(req, res, next){
 					list:eventList,
 					columns:columns,
 					viewLink: viewLink,
+					exportLink: exportLink,
 					error:error,
 					filter:"Events",
 					type:"participate",
@@ -298,6 +301,7 @@ router.get('/'+listLink, function(req, res, next) {
 				viewLink: viewLink,
 				addLink: addLink,
 				deleteLink: deleteLink,
+				exportLink: exportLink,
 				error: error,
 				filter:"Events",
 				type:"allList",

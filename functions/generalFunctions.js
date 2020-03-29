@@ -138,9 +138,9 @@ function getAllEquipment(){
 
 function getAllRooms(){
 	return new Promise((resolve,reject) => {
-		Room.find({}, function (err, room) {
+		Room.find({}, function (err, rooms) {
 			if(!err){
-				resolve(room)
+				resolve(rooms)
 			} else {
 				resolve([]);
 				console.log(err);

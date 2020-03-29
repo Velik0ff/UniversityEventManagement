@@ -15,6 +15,7 @@ const Room = require('../models/Room');
 const Event = require('../models/Event');
 const Staff = require('../models/staff_user');
 const Visitor = require('../models/visitor_user');
+const Equipment = require('../models/EqInventory');
 const SubNotification = require('../models/SubNotification');
 /* End Models */
 
@@ -863,15 +864,18 @@ function getRoomInfo(event_rooms) {
 
 router.get('/export', function (req, res, next) {
 	if (req.user && req.user.permission === 0) {
+		let export_options = ['Events', 'Equipment', 'Staff', 'Rooms', 'Visitors', 'Еvent Types'];
+
 		if (req.query.type) {
 			var json_array = [];
 			var fileName = 'error';
+			var fields = [];
 			let today = new Date();
 			let date = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
 
 			new Promise(function (resolve, reject) {
 				switch (req.query.type) {
-					case "events":
+					case export_options[0]:
 						Event.find({}, async function (errFindEvents, eventDoc) {
 							if (!errFindEvents) {
 								await Promise.all(eventDoc.map(async function (event) {
@@ -907,33 +911,147 @@ router.get('/export', function (req, res, next) {
 								console.log(errFindEvents);
 							}
 
+							fields = ['ID', 'Name', 'Event Type', 'Event Spaces', 'Number of Visitors', 'Date', 'End Date', 'Location'];
 							fileName = 'events' + date;
 							resolve();
 						});
 						break;
-					case "equipment":
+					case export_options[1]:
+						genFunctions.getAllEquipment().then(function (eqDoc) {
+							fields = ['ID', 'Name', 'Quantity'];
 
-						break;
-					case "staff":
+							eqDoc.forEach(function (equip) {
+								let eq_object = {
+									ID: equip._id,
+									Name: equip.typeName,
+									Quantity: equip.quantity
+								};
 
+								equip.customFields.forEach(function (field) {
+									eq_object[field.fieldName] = fieldValue
+
+									if (!fields.includes(field.fieldName)) {
+										fields.push(field.fieldName);
+									}
+								});
+
+								json_array.push(eq_object);
+							});
+						});
+
+						fileName = 'equipment' + date;
+						resolve();
 						break;
-					case "rooms":
+					case export_options[2]:
+						genFunctions.getAllStaff().then(function (staffDoc) {
+							staffDoc.forEach(function (staff_member) {
+								json_array.push({
+									'Full Name': staff_member.fullName,
+									Email: staff_member.email,
+									Phone: staff_member.phone,
+									Role: staff_member.role
+								});
+							});
+						});
+
+						fields = ['Full Name', 'Email', 'Phone', 'Role'];
+						fileName = 'staff' + date;
+						resolve();
 						break;
-					case "visitors":
+					case export_options[3]:
+						genFunctions.getAllRooms().then(function (roomsDoc) {
+							fields = ['ID', 'Name', 'Quantity'];
+
+							roomsDoc.forEach(function (room) {
+								let room_object = {
+									ID: room._id,
+									Name: room.roomName,
+									Capacity: room.capacity
+								};
+
+								room.customFields.forEach(function (field) {
+									room_object[field.fieldName] = fieldValue
+
+									if (!fields.includes(field.fieldName)) {
+										fields.push(field.fieldName);
+									}
+								});
+
+								json_array.push(room_object);
+							});
+						});
+
+						fileName = 'rooms' + date;
+						resolve();
+						break;
+					case export_options[4]:
+						genFunctions.getAllVisitor().then(function (visitorDoc) {
+							fields = ['ID', 'Lead Teacher Name', 'Contact Email', 'Contact Phone', 'Group Size'];
+
+							visitorDoc.forEach(function (visitor) {
+								json_array.push({
+									ID: visitor._id,
+									'Lead Teacher Name': visitor.leadTeacherName,
+									'Contact Email': visitor.contactEmail,
+									'Contact Phone': visitor.contactPhone,
+									'Group Size': visitor.groupSize
+								});
+							});
+
+							fileName = 'visitors' + date;
+							resolve();
+						});
+						break;
+					case export_options[5]:
+						genFunctions.getAllEventTypes().then(function (eventTypesDoc) {
+
+							eventTypesDoc.forEach(function (type) {
+								let eventType_object = {
+									ID: type._id,
+									Name: type.eventTypeName
+								};
+
+								type.customFields.forEach(function (field) {
+									eventType_object[field.fieldName] = fieldValue
+
+									if (!fields.includes(field.fieldName)) {
+										fields.push(field.fieldName);
+									}
+								});
+
+								json_array.push(eventType_object);
+							});
+
+
+							fileName = 'eventTypes' + date;
+							resolve();
+						});
+						break;
+					default:
+						resolve();
 						break;
 				}
 			}).then(function () {
-				const fields = ['ID', 'Name', 'Event Type', 'Event Spaces', 'Number of Visitors', 'Date', 'End Date', 'Location'];
-				let csv = json2csv(json_array, fields);
+				if (json_array.length > 0) {
+					let csv = json2csv(json_array, fields);
 
-				res.setHeader('Content-disposition', 'attachment; filename=' + fileName + '.csv');
-				res.set('Content-Type', 'text/csv');
-				res.status(200).send(csv);
+					res.setHeader('Content-disposition', 'attachment; filename=' + fileName + '.csv');
+					res.set('Content-Type', 'text/csv');
+					res.status(200).send(csv);
+				} else {
+					res.status(500).json({message: "Unable to process request, please try again."});
+				}
+			});
+		} else {
+			res.render('export', {
+				title: "Export",
+				exportOptions: export_options,
+				text: "Your download will start in a few seconds. Please be patient.",
+				user: req.user
 			});
 		}
 	} else {
-
-		//TODO: Error not authenticated
+		res.status(500).json({message: "Unable to process request, please try again."});
 	}
 });
 

@@ -10,6 +10,7 @@ const viewLink = "view-event-type";
 const addLink = "add-event-type";
 const deleteLink = "delete-event-type";
 const listLink = "list-event-type";
+const exportLink = "../export?type=Event Types";
 
 function validationErr(error){
 	var error_msg = "";
@@ -53,6 +54,7 @@ router.get('/'+listLink, function(req, res, next) {
 				viewLink: viewLink,
 				addLink: addLink,
 				deleteLink: deleteLink,
+				exportLink: exportLink,
 				error: error,
 				user:req.user
 			});

@@ -15,6 +15,7 @@ const addLink = "add-user";
 const deleteLink = "delete-user";
 const listLink = "list-users";
 const resetPassLink = "reset-password";
+const exportLink = "../export?type=Staff";
 /* End Links */
 
 /* Functions */
@@ -117,6 +118,7 @@ router.get('/' + listLink, function (req, res, next) {
 				viewLink: viewLink,
 				addLink: addLink,
 				deleteLink: deleteLink,
+				exportLink: exportLink,
 				error: error,
 				user: req.user
 			});

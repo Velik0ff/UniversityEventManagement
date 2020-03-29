@@ -1,0 +1,50 @@
+extends layout
+
+block content
+	.container
+
+		h3.title=title
+		hr
+
+		div#msg.alert(role="alert" style='display:none;')
+
+		div.row(style="flex-wrap:nowrap;")
+			div.col-sm(style="padding-right:0")
+				select.form-control#exportSelect(onchange='$("#exportBtn").attr("href","/export?type="+this.value)')
+					each option in exportOptions
+						option(value=option)=option
+			div.col-sm(style="flex-grow:0;padding-left:0;width:unset")
+				a.btn.btn-primary#exportBtn(href='/export?type=')='Export'
+
+
+	script.
+		$(document).ready(function(){
+			$('#exportBtn').attr('href','/export?type='+$('#exportSelect').val());
+		});
+
+		$('#exportBtn').click(function(){
+			let link = $('#exportBtn').attr('href');
+			let message_btn = $('#msg');
+			message_btn.removeClass('alert-success');
+			message_btn.removeClass('alert-danger');
+			message_btn.attr('style','display:none');
+
+			$.get(link,function(data,status){
+				if(status === 'success'){
+					message_btn.text('Your download should start any moment now.. Please be patient or try again.');
+					message_btn.addClass('alert-success');
+					message_btn.attr('style','display:block');
+					window.open(link);
+				} else {
+					message_btn.text('Download failed. Please refresh the window and try again.');
+					message_btn.addClass('alert-danger');
+					message_btn.attr('style','display:block');
+				}
+			}).catch(function(){
+				message_btn.text('Download failed or nothing available to export. Please refresh the window and try again.');
+				message_btn.addClass('alert-danger');
+				message_btn.attr('style','display:block');
+			});
+
+			return false;
+		});
