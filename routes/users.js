@@ -186,7 +186,7 @@ router.get('/' + addLink, function (req, res, next) {
 });
 
 router.get('/' + editLink, function (req, res, next) {
-	if (req.user && req.user.permission === 0) {
+	if ((req.user && req.user.permission === 0) || (req.user && req.user.permission === 0 && req.user._id === req.query.id)) {
 		User.findOne({_id: req.query.id}, function (err, user) {
 			if (!err && user) {
 				res.render('edit', {
@@ -239,7 +239,7 @@ router.get('/' + deleteLink, function (req, res, next) {
 });
 
 router.post('/' + editLink, function (req, res, next) {
-	if (req.user && req.user.permission === 0) {
+	if ((req.user && req.user.permission === 0) || (req.user && req.user.permission === 0 && req.user._id === req.query.id)) {
 		let updates = {$set: {fullName: req.body.Name, email: req.body.Email, role: req.body.Role, phone: req.body.Phone}}
 
 		User.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
@@ -351,7 +351,7 @@ router.get('/' + resetPassLink, function (req, res, next) {
 				if (!errFind) {
 					let password = short().new();
 
-					User.updateOne({_id: req.query.id}, {$set:{password:user.hashPassword(password)}}, function (err, userDoc) {
+					User.updateOne({_id: req.query.id}, {$set:{permission:-1,password:user.hashPassword(password)}}, function (err, userDoc) {
 						if (err) {
 							console.log(err);
 							res.render('view', {

@@ -34,7 +34,7 @@ block content
                             label(for=index)=index
                             select.form-control(name=index)
                                 each option in eventTypes
-                                    if info._id.toString() === option._id.toString()
+                                    if info.toString() === option._id.toString()
                                         option(value=option._id selected)=option.eventTypeName
                                     else
                                         option(value=option._id)=option.eventTypeName
