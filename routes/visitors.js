@@ -192,7 +192,7 @@ router.get('/'+editLink, function(req, res, next) {
 						expiryDate: user.expiryDate
 					},
 					editLink: '/visitor/' + editLink,
-					cancelLink: viewLink + '?id=' + user._id,
+					cancelLink: req.user.permission === 0 ? viewLink + '?id=' + user._id : '../events/participate-events-list',
 					user:req.user
 				});
 			} else {
@@ -251,7 +251,7 @@ router.post('/'+editLink, function(req, res, next) {
 						expiryDate: req.body['Expiry Date']
 					},
 					editLink: '/visitor/' + editLink,
-					cancelLink: viewLink + '?id=' + req.body.ID,
+					cancelLink: req.user.permission === 0 ? viewLink + '?id=' + req.body.ID : '../events/participate-events-list',
 					user:req.user
 				});
 			} else if (!update) {
@@ -278,7 +278,7 @@ router.post('/'+editLink, function(req, res, next) {
 						expiryDate: req.body['Expiry Date']
 					},
 					editLink: '/visitor/' + editLink,
-					cancelLink: viewLink + '?id=' + req.body.ID,
+					cancelLink: req.user.permission === 0 ? viewLink + '?id=' + req.body.ID : '../events/participate-events-list',
 					user:req.user
 				});
 			}

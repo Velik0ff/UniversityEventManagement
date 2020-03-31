@@ -40,7 +40,7 @@ function getRoomInfo(event_rooms){
 		var event_room_ids_arr = [];
 
 		event_rooms.forEach((event_room)=>{
-			event_room_ids_arr.push(event_room.equipID);
+			event_room_ids_arr.push(event_room.roomID);
 		});
 
 		Room.find({_id:{$in:event_room_ids_arr}}, function (err, rooms) {

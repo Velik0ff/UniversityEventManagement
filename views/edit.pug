@@ -6,6 +6,7 @@ block content
         - var visitor_count = 0
         - var equipment_count = 0
         - var staff_count = 0
+        - var room_count = 0
 
         if customFields
             include includes/customFieldScript
@@ -15,7 +16,7 @@ block content
             include includes/visitorFieldScript
         if equipmentFields
             include includes/equipmentFieldScript
-        if roomFields
+        if roomsFields
             include includes/roomsFieldScript
 
         if !errorCritical
@@ -177,6 +178,6 @@ block content
         if equipmentFields
             script.
                 var equipment_count = !{equipment_count};
-        if roomFields
+        if roomsFields
             script.
                 var room_count = !{room_count};

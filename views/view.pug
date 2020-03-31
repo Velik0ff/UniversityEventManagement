@@ -20,6 +20,18 @@ block content
                                                 br
                                                 each field in equip.customFields
                                                     span=field.fieldName + ": " + field.fieldValue
+                            else if index === 'Rooms'
+                                tr
+                                    td(style="font-weight:bold")=index
+                                    td
+                                        each room in info
+                                            p
+                                                span="Name: " + room.roomName
+                                                br
+                                                span="Capacity: " + room.capacity
+                                                br
+                                                each field in room.customFields
+                                                    span=field.fieldName + ": " + field.fieldValue
                             else if index === 'Event Type'
                                 tr
                                     td(style="font-weight:bold")=index

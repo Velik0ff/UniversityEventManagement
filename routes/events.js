@@ -346,6 +346,7 @@ router.get('/'+viewLink, function(req, res, next) {
 						// 		}
 						// 	});
 						// });
+						console.log(event.rooms)
 
 						rooms.forEach(function(room){
 							numberOfSpaces = numberOfSpaces + room.capacity;

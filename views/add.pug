@@ -16,7 +16,7 @@ block content
             include includes/visitorFieldScript
         if equipmentFields
             include includes/equipmentFieldScript
-        if roomFields
+        if roomsFields
             include includes/roomsFieldScript
 
         h3.title=title
@@ -165,6 +165,6 @@ block content
         if equipmentFields
             script.
                 var equipment_count = !{equipment_count};
-        if roomFields
+        if roomsFields
             script.
                 var room_count = !{room_count};
