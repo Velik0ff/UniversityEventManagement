@@ -275,6 +275,7 @@ router.post('/'+addLink, function(req, res, next) {
 				cancelLink: listLink,
 				addLink: '/event-types/' + addLink,
 				customFields: true,
+				customFieldsValues: custom_fields,
 				error: error_msg,
 				message: message,
 				user:req.user

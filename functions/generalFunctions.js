@@ -21,12 +21,17 @@ function getEquipmentInfo(event_equipment){
 
 		Equipment.find({_id:{$in:event_equip_ids_arr}}, function (err, equipment) {
 			if(!err){
+				let equipment_used = [];
 				event_equipment.forEach(function(equip_chosen){
 					equipment.forEach(function(equip){
-						equip.reqQty = equip_chosen.reqQty;
+						if(equip_chosen.equipID == equip._id){
+							equipment_used.push(equip);
+							equip.reqQty = equip_chosen.reqQty;
+						}
 					});
 				});
-				resolve(equipment)
+				console.log(equipment_used)
+				resolve(equipment_used)
 			} else {
 				resolve([]);
 				console.log(err);

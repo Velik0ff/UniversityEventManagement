@@ -508,6 +508,9 @@ router.post('/' + editLink, function (req, res, next) {
 				var staff = await genFunctions.getAllStaff();
 				var eventTypes = await genFunctions.getAllEventTypes();
 
+				let promisesEquip = [];
+				let equipmentNotUpdated = [];
+
 				var posted_staff_use = getPostedStaff(req);
 				var posted_visitors = getPostedVisitors(req);
 				var posted_equipment = getPostedEquipment(req);
@@ -625,6 +628,9 @@ router.post('/' + editLink, function (req, res, next) {
 								if (errorUpdateEquip) console.log(errorUpdateEquip);
 							});
 						} else if (equip_qty !== 0) {
+							Equipment.findOne({_id: prev_equip.equipID},function(){
+
+							});
 							Equipment.updateOne({_id: prev_equip.equipID}, {$inc: {quantity: equip_qty}}, function (errorUpdateEquip, equipDoc) {
 								if (errorUpdateEquip) console.log(errorUpdateEquip);
 							});
@@ -860,6 +866,8 @@ router.post('/' + addLink, async function (req, res, next) {
 		var visitor_attending = getPostedVisitors(req);
 		var numberOfSpaces = 0;
 		var numberOfVisitors = 0;
+		let promisesEquip = [];
+		let equipmentNotUpdated = [];
 
 		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
 			if (req.body.hasOwnProperty(field_post_key)) {
@@ -871,15 +879,31 @@ router.post('/' + addLink, async function (req, res, next) {
 				} else if (field_post_key.includes('quantity')) {
 					equipment_use[equipment_use.length - 1]['reqQty'] = parseInt(field_post_value);
 
-					Equipment.updateOne({_id: equipment_use[equipment_use.length - 1]['equipID']}, {$inc: {quantity: -equipment_use[equipment_use.length - 1]['reqQty']}}, function (err, eqDoc) {
-						if (err) {
-							console.log("Failed to update quantity for id:" + equipment_use[equipment_use.length - 1]['equipID']);
-							console.log(err);
-						}
-					});
+					promisesEquip.push(new Promise(function (resolve, reject) {
+						Equipment.findOne({_id: equipment_use[equipment_use.length - 1]['equipID']}, function (errFindEquip, equipmenFoundDoc) {
+							if (!errFindEquip) {
+								if (equipmenFoundDoc.quantity >= equipment_use[equipment_use.length - 1]['reqQty']) {
+									Equipment.updateOne({_id: equipment_use[equipment_use.length - 1]['equipID']}, {$inc: {quantity: -equipment_use[equipment_use.length - 1]['reqQty']}}, function (err, eqDoc) {
+										if (err) {
+											console.log("Failed to update quantity for id:" + equipment_use[equipment_use.length - 1]['equipID']);
+											console.log(err);
+										}
+										resolve();
+									});
+								} else {
+									equipmentNotUpdated.push(equipment_use[equipment_use.length - 1]['equipID']);
+									resolve();
+								}
+							} else {
+								console.log(errFindEquip);
+								resolve();
+							}
+						});
+					}));
 				}
 			}
 		}
+
 
 		rooms_use.forEach(function (room) {
 			numberOfSpaces = numberOfSpaces + room.capacity;
@@ -891,101 +915,105 @@ router.post('/' + addLink, async function (req, res, next) {
 
 		if (numberOfSpaces < numberOfVisitors) error_msg = 'Not enough spaces are assigned for the event';
 
-		let new_event = new Event({
-			eventName: req.body['Event Name'],
-			equipment: equipment_use,
-			rooms: rooms_use,
-			eventTypeID: req.body['Event Type'],
-			staffChosen: staff_use,
-			date: req.body.Date,
-			endDate: req.body['End Date'],
-			location: req.body.Location,
-			visitors: visitor_attending
-		});
+		Promise.all(promisesEquip).then(function () {
+			let new_event = new Event({
+				eventName: req.body['Event Name'],
+				equipment: equipment_use,
+				rooms: rooms_use,
+				eventTypeID: req.body['Event Type'],
+				staffChosen: staff_use,
+				date: req.body.Date,
+				endDate: req.body['End Date'],
+				location: req.body.Location,
+				visitors: visitor_attending
+			});
 
-		new_event.save(function (error, eventDoc) {
-			if (!error) {
-				staff_use.forEach(function (staff_member) {
-					Staff.findOne({_id: staff_use.staffMemberID}, function (err, staffDoc) {
-						if (!err && staffDoc) {
-							Staff.updateOne({_id: staff_use.staffMemberID}, {
-								$push: {
-									attendingEvents: {
-										eventID: eventDoc._id,
-										role: staff_use.role
+			new_event.save(function (error, eventDoc) {
+				if (!error) {
+					staff_use.forEach(function (staff_member) {
+						Staff.findOne({_id: staff_use.staffMemberID}, function (err, staffDoc) {
+							if (!err && staffDoc) {
+								Staff.updateOne({_id: staff_use.staffMemberID}, {
+									$push: {
+										attendingEvents: {
+											eventID: eventDoc._id,
+											role: staff_use.role
+										}
 									}
-								}
-							}, function (errUpdate, staffDoc) {
-								if (errUpdate) {
-									console.log(errUpdate);
-								} else {
-									genFunctions.sendNotification(staffDoc._id, "Participating Event", "You are a participant to a new event.");
-									sendEmail(staffDoc.email, "added");
+								}, function (errUpdate, staffDoc) {
+									if (errUpdate) {
+										console.log(errUpdate);
+									} else {
+										genFunctions.sendNotification(staffDoc._id, "Participating Event", "You are a participant to a new event.");
+										sendEmail(staffDoc.email, "added");
+									}
+								});
+							} else { // staff not found or error with database
+								console.log(err);
+							}
+						});
+					});
+
+					visitor_attending.forEach(function (staff_member) {
+						Visitor.findOne({_id: visitor_attending.visitorID}, function (err, visitorDoc) {
+							if (!err && visitorDoc) {
+								Visitor.updateOne({_id: visitor_attending.visitorID}, {$push: {attendingEvents: {eventID: eventDoc._id}}}, function (errUpdate, visitorDoc) {
+									if (errUpdate) {
+										console.log(errUpdate);
+									} else {
+										genFunctions.sendNotification(visitorDoc._id, "Participating Event", "You are a participant to a new event.");
+										sendEmail(visitorDoc.contactEmail, "added");
+									}
+								});
+							} else { // visitor not found or error with database
+								console.log(err);
+							}
+						});
+					});
+
+					message = "Successfully create new event: " + req.body['Event Name'];
+					console.log(message);
+					// sendInvitationEmail(req.body.Email, password_to_insert, req.body.Role);
+				} else {
+					/* Recover quantity */
+					for (var i = 0; i < equipment_use.length; i++) {
+						if (!equipmentNotUpdated.includes(equipment_use[i]['equipID'])) {
+							Equipment.updateOne({_id: equipment_use[i]['equipID']}, {$inc: {quantity: +equipment_use[i]['reqQty']}}, function (err, eqDoc) {
+								if (err) {
+									console.log(err);
 								}
 							});
-						} else { // staff not found or error with database
-							console.log(err);
 						}
-					});
-				});
+					}
+					/* End Recover quantity */
 
-				visitor_attending.forEach(function (staff_member) {
-					Visitor.findOne({_id: visitor_attending.visitorID}, function (err, visitorDoc) {
-						if (!err && visitorDoc) {
-							Visitor.updateOne({_id: visitor_attending.visitorID}, {$push: {attendingEvents: {eventID: eventDoc._id}}}, function (errUpdate, visitorDoc) {
-								if (errUpdate) {
-									console.log(errUpdate);
-								} else {
-									genFunctions.sendNotification(visitorDoc._id, "Participating Event", "You are a participant to a new event.");
-									sendEmail(visitorDoc.contactEmail, "added");
-								}
-							});
-						} else { // visitor not found or error with database
-							console.log(err);
-						}
-					});
-				});
-
-				message = "Successfully create new event: " + req.body['Event Name'];
-				console.log(message);
-				// sendInvitationEmail(req.body.Email, password_to_insert, req.body.Role);
-			} else {
-				/* Recover quantity */
-				for (var i = 0; i < equipment_use.length; i++) {
-					Equipment.updateOne({_id: equipment_use[i]['equipID']}, {$inc: {quantity: +equipment_use[i]['reqQty']}}, function (err, eqDoc) {
-						if (err) {
-							console.log(err);
-						}
-					});
+					error_msg = validationErr(error);
 				}
-				/* End Recover quantity */
 
-				error_msg = validationErr(error);
-			}
-
-			Promise.all([equipment, rooms, eventTypes, visitors, staff]).then((result) => {
-				res.render('add', {
-					title: 'Add New Event',
-					error: error_msg,
-					message: message,
-					fields: fields,
-					cancelLink: listLink,
-					customFields: false,
-					roomsFields: true,
-					equipmentFields: true,
-					staffFields: true,
-					visitorFields: true,
-					visitors: visitors,
-					equipment: equipment,
-					rooms: rooms,
-					eventTypes: eventTypes,
-					staff: staff,
-					selectedEventType: req.body['Event Type'],
-					selectedStaff: staff_use,
-					selectedEquip: equipment_use,
-					selectedRooms: rooms_use,
-					selectedVisitors: visitor_attending,
-					user: req.user
+				Promise.all([equipment, rooms, eventTypes, visitors, staff]).then((result) => {
+					res.render('add', {
+						title: 'Add New Event',
+						error: error_msg,
+						message: message,
+						fields: fields,
+						cancelLink: listLink,
+						customFields: false,
+						roomsFields: true,
+						equipmentFields: true,
+						staffFields: true,
+						visitorFields: true,
+						visitors: visitors,
+						equipment: equipment,
+						rooms: rooms,
+						eventTypes: eventTypes,
+						staff: staff,
+						selectedEventType: req.body['Event Type'],
+						selectedStaff: staff_use,
+						selectedEquip: equipment_use,
+						selectedRooms: rooms_use,
+						selectedVisitors: visitor_attending,
+						user: req.user
+					});
 				});
 			});
 		});

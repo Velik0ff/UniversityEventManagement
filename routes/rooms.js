@@ -286,6 +286,7 @@ router.post('/'+addLink, function(req, res, next) {
 				cancelLink: listLink,
 				addLink: '/rooms/' + addLink,
 				customFields: true,
+				customFieldsValues: custom_fields,
 				error: error_msg,
 				message: message,
 				user:req.user

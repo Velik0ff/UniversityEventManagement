@@ -48,7 +48,7 @@ block content
                 div#rooms
                     p
                         b="Rooms:"
-                        a.btn.btn-primary(href="#" onclick="addRoomField()") Add Room
+                        a.btn.btn-primary(href="javascript.void(0)" onclick="addRoomField()") Add Room
 
                     if selectedRooms && selectedRooms.length > 0
                         each room in selectedRooms
@@ -70,7 +70,7 @@ block content
                 div#equipment
                     p
                         b="Equipment:"
-                        a.btn.btn-primary(href="#" onclick="addEquipmentField()") Add Equipment
+                        a.btn.btn-primary(href="javascript.void(0)" onclick="addEquipmentField()") Add Equipment
 
                     if selectedEquip && selectedEquip.length > 0
                         each equip in selectedEquip
@@ -79,16 +79,19 @@ block content
                                     label(for="equipmentName" + equipment_count)='Equipment ' + equipment_count + ' Name'
                                     select.form-control(id="selectEquipment" + equipment_count name='equipmentID' + equipment_count onChange='selectedEquipment(this)')
                                         each option in equipment
-                                            if equip.equipID === option._id
+                                            if equip.equipID === option._id && option.quantity > 0
                                                 option(value=equip.equipID selected)=option.typeName
                                             else
-                                                option(value=option._id)=option.typeName
+                                                if option.quantity <= 0
+                                                    option(value=option._id disabled)=option.typeName
+                                                else
+                                                    option(value=option._id)=option.typeName
                                 div.col(id="equipmentQuantityCol" + equipment_count)
                                     label(for="quantity" + equipment_count)="Quantity " + equipment_count
                                     input.form-control(type="number" name="quantity" + equipment_count min="1" max=equip.quantity value=equip.reqQty)
 
                                 div.col(id="removeEquipmentCol" + equipment_count style="flex-grow:0;position:relative;")
-                                    a.options-btn(href="#" id="removeEquipmentIcon" + equipment_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
+                                    a.options-btn(href="#" id="removeEquipmentIcon" + equipment_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove();checkAddedEquip();")
                                         i.material-icons.md-18="delete"
                             - equipment_count++
 
@@ -96,7 +99,7 @@ block content
                 div#staff
                     p
                         b="Staff:"
-                        a.btn.btn-primary(href="#" onclick="addStaffField()") Add Staff
+                        a.btn.btn-primary(href="javascript.void(0)" onclick="addStaffField()") Add Staff
 
                     if selectedStaff && selectedStaff.length > 0
                         each staff in selectedStaff
@@ -124,7 +127,7 @@ block content
                 div#visitors
                     p
                         b="Visitors:"
-                        a.btn.btn-primary(href="#" onclick="addVisitorField()") Add Visitor
+                        a.btn.btn-primary(href="javascript.void(0)" onclick="addVisitorField()") Add Visitor
 
                     if selectedVisitors && selectedVisitors.length > 0
                         each visitor in selectedVisitors
@@ -142,10 +145,28 @@ block content
                                     a.options-btn(href="#" id="removeVisitorIcon" + visitor_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
                                         i.material-icons.md-18="delete"
                             - visitor_count++
+            if customFields
+                p
+                    b='Custom Fields:'
+                    a.btn.btn-primary(href="javascript.void(0)" onclick="addCustomField()") Add Custom Field
+                if customFieldsValues
+                    div#fields
+                        each fieldValue in customFieldsValues
+                            div.row.form-group
+                                div.col
+                                    label(for=fieldValue['fieldName'])='Custom Field ' + field_count + ' Name'
+                                    input.form-control(id=fieldValue['fieldName'] type="text" value=fieldValue['fieldName'] name='fieldName' + field_count)
+                                div.col
+                                    label(for=fieldValue['fieldValue'])='Custom Field ' + field_count + ' Value'
+                                    input.form-control(id=fieldValue['fieldValue'] type="text" value=fieldValue['fieldValue'] name='fieldValue' + field_count)
+                                div.col(style='flex-grow:0;position:relative;')
+                                    a.options-btn(href="#" style="position:absolute;bottom:0;left:0;" onclick='$(this).parent().parent().remove()')
+                                        i.material-icons.md-18 delete
+                        - field_count++
             center
                 if customFields
                     p
-                        a.btn.btn-primary(href="#" onclick="addCustomField()") Add Custom Field
+                        a.btn.btn-primary(href="javascript.void(0)" onclick="addCustomField()") Add Custom Field
 
 
 

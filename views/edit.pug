@@ -7,6 +7,7 @@ block content
         - var equipment_count = 0
         - var staff_count = 0
         - var room_count = 0
+        - var selected_equipment = [];
 
         if customFields
             include includes/customFieldScript
@@ -43,7 +44,7 @@ block content
                         div#rooms
                             p
                                 b="Rooms:"
-                                a.btn.btn-primary(href="#" onclick="addRoomField()") Add Room
+                                a.btn.btn-primary(href="javascript.void(0)" onclick="addRoomField()") Add Room
 
                             each room in info
                                 div.row.form-group(id="rowRoom" + room_count)
@@ -64,7 +65,7 @@ block content
                         div#equipment
                             p
                                 b="Equipment:"
-                                a.btn.btn-primary(href="#" onclick="addEquipmentField()") Add Equipment
+                                a.btn.btn-primary(href="javascript.void(0)" onclick="addEquipmentField()") Add Equipment
 
                             each equip in info
                                 div.row.form-group(id="rowEquipment" + equipment_count)
@@ -72,23 +73,32 @@ block content
                                         label(for="equipmentName" + equipment_count)='Equipment ' + equipment_count + ' Name'
                                         select.form-control(id="selectEquipment" + equipment_count name='equipmentID' + equipment_count onChange='selectedEquipment(this)')
                                             each option in equipment
-                                                if equip._id.toString() === option._id.toString()
+                                                if equip._id.toString() === option._id.toString() && !selected_equipment.includes(option._id.toString()) && option.quantity+equip.reqQty > 0
                                                     option(value=option._id selected)=option.typeName
                                                 else
-                                                    option(value=option._id)=option.typeName
+                                                    if selected_equipment.includes(option._id.toString()) || option.quantity <= 0
+                                                        option(value=option._id disabled)=option.typeName
+                                                    else
+                                                        option(value=option._id)=option.typeName
                                     div.col(id="equipmentQuantityCol" + equipment_count)
                                         label(for="quantity" + equipment_count)="Quantity " + equipment_count
-                                        input.form-control(type="number" name="quantity" + equipment_count min="1" max=equip.quantity+equip.reqQty value=equip.reqQty)
+                                        if equip.quantity+equip.reqQty >= equip.reqQty
+                                            input.form-control(type="number" name="quantity" + equipment_count min="1" max=equip.quantity+equip.reqQty value=equip.reqQty)
+                                        else if equip.quantity > 0
+                                            input.form-control(type="number" name="quantity" + equipment_count min="1" max=equip.quantity value=equip.quantity)
+                                        else
+                                            input.form-control(type="number" name="quantity" + equipment_count min="1" max=equip.quantity+equip.reqQty value=equip.quantity+equip.reqQty)
 
                                     div.col(id="removeEquipmentCol" + equipment_count style="flex-grow:0;position:relative;")
-                                        a.options-btn(href="#" id="removeEquipmentIcon" + equipment_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
+                                        a.options-btn(href="#" id="removeEquipmentIcon" + equipment_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove();checkAddedEquip();")
                                             i.material-icons.md-18="delete"
+                                - selected_equipment.push(equip._id)
                                 - equipment_count++
                     else if index === 'Staff'
                         div#staff
                             p
                                 b="Staff:"
-                                a.btn.btn-primary(href="#" onclick="addStaffField()") Add Staff
+                                a.btn.btn-primary(href="javascript.void(0)" onclick="addStaffField()") Add Staff
 
                             each staff_member in info
                                 div.row.form-group(id="rowStaff" + staff_count)
@@ -115,7 +125,7 @@ block content
                         div#visitors
                             p
                                 b="Visitors:"
-                                a.btn.btn-primary(href="#" onclick="addVisitorField()") Add Visitor
+                                a.btn.btn-primary(href="javascript.void(0)" onclick="addVisitorField()") Add Visitor
 
                             each visitor in info
                                 div.row.form-group(id="visitorCol" + visitor_count)
@@ -145,7 +155,7 @@ block content
                     else if index === 'customFieldsValues'
                         p
                             b='Custom Fields:'
-                            a.btn.btn-primary(href="#" onclick="addCustomField()") Add Custom Field
+                            a.btn.btn-primary(href="javascript.void(0)" onclick="addCustomField()") Add Custom Field
                         div#fields
                             each fieldValue in info
                                 div.row.form-group
@@ -177,6 +187,9 @@ block content
                 var visitor_count = !{visitor_count};
         if equipmentFields
             script.
+                $(document).ready(function(){
+                    disabled_equipment = disabled_equipment.concat(!{JSON.stringify(selected_equipment)});
+                });
                 var equipment_count = !{equipment_count};
         if roomsFields
             script.
