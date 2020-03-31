@@ -25,16 +25,16 @@ const listLink = "list-events";
 const exportLink = "../export?type=Events";
 
 webpush.setVapidDetails(
-      "mailto:sglvelik@liv.ac.uk",
-      process.env.PUBLIC_VAPID_KEY,
-      process.env.PRIVATE_VAPID_KEY
-    );
+	"mailto:sglvelik@liv.ac.uk",
+	process.env.PUBLIC_VAPID_KEY,
+	process.env.PRIVATE_VAPID_KEY
+);
 
 /* Functions */
-function validationErr(error){
+function validationErr(error) {
 	var error_msg = "";
 
-	if(error.name === "ValidationError"){ // check if the error is from the validator
+	if (error.name === "ValidationError") { // check if the error is from the validator
 		if (typeof error.errors.eventName !== "undefined" &&
 			error.errors.eventName !== null) {
 			error_msg = error.errors.eventName.message
@@ -73,19 +73,19 @@ function validationErr(error){
 	return error_msg;
 }
 
-function getPostedStaff(req){
+function getPostedStaff(req) {
 	var staff_use = [];
 
-	for(const [ field_post_key, field_post_value ] of Object.entries(req.body)) {
-		if(req.body.hasOwnProperty(field_post_key)) {
-			if(field_post_key.includes('staffID')) {
+	for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
+		if (req.body.hasOwnProperty(field_post_key)) {
+			if (field_post_key.includes('staffID')) {
 				staff_use.push({
 					_id: field_post_value,
 					staffMemberID: field_post_value,
 					role: ""
 				});
-			} else if(field_post_key.includes('staffRole')){
-				staff_use[staff_use.length-1]['role'] = field_post_value;
+			} else if (field_post_key.includes('staffRole')) {
+				staff_use[staff_use.length - 1]['role'] = field_post_value;
 			}
 
 			// delete req.body[field_post_key];
@@ -95,12 +95,12 @@ function getPostedStaff(req){
 	return staff_use;
 }
 
-function getPostedVisitors(req){
+function getPostedVisitors(req) {
 	var visitor_attending = [];
 
-	for(let [ field_post_key, field_post_value ] of Object.entries(req.body)) {
-		if(req.body.hasOwnProperty(field_post_key)) {
-			if(field_post_key.includes('visitor')) {
+	for (let [field_post_key, field_post_value] of Object.entries(req.body)) {
+		if (req.body.hasOwnProperty(field_post_key)) {
+			if (field_post_key.includes('visitor')) {
 				visitor_attending.push({
 					_id: field_post_value,
 					visitorID: field_post_value
@@ -114,12 +114,12 @@ function getPostedVisitors(req){
 	return visitor_attending;
 }
 
-function getPostedRooms(req){
+function getPostedRooms(req) {
 	var rooms_used = [];
 
-	for(const [ field_post_key, field_post_value ] of Object.entries(req.body)) {
-		if(req.body.hasOwnProperty(field_post_key)) {
-			if(field_post_key.includes('roomID')) {
+	for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
+		if (req.body.hasOwnProperty(field_post_key)) {
+			if (field_post_key.includes('roomID')) {
 				rooms_used.push({
 					_id: field_post_value,
 					roomID: field_post_value
@@ -133,7 +133,7 @@ function getPostedRooms(req){
 	return rooms_used;
 }
 
-async function sendEmail(email,type){
+async function sendEmail(email, type) {
 	// Generate test SMTP service account from ethereal.email
 	// Only needed if you don't have a real mail account for testing
 	let testAccount = await nodemailer.createTestAccount();
@@ -141,7 +141,7 @@ async function sendEmail(email,type){
 	// create reusable transporter object using the default SMTP transport
 	let transporter = nodemailer.createTransport({
 		// host: "smtp.mailgun.org",
-		host:"smtp.ethereal.email",
+		host: "smtp.ethereal.email",
 		port: 587,
 		secure: false, // true for 465, false for other ports
 		auth: {
@@ -154,7 +154,7 @@ async function sendEmail(email,type){
 
 	var info = null; // store the callback email data
 	// send mail with defined transport object
-	switch(type){
+	switch (type) {
 		case "added":
 			info = await transporter.sendMail({
 				from: '"University of Liverpool Event System" <no-reply@uol-events.co.uk>', // sender address
@@ -201,72 +201,77 @@ async function sendEmail(email,type){
 	console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
 	// Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
 }
+
 /* End Functions */
 
-router.get('/participate-events-list', function(req, res, next){
+router.get('/participate-events-list', function (req, res, next) {
 	let columns = ["ID", "Event Name"];
 	var error = "";
 	let allEventTypes = genFunctions.getAllEventTypes();
 
-	if(req.user && req.user.permission === 0){
-		Staff.findOne({_id: req.user._id}, function(err, staffDoc){
-			if(err) console.log(err)
+	if (req.user && req.user.permission === 0) {
+		Staff.findOne({_id: req.user._id}, function (err, staffDoc) {
+			if (err) console.log(err)
 
-			Event.find({_id:{$in:staffDoc.attendingEvents}}, function (err, events) {
+			Event.find({_id: {$in: staffDoc.attendingEvents}}, function (err, events) {
 				var eventList = [];
 
 				events.forEach(function (event) {
 					eventList.push({
-						id:event._id,
-						name:event.eventName,
+						id: event._id,
+						name: event.eventName,
 					});
 				});
 
-				error = eventList.length === 0 ? "No results to show" : ""
+				error = eventList.length === 0 ? "No results to show" : "";
 
-				res.render('list', {
-					title: 'Events List',
-					list:eventList,
-					columns:columns,
-					editLink: editLink,
-					viewLink: viewLink,
-					deleteLink: deleteLink,
-					exportLink: exportLink,
-					error:error,
-					filter:"Events",
-					type:"participate",
-					eventTypes:allEventTypes,
-					user:req.user
+				allEventTypes.then(function (eventTypes) {
+					res.render('list', {
+						title: 'Events List',
+						list: eventList,
+						columns: columns,
+						editLink: editLink,
+						viewLink: viewLink,
+						deleteLink: deleteLink,
+						exportLink: exportLink,
+						error: error,
+						filter: "Events",
+						type: "participate",
+						eventTypes: eventTypes,
+						user: req.user
+					});
 				});
 			});
 		});
-	} else if(req.user && req.user.permission === 1){
-		Visitor.findOne({_id: req.user._id}, function(err, visitorDoc){
-			if(err) console.log(err)
+	} else if (req.user && req.user.permission === 1) {
+		Visitor.findOne({_id: req.user._id}, function (err, visitorDoc) {
+			if (err) console.log(err)
 
-			Event.find({_id:{$in:visitorDoc.attendingEvents}}, function (err, events) {
+			Event.find({_id: {$in: visitorDoc.attendingEvents}}, function (err, events) {
 				var eventList = [];
 
 				events.forEach(function (event) {
 					eventList.push({
-						id:event._id,
-						name:event.eventName,
+						id: event._id,
+						name: event.eventName,
 					});
 				});
 
 				error = eventList.length === 0 ? "You are not participating to any events. Please come back later or contact an administrator!" : ""
 
-				res.render('list', {
-					title: 'Events List',
-					list:eventList,
-					columns:columns,
-					viewLink: viewLink,
-					exportLink: exportLink,
-					error:error,
-					filter:"Events",
-					type:"participate",
-					eventTypes:allEventTypes,
-					user:req.user
+				allEventTypes.then(function (eventTypes) {
+					res.render('list', {
+						title: 'Events List',
+						list: eventList,
+						columns: columns,
+						viewLink: viewLink,
+						exportLink: exportLink,
+						error: error,
+						filter: "Events",
+						type: "participate",
+						eventTypes: eventTypes,
+						user: req.user
+					});
 				});
 			});
 		});
@@ -275,8 +280,8 @@ router.get('/participate-events-list', function(req, res, next){
 	}
 });
 
-router.get('/'+listLink, function(req, res, next) {
-	if(req.user && req.user.permission === 0) {
+router.get('/' + listLink, function (req, res, next) {
+	if (req.user && req.user.permission === 0) {
 		let columns = ["ID", "Event Name", "Options"];
 		var error = "";
 		let allEventTypes = genFunctions.getAllEventTypes();
@@ -293,20 +298,22 @@ router.get('/'+listLink, function(req, res, next) {
 
 			error = eventList.length === 0 ? "No results to show" : ""
 
-			res.render('list', {
-				title: 'Events List',
-				list: eventList,
-				columns: columns,
-				editLink: editLink,
-				viewLink: viewLink,
-				addLink: addLink,
-				deleteLink: deleteLink,
-				exportLink: exportLink,
-				error: error,
-				filter:"Events",
-				type:"allList",
-				eventTypes:allEventTypes,
-				user:req.user
+			allEventTypes.then(function (eventTypes) {
+				res.render('list', {
+					title: 'Events List',
+					list: eventList,
+					columns: columns,
+					editLink: editLink,
+					viewLink: viewLink,
+					addLink: addLink,
+					deleteLink: deleteLink,
+					exportLink: exportLink,
+					error: error,
+					filter: "Events",
+					type: "allList",
+					eventTypes: eventTypes,
+					user: req.user
+				});
 			});
 		});
 	} else {
@@ -314,22 +321,22 @@ router.get('/'+listLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+viewLink, function(req, res, next) {
-	if(req.user && (req.user.permission === 0 || req.user.permission === 1)) {
+router.get('/' + viewLink, function (req, res, next) {
+	if (req.user && (req.user.permission === 0 || req.user.permission === 1)) {
 		/* Logic to get info from database */
 		Event.findOne({_id: req.query.id}, async function (err, event) {
 			if (!err && event) {
 				var attending = false;
 
-				if(req.user.permission === 1){
-					event.visitors.forEach(function(visitor){
-						if(visitor.visitorID === req.user._id){
+				if (req.user.permission === 1) {
+					event.visitors.forEach(function (visitor) {
+						if (visitor.visitorID === req.user._id) {
 							attending = true;
 						}
 					});
 				}
 
-				if(req.user.permission === 0 || attending) {
+				if (req.user.permission === 0 || attending) {
 					var equipment = await genFunctions.getEquipmentInfo(event.equipment);
 					var rooms = await genFunctions.getRoomInfo(event.rooms);
 					var event_type = await genFunctions.getEventType(event.eventTypeID);
@@ -346,9 +353,8 @@ router.get('/'+viewLink, function(req, res, next) {
 						// 		}
 						// 	});
 						// });
-						console.log(event.rooms)
 
-						rooms.forEach(function(room){
+						rooms.forEach(function (room) {
 							numberOfSpaces = numberOfSpaces + room.capacity;
 						});
 
@@ -375,7 +381,7 @@ router.get('/'+viewLink, function(req, res, next) {
 							listLink: req.user.permission === 0 ? listLink : 'participate-events-list',
 							deleteLink: req.user.permission === 0 ? deleteLink : null,
 							editLink: req.user.permission === 0 ? editLink + '?id=' + event._id : null,
-							user:req.user
+							user: req.user
 						});
 					});
 				} else {
@@ -386,7 +392,7 @@ router.get('/'+viewLink, function(req, res, next) {
 				res.render('view', {
 					error: "Event not found!",
 					listLink: listLink,
-					user:req.user
+					user: req.user
 				});
 			}
 		});
@@ -394,8 +400,8 @@ router.get('/'+viewLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+editLink, function(req, res, next) {
-	if(req.user && req.user.permission === 0) {
+router.get('/' + editLink, function (req, res, next) {
+	if (req.user && req.user.permission === 0) {
 		Event.findOne({_id: req.query.id}, async function (err, event) {
 			if (!err && event) {
 				var equipment_use = await genFunctions.getEquipmentInfo(event.equipment);
@@ -414,7 +420,7 @@ router.get('/'+editLink, function(req, res, next) {
 					var numberOfVisitors = 0;
 					var error = null;
 
-					rooms.forEach(function(room){
+					rooms.forEach(function (room) {
 						numberOfSpaces = numberOfSpaces + room.capacity;
 					});
 
@@ -422,7 +428,7 @@ router.get('/'+editLink, function(req, res, next) {
 						visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
 					});
 
-					if(numberOfSpaces < numberOfVisitors) error = 'Not enough spaces are assigned for the event';
+					if (numberOfSpaces < numberOfVisitors) error = 'Not enough spaces are assigned for the event';
 
 					res.render('edit', {
 						title: 'Editing event: ' + event.eventName,
@@ -451,14 +457,14 @@ router.get('/'+editLink, function(req, res, next) {
 						visitorFields: true,
 						editLink: '/events/' + editLink,
 						cancelLink: viewLink + '?id=' + event._id,
-						user:req.user
+						user: req.user
 					});
 				});
 			} else {
 				res.render('view', {
 					error: "Event not found!",
 					listLink: listLink,
-					user:req.user
+					user: req.user
 				});
 			}
 		});
@@ -467,20 +473,20 @@ router.get('/'+editLink, function(req, res, next) {
 	}
 });
 
-router.post('/'+editLink, function(req, res, next) {
-	function getPostedEquipment(req){
+router.post('/' + editLink, function (req, res, next) {
+	function getPostedEquipment(req) {
 		var equipment_posted = [];
 
-		for(const [ field_post_key, field_post_value ] of Object.entries(req.body)) {
-			if(req.body.hasOwnProperty(field_post_key)) {
-				if(field_post_key.includes('equipment')) {
+		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
+			if (req.body.hasOwnProperty(field_post_key)) {
+				if (field_post_key.includes('equipment')) {
 					equipment_posted.push({
 						_id: field_post_value,
 						equipID: field_post_value,
 						reqQty: 1
 					});
-				} else if(field_post_key.includes('quantity')){
-					equipment_posted[equipment_posted.length-1]['reqQty'] = parseInt(field_post_value);
+				} else if (field_post_key.includes('quantity')) {
+					equipment_posted[equipment_posted.length - 1]['reqQty'] = parseInt(field_post_value);
 				}
 			}
 		}
@@ -488,7 +494,7 @@ router.post('/'+editLink, function(req, res, next) {
 		return equipment_posted;
 	}
 
-	if(req.user && req.user.permission === 0) {
+	if (req.user && req.user.permission === 0) {
 		Event.findOne({_id: req.body.ID}, async function (err, event) {
 			if (!err && event) {
 				var equipment_use = await genFunctions.getEquipmentInfo(event.equipment);
@@ -512,7 +518,7 @@ router.post('/'+editLink, function(req, res, next) {
 					var numberOfVisitors = 0;
 					var error = null;
 
-					posted_rooms.forEach(function(room){
+					posted_rooms.forEach(function (room) {
 						numberOfSpaces = numberOfSpaces + room.capacity;
 					});
 
@@ -520,7 +526,7 @@ router.post('/'+editLink, function(req, res, next) {
 						visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
 					});
 
-					if(numberOfSpaces < numberOfVisitors) error = 'Not enough spaces are assigned for the event';
+					if (numberOfSpaces < numberOfVisitors) error = 'Not enough spaces are assigned for the event';
 
 					staff_use.forEach(function (prev_staff_member) {
 						var staff_posted = false;
@@ -531,10 +537,10 @@ router.post('/'+editLink, function(req, res, next) {
 
 						if (!staff_posted) {
 							Staff.updateOne({_id: prev_staff_member._id}, {$pull: {attendingEvents: {eventID: event._id}}}, function (errorUpdateStaff, staffDoc) {
-								if(!errorUpdateStaff){
-									Staff.findOne({_id:prev_staff_member._id}, function(errFind,staffMemberDoc){
-										if(!errFind){
-											if(staffMemberDoc) {
+								if (!errorUpdateStaff) {
+									Staff.findOne({_id: prev_staff_member._id}, function (errFind, staffMemberDoc) {
+										if (!errFind) {
+											if (staffMemberDoc) {
 												genFunctions.sendNotification(staffMemberDoc._id, "Event Update", "You have been removed from an event.")
 												sendEmail(staffMemberDoc.email, "removed");
 											} else {
@@ -558,9 +564,9 @@ router.post('/'+editLink, function(req, res, next) {
 							if (posted_staff_member.staffMemberID == prev_staff_member._id) new_staff = false;
 						});
 
-						if(new_staff){
-							Staff.findOne({_id:posted_staff_member.staffMemberID}, function(errorFindStaffEmail, staffDoc){
-								if(!errorFindStaffEmail){
+						if (new_staff) {
+							Staff.findOne({_id: posted_staff_member.staffMemberID}, function (errorFindStaffEmail, staffDoc) {
+								if (!errorFindStaffEmail) {
 									genFunctions.sendNotification(staffDoc._id, "Event Participation", "You have been added to participate to an event.");
 									sendEmail(staffDoc.email, "added");
 								} else {
@@ -579,7 +585,7 @@ router.post('/'+editLink, function(req, res, next) {
 
 						if (!visitor_posted) {
 							Visitor.updateOne({_id: prev_visitor._id}, {$pull: {attendingEvents: {eventID: event._id}}}, function (errorUpdateVisitor, visitorDoc) {
-								if(errorUpdateVisitor) console.log(errorUpdateVisitor);
+								if (errorUpdateVisitor) console.log(errorUpdateVisitor);
 							});
 						}
 					});
@@ -592,8 +598,8 @@ router.post('/'+editLink, function(req, res, next) {
 						});
 
 						if (new_visitor) {
-							Visitor.findOne({_id:posted_visitor.visitorID}, function(errorFindVisitorEmail, visitorDoc){
-								if(!errorFindVisitorEmail){
+							Visitor.findOne({_id: posted_visitor.visitorID}, function (errorFindVisitorEmail, visitorDoc) {
+								if (!errorFindVisitorEmail) {
 									genFunctions.sendNotification(visitorDoc._id, "Event Participation", "You have been added to participate to an event.");
 									sendEmail(visitorDoc.contactEmail, "added");
 								} else {
@@ -616,11 +622,11 @@ router.post('/'+editLink, function(req, res, next) {
 
 						if (!equipment_posted) {
 							Equipment.updateOne({_id: prev_equip.equipID}, {$inc: {quantity: prev_equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
-								if(errorUpdateEquip) console.log(errorUpdateEquip);
+								if (errorUpdateEquip) console.log(errorUpdateEquip);
 							});
 						} else if (equip_qty !== 0) {
 							Equipment.updateOne({_id: prev_equip.equipID}, {$inc: {quantity: equip_qty}}, function (errorUpdateEquip, equipDoc) {
-								if(errorUpdateEquip) console.log(errorUpdateEquip);
+								if (errorUpdateEquip) console.log(errorUpdateEquip);
 							});
 						}
 					});
@@ -641,20 +647,20 @@ router.post('/'+editLink, function(req, res, next) {
 
 					Event.updateOne({_id: req.body.ID}, event_type_update, function (err, eventUpdateDoc) {
 						if (!err) {
-							posted_staff_use.forEach(function(staffMember){
-								Staff.findOne({_id:staffMember.staffMemberID}, function(errorStaffSendEmail, staffMemberDoc){
-									if(!errorStaffSendEmail){
+							posted_staff_use.forEach(function (staffMember) {
+								Staff.findOne({_id: staffMember.staffMemberID}, function (errorStaffSendEmail, staffMemberDoc) {
+									if (!errorStaffSendEmail) {
 										genFunctions.sendNotification(staffMemberDoc._id, "Event Update", "An event that you are participating has been updated.");
-										sendEmail(staffMemberDoc.email,"edited");
+										sendEmail(staffMemberDoc.email, "edited");
 									}
 								});
 							});
 
-							posted_visitors.forEach(function(visitor){
-								Visitor.findOne({_id:visitor.visitorID}, function(errorVisitorSendEmail, visitorDoc){
-									if(!errorVisitorSendEmail){
+							posted_visitors.forEach(function (visitor) {
+								Visitor.findOne({_id: visitor.visitorID}, function (errorVisitorSendEmail, visitorDoc) {
+									if (!errorVisitorSendEmail) {
 										genFunctions.sendNotification(visitorDoc._id, "Event Update", "An event that you are participating has been updated.")
-										sendEmail(visitorDoc.contactEmail,"edited");
+										sendEmail(visitorDoc.contactEmail, "edited");
 									}
 								});
 							});
@@ -687,7 +693,7 @@ router.post('/'+editLink, function(req, res, next) {
 								visitorFields: true,
 								editLink: '/events/' + editLink,
 								cancelLink: viewLink + '?id=' + event._id,
-								user:req.user
+								user: req.user
 							});
 						} else {
 							res.render('edit', {
@@ -718,7 +724,7 @@ router.post('/'+editLink, function(req, res, next) {
 								visitorFields: true,
 								editLink: '/events/' + editLink,
 								cancelLink: viewLink + '?id=' + event._id,
-								user:req.user
+								user: req.user
 							});
 						}
 					});
@@ -727,7 +733,7 @@ router.post('/'+editLink, function(req, res, next) {
 				res.render('view', {
 					error: "Event not found!",
 					listLink: listLink,
-					user:req.user
+					user: req.user
 				});
 			}
 		});
@@ -736,8 +742,8 @@ router.post('/'+editLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+deleteLink, function(req, res, next) {
-	if(req.user && req.user.permission === 0) {
+router.get('/' + deleteLink, function (req, res, next) {
+	if (req.user && req.user.permission === 0) {
 		Event.findOne({_id: req.query.id}, function (err, eventDoc) {
 			if (!err && eventDoc) {
 				var promises = [];
@@ -775,7 +781,7 @@ router.get('/'+deleteLink, function(req, res, next) {
 							res.render('view', {
 								deleteMsg: "Successfully deleted event!",
 								listLink: listLink,
-								user:req.user
+								user: req.user
 							});
 						} else {
 							console.log(err); // console log the error
@@ -787,7 +793,7 @@ router.get('/'+deleteLink, function(req, res, next) {
 				res.render('view', {
 					error: "Event not found!",
 					listLink: listLink,
-					user:req.user
+					user: req.user
 				});
 			}
 		});
@@ -796,8 +802,8 @@ router.get('/'+deleteLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+addLink, async function (req, res, next) {
-	if(req.user && req.user.permission === 0) {
+router.get('/' + addLink, async function (req, res, next) {
+	if (req.user && req.user.permission === 0) {
 		let fields = [{name: "Event Name", type: "text", identifier: "name"},
 			{name: "Location", type: "text", identifier: "location"},
 			{name: "Date", type: "datetime-local", identifier: "date"},
@@ -822,10 +828,10 @@ router.get('/'+addLink, async function (req, res, next) {
 				visitorFields: true,
 				visitors: visitors,
 				equipment: equipment,
-				rooms:rooms,
+				rooms: rooms,
 				eventTypes: eventTypes,
 				staff: staff,
-				user:req.user
+				user: req.user
 			});
 		});
 	} else {
@@ -833,8 +839,8 @@ router.get('/'+addLink, async function (req, res, next) {
 	}
 });
 
-router.post('/'+addLink, async function (req, res, next) {
-	if(req.user && req.user.permission === 0) {
+router.post('/' + addLink, async function (req, res, next) {
+	if (req.user && req.user.permission === 0) {
 		let fields = [{name: "Event Name", type: "text", identifier: "name"},
 			{name: "Location", type: "text", identifier: "location"},
 			{name: "Date", type: "datetime-local", identifier: "date"},
@@ -875,7 +881,7 @@ router.post('/'+addLink, async function (req, res, next) {
 			}
 		}
 
-		rooms_use.forEach(function(room){
+		rooms_use.forEach(function (room) {
 			numberOfSpaces = numberOfSpaces + room.capacity;
 		});
 
@@ -883,7 +889,7 @@ router.post('/'+addLink, async function (req, res, next) {
 			visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
 		});
 
-		if(numberOfSpaces < numberOfVisitors) error_msg = 'Not enough spaces are assigned for the event';
+		if (numberOfSpaces < numberOfVisitors) error_msg = 'Not enough spaces are assigned for the event';
 
 		let new_event = new Event({
 			eventName: req.body['Event Name'],
@@ -971,7 +977,7 @@ router.post('/'+addLink, async function (req, res, next) {
 					visitorFields: true,
 					visitors: visitors,
 					equipment: equipment,
-					rooms:rooms,
+					rooms: rooms,
 					eventTypes: eventTypes,
 					staff: staff,
 					selectedEventType: req.body['Event Type'],
@@ -979,7 +985,7 @@ router.post('/'+addLink, async function (req, res, next) {
 					selectedEquip: equipment_use,
 					selectedRooms: rooms_use,
 					selectedVisitors: visitor_attending,
-					user:req.user
+					user: req.user
 				});
 			});
 		});

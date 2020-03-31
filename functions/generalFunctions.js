@@ -77,12 +77,16 @@ function getStaffInfo(staff_chosen){
 
 		Staff.find({_id:{$in:staff_ids_arr}}, function (err, staff) {
 			if(!err){
+				let staff_members = [];
 				staff_chosen.forEach(function(staff_member_chosen){
 					staff.forEach(function(staff_member){
-						staff_member.role = staff_member_chosen.role
+						if(staff_member_chosen.staffMemberID == staff_member._id){
+							staff_members.push(staff_member);
+							staff_members[staff_members.length-1].role = staff_member_chosen.role;
+						}
 					});
 				});
-				resolve(staff);
+				resolve(staff_members);
 			} else {
 				resolve([]);
 				console.log(err);

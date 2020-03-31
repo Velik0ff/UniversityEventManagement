@@ -743,6 +743,9 @@ router.post('/filter', function (req, res, next) {
 						res.status(200).json({list: []});
 					}
 					break;
+				case "staff":
+
+					break;
 			}
 		} else {
 			res.status(500).json({message: ""});

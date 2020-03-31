@@ -252,9 +252,11 @@ block content
                 hr
 
                 div#eventTypeFilter
-                    select#eventTypeSelectedFilter
+                    h6="Event Types"
+                    select.form-control#eventTypeSelectedFilter
+                        option(selected)="Select Event Type"
                         each event_type in eventTypes
-                            option(value=event_type._id)=event_type.typeName
+                            option(value=event_type._id)=event_type.eventTypeName
                 hr
 
             if filter == "Equipment"
@@ -279,6 +281,14 @@ block content
                         div.col-sm
                             span="Maximum"
                             input.form-control#rangeCapacityMax(type="number")
+                hr
+
+            if filter == "Staff"
+                div#staffRoleFilter
+                    h6="Staff Role"
+                    select.form-control#staffRoleSelect
+                        each staff_role in staffRoles
+                            option(value=staff_role._id)=staff_role.typeName
                 hr
 
 
