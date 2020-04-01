@@ -494,9 +494,33 @@ router.post('/' + editLink, function (req, res, next) {
 		return equipment_posted;
 	}
 
+	function recoverQuantity(previousQuantity, equipmentNotUpdatedNames, error, error_return) {
+		/* Recover quantity */
+		for (let i = 0; i < previousQuantity.length; i++) {
+			Equipment.updateOne({_id: previousQuantity[i]['equipID']}, {$set: {quantity: +previousQuantity[i]['reqQty']}}, function (err, eqDoc) {
+				if (err) {
+					console.log(err);
+				}
+			});
+		}
+		/* End Recover quantity */
+
+		if(error_return) {
+			if (equipmentNotUpdatedNames.length > 0) {
+				error = 'Unable to edit event because the equipment with names: ';
+
+				equipmentNotUpdatedNames.forEach(function (equipName) {
+					error = error.concat(equipName + ",");
+				});
+
+				error = error.concat(' have insufficient quantity, please revise all the data again and try to edit event again.');
+			}
+		}
+	}
+
 	if (req.user && req.user.permission === 0) {
-		Event.findOne({_id: req.body.ID}, async function (err, event) {
-			if (!err && event) {
+		Event.findOne({_id: req.body.ID}, async function (errFindEvent, event) {
+			if (!errFindEvent && event) {
 				var equipment_use = await genFunctions.getEquipmentInfo(event.equipment);
 				var rooms_user = await genFunctions.getRoomInfo(event.rooms);
 				var event_type = await genFunctions.getEventType(event.eventTypeID);
@@ -509,7 +533,10 @@ router.post('/' + editLink, function (req, res, next) {
 				var eventTypes = await genFunctions.getAllEventTypes();
 
 				let promisesEquip = [];
+				let repostedEquip = [];
 				let equipmentNotUpdated = [];
+				let equipmentNotUpdatedNames = [];
+				let previousQuantity = [];
 
 				var posted_staff_use = getPostedStaff(req);
 				var posted_visitors = getPostedVisitors(req);
@@ -520,6 +547,7 @@ router.post('/' + editLink, function (req, res, next) {
 					var numberOfSpaces = 0;
 					var numberOfVisitors = 0;
 					var error = null;
+					var message = null;
 
 					posted_rooms.forEach(function (room) {
 						numberOfSpaces = numberOfSpaces + room.capacity;
@@ -619,123 +647,167 @@ router.post('/' + editLink, function (req, res, next) {
 						posted_equipment.forEach(function (posted_equip) {
 							if (posted_equip.equipID == prev_equip.equipID) {
 								equipment_posted = true;
+								repostedEquip.push(posted_equip.equipID);
 								equip_qty = prev_equip.reqQty - posted_equip.reqQty;
 							}
 						});
 
 						if (!equipment_posted) {
-							Equipment.updateOne({_id: prev_equip.equipID}, {$inc: {quantity: prev_equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
-								if (errorUpdateEquip) console.log(errorUpdateEquip);
-							});
-						} else if (equip_qty !== 0) {
-							Equipment.findOne({_id: prev_equip.equipID},function(){
+							if (prev_equip.reqQty > 0) {
+								promisesEquip.push(new Promise(function (resolve, reject) {
+									Equipment.findOne({_id: prev_equip.equipID}, function (errFindEquip, equipFindDoc) {
+										if (errFindEquip) console.log(errFindEquip);
 
-							});
-							Equipment.updateOne({_id: prev_equip.equipID}, {$inc: {quantity: equip_qty}}, function (errorUpdateEquip, equipDoc) {
-								if (errorUpdateEquip) console.log(errorUpdateEquip);
-							});
+										previousQuantity.push({
+											equipID: prev_equip.equipID,
+											quantity: equipFindDoc.quantity
+										});
+
+										resolve();
+									});
+
+									Equipment.updateOne({_id: prev_equip.equipID}, {$inc: {quantity: prev_equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
+										if (errorUpdateEquip) console.log(errorUpdateEquip);
+									});
+								}));
+							}
+						} else if (equip_qty !== 0) {
+							promisesEquip.push(new Promise(function (resolve, reject) {
+								Equipment.findOne({_id: prev_equip.equipID}, function (errFindEquip, equipFindDoc) {
+									if (!errFindEquip) {
+										if (equipFindDoc && equipFindDoc.quantity + equip_qty >= 0) {
+											previousQuantity.push({
+												equipID: prev_equip.equipID,
+												quantity: equipFindDoc.quantity
+											});
+
+											Equipment.updateOne({_id: prev_equip.equipID}, {$inc: {quantity: equip_qty}}, function (errorUpdateEquip, equipDoc) {
+												if (errorUpdateEquip) console.log(errorUpdateEquip);
+												resolve();
+											});
+										} else {
+											console.log('Cannot update equipment, because insufficient quantity.');
+											resolve();
+										}
+									} else {
+										console.log(errFindEquip);
+										resolve();
+									}
+								});
+							}));
 						}
 					});
 
-					var event_type_update = {
-						$set: {
-							eventName: req.body['Event Name'],
-							equipment: posted_equipment,
-							rooms: posted_rooms,
-							eventTypeID: req.body['Event Type'],
-							staffChosen: posted_staff_use,
-							date: req.body.Date,
-							endDate: req.body['End Date'],
-							location: req.body.Location,
-							visitors: posted_visitors
+					posted_equipment.forEach(function (posted_equip) {
+						if (!repostedEquip.includes(posted_equip.equipID)) {
+							promisesEquip.push(new Promise(function (resolve, reject) {
+								Equipment.findOne({_id: posted_equip.equipID}, function (errFindEquip, equipFindDoc) {
+									if (!errFindEquip) {
+										if (equipFindDoc && equipFindDoc.quantity - posted_equip.reqQty >= 0) {
+											Equipment.updateOne({_id: posted_equip.equipID}, {$inc: {quantity: -posted_equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
+												if (errorUpdateEquip) console.log(errorUpdateEquip);
+												resolve();
+											});
+										} else {
+											console.log('Cannot update equipment, because insufficient quantity.');
+											equipmentNotUpdated.push(posted_equip.equipID);
+											if (equipFindDoc) equipmentNotUpdatedNames.push(equipFindDoc.typeName);
+
+											resolve();
+										}
+									} else {
+										console.log(errFindEquip);
+										resolve();
+									}
+								});
+							}));
 						}
-					};
+					});
 
-					Event.updateOne({_id: req.body.ID}, event_type_update, function (err, eventUpdateDoc) {
-						if (!err) {
-							posted_staff_use.forEach(function (staffMember) {
-								Staff.findOne({_id: staffMember.staffMemberID}, function (errorStaffSendEmail, staffMemberDoc) {
-									if (!errorStaffSendEmail) {
-										genFunctions.sendNotification(staffMemberDoc._id, "Event Update", "An event that you are participating has been updated.");
-										sendEmail(staffMemberDoc.email, "edited");
-									}
+					Promise.all(promisesEquip).then(function () {
+						if (equipmentNotUpdated.length > 0) {
+							var event_type_update = {
+								$set: {
+									eventName: req.body['Event Name'],
+									equipment: posted_equipment,
+									rooms: posted_rooms,
+									eventTypeID: req.body['Event Type'],
+									staffChosen: posted_staff_use,
+									date: req.body.Date,
+									endDate: req.body['End Date'],
+									location: req.body.Location,
+									visitors: posted_visitors
+								}
+							};
+
+							Event.updateOne({_id: req.body.ID}, event_type_update, function (errEventUpdate, eventUpdateDoc) {
+								if (!errEventUpdate) {
+									/* Notifications and emails */
+									posted_staff_use.forEach(function (staffMember) {
+										Staff.findOne({_id: staffMember.staffMemberID}, function (errorStaffSendEmail, staffMemberDoc) {
+											if (!errorStaffSendEmail) {
+												genFunctions.sendNotification(staffMemberDoc._id, "Event Update", "An event that you are participating has been updated.");
+												sendEmail(staffMemberDoc.email, "edited");
+											}
+										});
+									});
+
+									posted_visitors.forEach(function (visitor) {
+										Visitor.findOne({_id: visitor.visitorID}, function (errorVisitorSendEmail, visitorDoc) {
+											if (!errorVisitorSendEmail) {
+												genFunctions.sendNotification(visitorDoc._id, "Event Update", "An event that you are participating has been updated.")
+												sendEmail(visitorDoc.contactEmail, "edited");
+											}
+										});
+									});
+									/* End Notifications and emails */
+
+									message = "Successfully updated event: " + event.eventName;
+								} else {
+									console.log(errEventUpdate);
+									error = "Unknown error occurred, please try again.";
+
+									recoverQuantity(previousQuantity,equipmentNotUpdatedNames,error,false);
+								}
+
+								res.render('edit', {
+									title: 'Editing event: ' + event.eventName,
+									error: error,
+									message: message,
+									item: {
+										ID: event._id,
+										"Event Name": req.body['Event Name'],
+										Location: req.body.Location,
+										Date: moment(req.body.Date).format('YYYY-MM-DDTHH:mm'),
+										"End Date": req.body['End Date'] ? moment(req.body['End Date']).format('YYYY-MM-DDTHH:mm') : "",
+										"Event Type": req.body['Event Type'],
+										Equipment: posted_equipment,
+										Rooms: posted_rooms,
+										Staff: posted_staff_use,
+										Visitors: posted_visitors
+									},
+									eventTypes: eventTypes,
+									staff: staff,
+									equipment: equipment,
+									rooms: rooms,
+									visitors: visitors,
+									customFields: false,
+									equipmentFields: true,
+									roomsFields: true,
+									staffFields: true,
+									visitorFields: true,
+									editLink: '/events/' + editLink,
+									cancelLink: viewLink + '?id=' + event._id,
+									user: req.user
 								});
-							});
-
-							posted_visitors.forEach(function (visitor) {
-								Visitor.findOne({_id: visitor.visitorID}, function (errorVisitorSendEmail, visitorDoc) {
-									if (!errorVisitorSendEmail) {
-										genFunctions.sendNotification(visitorDoc._id, "Event Update", "An event that you are participating has been updated.")
-										sendEmail(visitorDoc.contactEmail, "edited");
-									}
-								});
-							});
-
-							res.render('edit', {
-								title: 'Editing event: ' + event.eventName,
-								error: error,
-								message: "Successfully updated event: " + event.eventName,
-								item: {
-									ID: event._id,
-									"Event Name": req.body['Event Name'],
-									Location: req.body.Location,
-									Date: moment(req.body.Date).format('YYYY-MM-DDTHH:mm'),
-									"End Date": req.body['End Date'] ? moment(req.body['End Date']).format('YYYY-MM-DDTHH:mm') : "",
-									"Event Type": req.body['Event Type'],
-									Equipment: posted_equipment,
-									Rooms: posted_rooms,
-									Staff: posted_staff_use,
-									Visitors: posted_visitors
-								},
-								eventTypes: eventTypes,
-								staff: staff,
-								equipment: equipment,
-								rooms: rooms,
-								visitors: visitors,
-								customFields: false,
-								equipmentFields: true,
-								roomsFields: true,
-								staffFields: true,
-								visitorFields: true,
-								editLink: '/events/' + editLink,
-								cancelLink: viewLink + '?id=' + event._id,
-								user: req.user
 							});
 						} else {
-							res.render('edit', {
-								title: 'Editing event: ' + event.eventName,
-								error: "Unknown error occurred, please try again.",
-								message: null,
-								item: {
-									ID: event._id,
-									"Event Name": req.body['Event Name'],
-									Location: req.body.Location,
-									Date: moment(req.body.Date).format('YYYY-MM-DDTHH:mm'),
-									"End Date": req.body['End Date'] ? moment(req.body['End Date']).format('YYYY-MM-DDTHH:mm') : "",
-									"Event Type": req.body['Event Type'],
-									Equipment: posted_equipment,
-									Rooms: posted_rooms,
-									Staff: posted_staff_use,
-									Visitors: posted_visitors
-								},
-								eventTypes: eventTypes,
-								staff: staff,
-								equipment: equipment,
-								rooms: rooms,
-								visitors: visitors,
-								customFields: false,
-								equipmentFields: true,
-								roomsFields: true,
-								staffFields: true,
-								visitorFields: true,
-								editLink: '/events/' + editLink,
-								cancelLink: viewLink + '?id=' + event._id,
-								user: req.user
-							});
+							recoverQuantity(previousQuantity,equipmentNotUpdatedNames,error,true);
 						}
 					});
 				});
 			} else {
+				console.log(errFindEvent);
 				res.render('view', {
 					error: "Event not found!",
 					listLink: listLink,
@@ -868,6 +940,7 @@ router.post('/' + addLink, async function (req, res, next) {
 		var numberOfVisitors = 0;
 		let promisesEquip = [];
 		let equipmentNotUpdated = [];
+		let equipmentNotUpdatedNames = [];
 
 		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
 			if (req.body.hasOwnProperty(field_post_key)) {
@@ -880,9 +953,9 @@ router.post('/' + addLink, async function (req, res, next) {
 					equipment_use[equipment_use.length - 1]['reqQty'] = parseInt(field_post_value);
 
 					promisesEquip.push(new Promise(function (resolve, reject) {
-						Equipment.findOne({_id: equipment_use[equipment_use.length - 1]['equipID']}, function (errFindEquip, equipmenFoundDoc) {
+						Equipment.findOne({_id: equipment_use[equipment_use.length - 1]['equipID']}, function (errFindEquip, equipmentFoundDoc) {
 							if (!errFindEquip) {
-								if (equipmenFoundDoc.quantity >= equipment_use[equipment_use.length - 1]['reqQty']) {
+								if (equipmentFoundDoc && equipmenFoundDoc.quantity >= equipment_use[equipment_use.length - 1]['reqQty']) {
 									Equipment.updateOne({_id: equipment_use[equipment_use.length - 1]['equipID']}, {$inc: {quantity: -equipment_use[equipment_use.length - 1]['reqQty']}}, function (err, eqDoc) {
 										if (err) {
 											console.log("Failed to update quantity for id:" + equipment_use[equipment_use.length - 1]['equipID']);
@@ -892,6 +965,8 @@ router.post('/' + addLink, async function (req, res, next) {
 									});
 								} else {
 									equipmentNotUpdated.push(equipment_use[equipment_use.length - 1]['equipID']);
+									if (equipmentFoundDoc) equipmentNotUpdatedNames.push(equipmentFoundDoc.typeName);
+
 									resolve();
 								}
 							} else {
@@ -916,104 +991,118 @@ router.post('/' + addLink, async function (req, res, next) {
 		if (numberOfSpaces < numberOfVisitors) error_msg = 'Not enough spaces are assigned for the event';
 
 		Promise.all(promisesEquip).then(function () {
-			let new_event = new Event({
-				eventName: req.body['Event Name'],
-				equipment: equipment_use,
-				rooms: rooms_use,
-				eventTypeID: req.body['Event Type'],
-				staffChosen: staff_use,
-				date: req.body.Date,
-				endDate: req.body['End Date'],
-				location: req.body.Location,
-				visitors: visitor_attending
-			});
+			if (!(equipmentNotUpdated.length > 0)) {
+				let new_event = new Event({
+					eventName: req.body['Event Name'],
+					equipment: equipment_use,
+					rooms: rooms_use,
+					eventTypeID: req.body['Event Type'],
+					staffChosen: staff_use,
+					date: req.body.Date,
+					endDate: req.body['End Date'],
+					location: req.body.Location,
+					visitors: visitor_attending
+				});
 
-			new_event.save(function (error, eventDoc) {
-				if (!error) {
-					staff_use.forEach(function (staff_member) {
-						Staff.findOne({_id: staff_use.staffMemberID}, function (err, staffDoc) {
-							if (!err && staffDoc) {
-								Staff.updateOne({_id: staff_use.staffMemberID}, {
-									$push: {
-										attendingEvents: {
-											eventID: eventDoc._id,
-											role: staff_use.role
+				new_event.save(function (error, eventDoc) {
+					if (!error) {
+						staff_use.forEach(function (staff_member) {
+							Staff.findOne({_id: staff_use.staffMemberID}, function (err, staffDoc) {
+								if (!err && staffDoc) {
+									Staff.updateOne({_id: staff_use.staffMemberID}, {
+										$push: {
+											attendingEvents: {
+												eventID: eventDoc._id,
+												role: staff_use.role
+											}
 										}
-									}
-								}, function (errUpdate, staffDoc) {
-									if (errUpdate) {
-										console.log(errUpdate);
-									} else {
-										genFunctions.sendNotification(staffDoc._id, "Participating Event", "You are a participant to a new event.");
-										sendEmail(staffDoc.email, "added");
-									}
-								});
-							} else { // staff not found or error with database
-								console.log(err);
-							}
-						});
-					});
-
-					visitor_attending.forEach(function (staff_member) {
-						Visitor.findOne({_id: visitor_attending.visitorID}, function (err, visitorDoc) {
-							if (!err && visitorDoc) {
-								Visitor.updateOne({_id: visitor_attending.visitorID}, {$push: {attendingEvents: {eventID: eventDoc._id}}}, function (errUpdate, visitorDoc) {
-									if (errUpdate) {
-										console.log(errUpdate);
-									} else {
-										genFunctions.sendNotification(visitorDoc._id, "Participating Event", "You are a participant to a new event.");
-										sendEmail(visitorDoc.contactEmail, "added");
-									}
-								});
-							} else { // visitor not found or error with database
-								console.log(err);
-							}
-						});
-					});
-
-					message = "Successfully create new event: " + req.body['Event Name'];
-					console.log(message);
-					// sendInvitationEmail(req.body.Email, password_to_insert, req.body.Role);
-				} else {
-					/* Recover quantity */
-					for (var i = 0; i < equipment_use.length; i++) {
-						if (!equipmentNotUpdated.includes(equipment_use[i]['equipID'])) {
-							Equipment.updateOne({_id: equipment_use[i]['equipID']}, {$inc: {quantity: +equipment_use[i]['reqQty']}}, function (err, eqDoc) {
-								if (err) {
+									}, function (errUpdate, staffDoc) {
+										if (errUpdate) {
+											console.log(errUpdate);
+										} else {
+											genFunctions.sendNotification(staffDoc._id, "Participating Event", "You are a participant to a new event.");
+											sendEmail(staffDoc.email, "added");
+										}
+									});
+								} else { // staff not found or error with database
 									console.log(err);
 								}
 							});
-						}
+						});
+
+						visitor_attending.forEach(function (staff_member) {
+							Visitor.findOne({_id: visitor_attending.visitorID}, function (err, visitorDoc) {
+								if (!err && visitorDoc) {
+									Visitor.updateOne({_id: visitor_attending.visitorID}, {$push: {attendingEvents: {eventID: eventDoc._id}}}, function (errUpdate, visitorDoc) {
+										if (errUpdate) {
+											console.log(errUpdate);
+										} else {
+											genFunctions.sendNotification(visitorDoc._id, "Participating Event", "You are a participant to a new event.");
+											sendEmail(visitorDoc.contactEmail, "added");
+										}
+									});
+								} else { // visitor not found or error with database
+									console.log(err);
+								}
+							});
+						});
+
+						message = "Successfully create new event: " + req.body['Event Name'];
+						console.log(message);
+						// sendInvitationEmail(req.body.Email, password_to_insert, req.body.Role);
+					} else {
+						error_msg = validationErr(error);
 					}
-					/* End Recover quantity */
 
-					error_msg = validationErr(error);
+
+				});
+			} else {
+				/* Recover quantity */
+				for (let i = 0; i < equipment_use.length; i++) {
+					if (!equipmentNotUpdated.includes(equipment_use[i]['equipID'])) {
+						Equipment.updateOne({_id: equipment_use[i]['equipID']}, {$inc: {quantity: +equipment_use[i]['reqQty']}}, function (err, eqDoc) {
+							if (err) {
+								console.log(err);
+							}
+						});
+					}
 				}
+				/* End Recover quantity */
 
-				Promise.all([equipment, rooms, eventTypes, visitors, staff]).then((result) => {
-					res.render('add', {
-						title: 'Add New Event',
-						error: error_msg,
-						message: message,
-						fields: fields,
-						cancelLink: listLink,
-						customFields: false,
-						roomsFields: true,
-						equipmentFields: true,
-						staffFields: true,
-						visitorFields: true,
-						visitors: visitors,
-						equipment: equipment,
-						rooms: rooms,
-						eventTypes: eventTypes,
-						staff: staff,
-						selectedEventType: req.body['Event Type'],
-						selectedStaff: staff_use,
-						selectedEquip: equipment_use,
-						selectedRooms: rooms_use,
-						selectedVisitors: visitor_attending,
-						user: req.user
+				if (equipmentNotUpdatedNames.length > 0) {
+					error_msg = 'Unable to add event because the equipment with names: ';
+
+					equipmentNotUpdatedNames.forEach(function (equipName) {
+						error_msg = error_msg.concat(equipName + ",");
 					});
+
+					error_msg = error_msg.concat(' have insufficient quantity, please revise all the data again and try to add event again.');
+				}
+			}
+
+			Promise.all([equipment, rooms, eventTypes, visitors, staff]).then((result) => {
+				res.render('add', {
+					title: 'Add New Event',
+					error: error_msg,
+					message: message,
+					fields: fields,
+					cancelLink: listLink,
+					customFields: false,
+					roomsFields: true,
+					equipmentFields: true,
+					staffFields: true,
+					visitorFields: true,
+					visitors: visitors,
+					equipment: equipment,
+					rooms: rooms,
+					eventTypes: eventTypes,
+					staff: staff,
+					selectedEventType: req.body['Event Type'],
+					selectedStaff: staff_use,
+					selectedEquip: equipment_use,
+					selectedRooms: rooms_use,
+					selectedVisitors: visitor_attending,
+					user: req.user
 				});
 			});
 		});
