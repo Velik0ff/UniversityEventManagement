@@ -132,6 +132,7 @@ router.get('/'+viewLink, function(req, res, next) {
 					// rows: rows,
 					item: {
 						ID: user._id,
+						"Intitution Name": user.institutionName,
 						"Lead Teacher": user.leadTeacherName,
 						Email: user.contactEmail,
 						"Group Size": user.groupSize
@@ -157,6 +158,7 @@ router.get('/'+viewLink, function(req, res, next) {
 router.get('/'+addLink, function(req, res, next) {
 	if(req.user && req.user.permission === 0) {
 		let fields = [{name: "Lead Teacher Full Name", type: "text", identifier: "name"},
+			{name: "Institution Name", type: "text", identifier: "institutionName"},
 			{name: "Contact Email", type: "email", identifier: "email"},
 			{name: "Contact Phone", type: "phone", identifier: "phone"},
 			{name: "Group Size", type: "number", identifier: "groupSize"},
@@ -186,6 +188,7 @@ router.get('/'+editLink, function(req, res, next) {
 					item: {
 						ID: req.query.id,
 						leadTeacherName: user.leadTeacherName,
+						institutionName: user.institutionName,
 						contactEmail: user.contactEmail,
 						contactPhone: user.contactPhone,
 						groupSize: user.groupSize,
@@ -245,6 +248,7 @@ router.post('/'+editLink, function(req, res, next) {
 					item: {
 						ID: req.body.ID,
 						leadTeacherName: req.body['Lead Teacher Full Name'],
+						institutionName: req.body['Institution Name'],
 						contactEmail: req.body['Contact Email'],
 						contactPhone: req.body['Contact Phone'],
 						groupSize: req.body['Group Size'],
@@ -272,6 +276,7 @@ router.post('/'+editLink, function(req, res, next) {
 					item: {
 						ID: req.body.ID,
 						leadTeacherName: req.body['Lead Teacher Full Name'],
+						institutionName: req.body['Institution Name'],
 						contactEmail: req.body['Contact Email'],
 						contactPhone: req.body['Contact Phone'],
 						groupSize: req.body['Group Size'],
@@ -294,6 +299,7 @@ router.post('/'+addLink, function(req, res, next) {
 		var message = "";
 		let password_to_insert = short().new();
 		let fields = [{name: "Lead Teacher Full Name", type: "text", identifier: "name"},
+			{name: "Institution Name", type: "text", identifier: "institutionName"},
 			{name: "Contact Email", type: "email", identifier: "email"},
 			{name: "Contact Phone", type: "phone", identifier: "phone"},
 			{name: "Group Size", type: "number", identifier: "groupSize"},
@@ -301,6 +307,7 @@ router.post('/'+addLink, function(req, res, next) {
 
 		let new_user = new User({ // new user object to be inserted
 			leadTeacherName: req.body['Lead Teacher Full Name'],
+			institutionName: req.body['Institution Name'],
 			contactEmail: req.body['Contact Email'],
 			password: password_to_insert,
 			contactPhone: req.body['Contact Phone'],
