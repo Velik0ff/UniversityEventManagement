@@ -44,7 +44,7 @@ block content
                         div#rooms
                             p
                                 b="Rooms:"
-                                a.btn.btn-primary(href="javascript.void(0)" onclick="addRoomField()") Add Room
+                                a.btn.btn-primary(href="javascript:void(0)" onclick="addRoomField()") Add Room
 
                             each room in info
                                 div.row.form-group(id="rowRoom" + room_count)
@@ -65,7 +65,7 @@ block content
                         div#equipment
                             p
                                 b="Equipment:"
-                                a.btn.btn-primary(href="javascript.void(0)" onclick="addEquipmentField()") Add Equipment
+                                a.btn.btn-primary(href="javascript:void(0)" onclick="addEquipmentField()") Add Equipment
 
                             each equip in info
                                 div.row.form-group(id="rowEquipment" + equipment_count)
@@ -98,7 +98,7 @@ block content
                         div#staff
                             p
                                 b="Staff:"
-                                a.btn.btn-primary(href="javascript.void(0)" onclick="addStaffField()") Add Staff
+                                a.btn.btn-primary(href="javascript:void(0)" onclick="addStaffField()") Add Staff
 
                             each staff_member in info
                                 div.row.form-group(id="rowStaff" + staff_count)
@@ -125,7 +125,7 @@ block content
                         div#visitors
                             p
                                 b="Visitors:"
-                                a.btn.btn-primary(href="javascript.void(0)" onclick="addVisitorField()") Add Visitor
+                                a.btn.btn-primary(href="javascript:void(0)" onclick="addVisitorField()") Add Visitor
 
                             each visitor in info
                                 div.row.form-group(id="visitorCol" + visitor_count)
@@ -155,7 +155,7 @@ block content
                     else if index === 'customFieldsValues'
                         p
                             b='Custom Fields:'
-                            a.btn.btn-primary(href="javascript.void(0)" onclick="addCustomField()") Add Custom Field
+                            a.btn.btn-primary(href="javascript:void(0)" onclick="addCustomField()") Add Custom Field
                         div#fields
                             each fieldValue in info
                                 div.row.form-group

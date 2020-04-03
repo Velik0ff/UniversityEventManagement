@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const short = require('short-uuid');
-const nodemailer = require('nodemailer');
+const genFunctions = require('../functions/generalFunctions');
 
 /* Model */
 const User = require('../models/staff_user');
@@ -48,22 +48,22 @@ function validationErr(error) {
 	return error_msg;
 }
 
-async function sendInvitationEmail(email, password, role) {
+async function sendResetPassEmail(email, password, role) {
 	// Generate test SMTP service account from ethereal.email
 	// Only needed if you don't have a real mail account for testing
 	let testAccount = await nodemailer.createTestAccount();
 
 	// create reusable transporter object using the default SMTP transport
 	let transporter = nodemailer.createTransport({
-		// host: "smtp.mailgun.org",
-		host: "smtp.ethereal.email",
+		host: smtp.host,
+		// host: "smtp.ethereal.email",
 		port: 587,
 		secure: false, // true for 465, false for other ports
 		auth: {
-			user: testAccount.user,
-			pass: testAccount.pass
-			// user: 'postmaster@sandbox93442b8153754117ada8172d0ef1129f.mailgun.org', // generated ethereal user
-			// pass: 'd6b25d3e7711da468290a08b2c1db517-074fa10c-7dd01f0c' // generated ethereal password
+			// user: testAccount.user,
+			// pass: testAccount.pass
+			user: smtp.user,
+			pass: smtp.pass
 		}
 	});
 
@@ -349,7 +349,7 @@ router.post('/' + addLink, function (req, res, next) {
 			if (!error) {
 				message = "Successfully added new user with email: " + req.body.Email;
 				console.log(message);
-				sendInvitationEmail(req.body.Email, password_to_insert, req.body.Role);
+				genFunctions.sendEmail(req.body.Email, password_to_insert, req.body.Role, 'staff');
 			} else {
 				error_msg = validationErr(error);
 			}
@@ -364,7 +364,20 @@ router.post('/' + addLink, function (req, res, next) {
 
 router.get('/' + resetPassLink, function (req, res, next) {
 	if (req.user && req.user.permission === 0) {
+
+		function renderView(message,error){
+			res.render('view', {
+				resetMsg: message,
+				error: error,
+				listLink: listLink,
+				user: req.user
+			});
+		}
+
 		if (req.query.id) {
+			let error = null;
+			let message = null;
+
 			User.findOne({_id: req.query.id}, function (errFind, user) {
 				if (!errFind) {
 					let password = short().new();
@@ -377,35 +390,22 @@ router.get('/' + resetPassLink, function (req, res, next) {
 					}, function (err, userDoc) {
 						if (err) {
 							console.log(err);
-							res.render('view', {
-								error: "Unknown error has occurred please try again!",
-								listLink: listLink,
-								user: req.user
-							});
+							error = "Unknown error has occurred please try again!";
 						} else {
-							res.render('view', {
-								message: "Successfully reset password of the user.",
-								listLink: listLink,
-								user: req.user
-							});
+							genFunctions.sendEmail(user.email, password, null, 'reset-pass');
+							message = "Successfully reset password of the user.";
 						}
+
+						renderView(message,error)
 					});
 				} else {
 					console.log(errFind);
-					res.render('view', {
-						error: "Unknown error has occurred please try again!",
-						listLink: listLink,
-						user: req.user
-					});
+					renderView(message,"Unknown error has occurred please try again!");
 				}
 			});
 		} else {
 			console.log('No id is posted for reset password of the user.');
-			res.render('view', {
-				error: "Unknown error has occurred please try again!",
-				listLink: listLink,
-				user: req.user
-			});
+			renderView(message,"Unknown error has occurred please try again!");
 		}
 	} else {
 		res.redirect('/welcome');

@@ -4,6 +4,8 @@ block content
     script.
         var original_list = !{JSON.stringify(list)};
         var list = !{JSON.stringify(list)};
+        var filter_list = [];
+        var search_list = [];
         var filter_applied = false;
         var search_applied = false;
 
@@ -52,42 +54,55 @@ block content
 
         function searchFilter() {
             const input = $("#searchBox").val();
+            let inner_list = original_list;
 
             function filterOutResults(object) {
-                return object.id.includes(input) || object.name.includes(input);
+                return object.id.toLowerCase().includes(input.toLowerCase()) || object.name.toLowerCase().includes(input.toLowerCase());
             }
+
+            if(filter_applied) inner_list = filter_list;
 
             if (input !== "") {
             	search_applied = true;
 
-            	list = list.filter(filterOutResults);
-                populateList(list);
-            } else populateList(list);
+                inner_list = inner_list.filter(filterOutResults);
+
+                search_list = original_list.filter(filterOutResults);
+            } else search_applied = false;
+
+            populateList(inner_list);
         }
     if filter == "Events"
         script.
             function applyFilter(){
             	filter_applied = true;
 
-            	let list_to_filter = list;
+            	let list_to_filter = original_list;
 
-                if(!search_applied){
-                    list_to_filter = original_list;
-                }
+                if(search_applied) list_to_filter = search_list;
+
+                let spacesMin = $("#rangeSpacesMin").val();
+                let spacesMax = $("#rangeSpacesMax").val();
+                let visitorsMin = $("#rangeVisitorsMin").val();
+                let visitorsMax = $("#rangeVisitorsMax").val();
+                let dateFrom = $("#rangeDateFrom").val();
+                let dateTo = $("#rangeDateTo").val();
+                let eventTypeSelected = $("#eventTypeSelectedFilter").val();
 
                 $.post("../filter", {
-                    spacesMin:$("#rangeSpacesMin").val(),
-                    spacesMax:$("#rangeSpacesMax").val(),
-                    visitorsMin:$("#rangeVisitorsMin").val(),
-                    visitorsMax:$("#rangeVisitorsMax").val(),
-                    dateFrom:$("#rangeDateFrom").val(),
-                    dateTo:$("#rangeDateTo").val(),
-                    eventTypeSelected:$("#eventTypeSelectedFilter").val(),
+                    spacesMin:spacesMin,
+                    spacesMax:spacesMax,
+                    visitorsMin:visitorsMin,
+                    visitorsMax:visitorsMax,
+                    dateFrom:dateFrom,
+                    dateTo:dateTo,
+                    eventTypeSelected:eventTypeSelected,
                     list:list_to_filter,
+                    originalList:original_list,
                     type:!{JSON.stringify(type)}
                 }, function (data) {
                     populateList(data.list);
-                    list = data.list;
+                    filter_list = data.filterList;
                 });
             }
     else if filter == "Equipment"
@@ -111,12 +126,12 @@ block content
                 	return result;
                 }
 
+                filter_list = original_list.filter(filterOutResults);
+
                 if(search_applied){
-                	list = list.filter(filterOutResults);
-                	populateList(list);
+                	populateList(search_list.filter(filterOutResults));
                 } else {
-                	list = original_list.filter(filterOutResults);
-                	populateList(list);
+                	populateList(filter_list);
                 }
             }
     else if filter == "Rooms"
@@ -140,12 +155,12 @@ block content
                 	return result;
                 }
 
-                if(search_applied){
-                	list = list.filter(filterOutResults);
-                	populateList(list);
+                filter_list = original_list.filter(filterOutResults);
+
+                if (search_applied) {
+                    populateList(search_list.filter(filterOutResults));
                 } else {
-                	list = original_list.filter(filterOutResults);
-                	populateList(list);
+                    populateList(filter_list);
                 }
             }
     else if filter == "Staff"
@@ -153,19 +168,18 @@ block content
             function applyFilter(){
                 filter_applied = true;
 
-                let list_to_filter = list;
+                let list_to_filter = original_list;
 
-                if(!search_applied){
-                    list_to_filter = original_list;
-                }
+                if(!search_applied) list_to_filter = search_list;
 
                 $.post("../filter", {
                     staffRole:$("#staffRoleSelect").val(),
                     list:list_to_filter,
+                    originalList:original_list,
                     type:!{JSON.stringify(type)}
                 }, function (data) {
                     populateList(data.list);
-                    list = data.list;
+                    filter_list = data.filterList;
                 });
             }
     else if filter == "Visitors"
@@ -185,12 +199,12 @@ block content
                 	return result;
                 }
 
-                if(search_applied){
-                	list = list.filter(filterOutResults);
-                	populateList(list);
+                filter_list = original_list.filter(filterOutResults);
+
+                if (search_applied) {
+                    populateList(search_list.filter(filterOutResults));
                 } else {
-                	list = original_list.filter(filterOutResults);
-                	populateList(list);
+                    populateList(filter_list);
                 }
             }
 

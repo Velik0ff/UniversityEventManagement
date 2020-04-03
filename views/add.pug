@@ -48,7 +48,7 @@ block content
                 div#rooms
                     p
                         b="Rooms:"
-                        a.btn.btn-primary(href="javascript.void(0)" onclick="addRoomField()") Add Room
+                        a.btn.btn-primary(href="javascript:void(0)" onclick="addRoomField()") Add Room
 
                     if selectedRooms && selectedRooms.length > 0
                         each room in selectedRooms
@@ -70,7 +70,7 @@ block content
                 div#equipment
                     p
                         b="Equipment:"
-                        a.btn.btn-primary(href="javascript.void(0)" onclick="addEquipmentField()") Add Equipment
+                        a.btn.btn-primary(href="javascript:void(0)" onclick="addEquipmentField()") Add Equipment
 
                     if selectedEquip && selectedEquip.length > 0
                         each equip in selectedEquip
@@ -99,7 +99,7 @@ block content
                 div#staff
                     p
                         b="Staff:"
-                        a.btn.btn-primary(href="javascript.void(0)" onclick="addStaffField()") Add Staff
+                        a.btn.btn-primary(href="javascript:void(0)" onclick="addStaffField()") Add Staff
 
                     if selectedStaff && selectedStaff.length > 0
                         each staff in selectedStaff
@@ -127,7 +127,7 @@ block content
                 div#visitors
                     p
                         b="Visitors:"
-                        a.btn.btn-primary(href="javascript.void(0)" onclick="addVisitorField()") Add Visitor
+                        a.btn.btn-primary(href="javascript:void(0)" onclick="addVisitorField()") Add Visitor
 
                     if selectedVisitors && selectedVisitors.length > 0
                         each visitor in selectedVisitors
@@ -148,7 +148,7 @@ block content
             if customFields
                 p
                     b='Custom Fields:'
-                    a.btn.btn-primary(href="javascript.void(0)" onclick="addCustomField()") Add Custom Field
+                    a.btn.btn-primary(href="javascript:void(0)" onclick="addCustomField()") Add Custom Field
                 if customFieldsValues
                     div#fields
                         each fieldValue in customFieldsValues
@@ -166,7 +166,7 @@ block content
             center
                 if customFields
                     p
-                        a.btn.btn-primary(href="javascript.void(0)" onclick="addCustomField()") Add Custom Field
+                        a.btn.btn-primary(href="javascript:void(0)" onclick="addCustomField()") Add Custom Field
 
 
 

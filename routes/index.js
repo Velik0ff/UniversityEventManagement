@@ -488,7 +488,7 @@ router.get("/logout", function (req, res) {
 });
 /* End Logout */
 
-router.post('/subscribe', (req, res) => {
+router.post('/subscribe', function (req, res) {
 	if (req.user && req.user.permission >= 0) {
 		if (req.body.subscription) {
 			const subscription = req.body.subscription;
@@ -514,7 +514,7 @@ router.post('/subscribe', (req, res) => {
 								console.log(errUpdate);
 								res.status(500).json({message: "Unable to update subscription to notifications."});
 							} else {
-								res.status(200);
+								res.status(200).json({message: "Successfully subscribed for notifications."});
 							}
 						});
 					} else {
@@ -544,6 +544,9 @@ router.post('/subscribe', (req, res) => {
 					res.status(500).json({message: "Unable to subscribe for notifications."});
 				}
 			});
+		} else {
+			console.log("Subscription not sent.");
+			res.status(500).json({message: "Unable to subscribe for notifications."});
 		}
 	} else {
 		res.status(500).json({message: "Permission for notifications is not granted."});
@@ -689,12 +692,13 @@ router.post('/filter', function (req, res, next) {
 	if (req.user && req.user.permission >= 0) {
 		if (req.body.type && req.body.type !== "undefined" && req.body.list && req.body.list !== "undefined") {
 			let list = [];
+			let filterList = [];
 			let promises = [];
 
 			switch (req.body.type) {
 				case "allList":
 					if (req.body.list && req.user.permission === 0) {
-						req.body.list.forEach(function (list_element) {
+						req.body.list.forEach(async function (list_element) {
 							promises.push(new Promise(function (resolve, reject) {
 								filterEventAdmin(list_element).then(function (result) {
 									if (result) {
@@ -706,15 +710,27 @@ router.post('/filter', function (req, res, next) {
 							}));
 						});
 
+						req.body.originalList.forEach(async function (list_element) {
+							promises.push(new Promise(function (resolve, reject) {
+								filterEventAdmin(list_element).then(function (result) {
+									if (result) {
+										filterList.push(list_element);
+									}
+
+									resolve();
+								});
+							}));
+						});
+
 						if (promises.length > 0) {
 							Promise.all(promises).then(function () {
-								res.status(200).json({list: list});
+								res.status(200).json({list: list,filterList: filterList});
 							});
 						} else {
-							res.status(200).json({list: []});
+							res.status(200).json({list: [],filterList: []});
 						}
 					} else {
-						res.status(200).json({list: []});
+						res.status(200).json({list: [],filterList: []});
 					}
 					break;
 				case "participate":
@@ -731,15 +747,27 @@ router.post('/filter', function (req, res, next) {
 							}));
 						});
 
+						req.body.originalList.forEach(async function (list_element) {
+							promises.push(new Promise(function (resolve, reject) {
+								filterEventParticipant(list_element).then(function (result) {
+									if (result) {
+										filterList.push(list_element);
+									}
+
+									resolve();
+								});
+							}));
+						});
+
 						if (promises.length > 0) {
 							Promise.all(promises).then(function () {
-								res.status(200).json({list: list});
+								res.status(200).json({list: list,filterList: filterList});
 							});
 						} else {
-							res.status(200).json({list: []});
+							res.status(200).json({list: [],filterList: []});
 						}
 					} else {
-						res.status(200).json({list: []});
+						res.status(200).json({list: [],filterList: []});
 					}
 					break;
 				case "staff":

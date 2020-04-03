@@ -1,20 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
-const nodemailer = require('nodemailer');
 const process = require('process');
 const webpush = require('web-push');
 const moment = require('moment');
-const genFunctions = require('../functions/generalFunctions')
+const genFunctions = require('../functions/generalFunctions');
 
 /* Model */
 const Event = require('../models/Event');
-const EventType = require('../models/EventType');
 const Equipment = require('../models/EqInventory');
 const Staff = require('../models/staff_user');
 const Visitor = require('../models/visitor_user');
-const Room = require('../models/Room');
-const SubNotification = require('../models/SubNotification');
 /* End Model */
 
 const editLink = "edit-event";
@@ -132,76 +127,6 @@ function getPostedRooms(req) {
 
 	return rooms_used;
 }
-
-async function sendEmail(email, type) {
-	// Generate test SMTP service account from ethereal.email
-	// Only needed if you don't have a real mail account for testing
-	let testAccount = await nodemailer.createTestAccount();
-
-	// create reusable transporter object using the default SMTP transport
-	let transporter = nodemailer.createTransport({
-		// host: "smtp.mailgun.org",
-		host: "smtp.ethereal.email",
-		port: 587,
-		secure: false, // true for 465, false for other ports
-		auth: {
-			user: testAccount.user,
-			pass: testAccount.pass
-			// user: 'postmaster@sandbox93442b8153754117ada8172d0ef1129f.mailgun.org', // generated ethereal user
-			// pass: 'd6b25d3e7711da468290a08b2c1db517-074fa10c-7dd01f0c' // generated ethereal password
-		}
-	});
-
-	var info = null; // store the callback email data
-	// send mail with defined transport object
-	switch (type) {
-		case "added":
-			info = await transporter.sendMail({
-				from: '"University of Liverpool Event System" <no-reply@uol-events.co.uk>', // sender address
-				to: email, // list of receivers
-				subject: "You have been invited to participate in an event", // Subject line
-				html: "Hello,</br></br>" +
-					"You have been added as a participant to an event." +
-					"<p>Please visit the University of Liverpool Event System to view the list of events you are a participant.</p>" +
-					"Best regards,</br>" +
-					"UOL Computer Science outreach staff."
-			});
-			break;
-		case "edited":
-			info = await transporter.sendMail({
-				from: '"University of Liverpool Event System" <no-reply@uol-events.co.uk>', // sender address
-				to: email, // list of receivers
-				subject: "An event has been edited", // Subject line
-				html: "Hello,</br></br>" +
-					"An event that you are participating to has been updated." +
-					"<p>Please visit the University of Liverpool Event System to view the list of events you are a participant.</p>" +
-					"Best regards,</br>" +
-					"UOL Computer Science outreach staff."
-			});
-			break;
-		case "removed":
-			info = await transporter.sendMail({
-				from: '"University of Liverpool Event System" <no-reply@uol-events.co.uk>', // sender address
-				to: email, // list of receivers
-				subject: "You have been removed as a participant to an event.", // Subject line
-				html: "Hello,</br></br>" +
-					"You have been removed from an event that you were going to participate." +
-					"<p>Please visit the University of Liverpool Event System to view the list of events you are a participant.</p>" +
-					"Best regards,</br>" +
-					"UOL Computer Science outreach staff."
-			});
-			break;
-	}
-
-
-	console.log("Message sent: %s", info.messageId);
-	// Message sent: <b658f8ca-6296-ccf4-8306-87d57a0b4321@example.com>
-
-	// Preview only available when sending through an Ethereal account
-	console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
-	// Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
-}
-
 /* End Functions */
 
 router.get('/participate-events-list', function (req, res, next) {
@@ -573,7 +498,7 @@ router.post('/' + editLink, function (req, res, next) {
 										if (!errFind) {
 											if (staffMemberDoc) {
 												genFunctions.sendNotification(staffMemberDoc._id, "Event Update", "You have been removed from an event.")
-												sendEmail(staffMemberDoc.email, "removed");
+												genFunctions.sendEmail(staffMemberDoc.email,null,null, "removed");
 											} else {
 												console.log("Staff member not found.");
 											}
@@ -599,7 +524,7 @@ router.post('/' + editLink, function (req, res, next) {
 							Staff.findOne({_id: posted_staff_member.staffMemberID}, function (errorFindStaffEmail, staffDoc) {
 								if (!errorFindStaffEmail) {
 									genFunctions.sendNotification(staffDoc._id, "Event Participation", "You have been added to participate to an event.");
-									sendEmail(staffDoc.email, "added");
+									genFunctions.sendEmail(staffDoc.email,null,null, "added");
 								} else {
 									console.log(errorFindStaffEmail);
 								}
@@ -632,7 +557,7 @@ router.post('/' + editLink, function (req, res, next) {
 							Visitor.findOne({_id: posted_visitor.visitorID}, function (errorFindVisitorEmail, visitorDoc) {
 								if (!errorFindVisitorEmail) {
 									genFunctions.sendNotification(visitorDoc._id, "Event Participation", "You have been added to participate to an event.");
-									sendEmail(visitorDoc.contactEmail, "added");
+									genFunctions.sendEmail(visitorDoc.contactEmail,null,null, "added");
 								} else {
 									console.log(errorFindVisitorEmail);
 								}
@@ -658,10 +583,12 @@ router.post('/' + editLink, function (req, res, next) {
 									Equipment.findOne({_id: prev_equip.equipID}, function (errFindEquip, equipFindDoc) {
 										if (errFindEquip) console.log(errFindEquip);
 
-										previousQuantity.push({
-											equipID: prev_equip.equipID,
-											quantity: equipFindDoc.quantity
-										});
+										if(equipFindDoc) {
+											previousQuantity.push({
+												equipID: prev_equip.equipID,
+												quantity: equipFindDoc.quantity
+											});
+										}
 
 										resolve();
 									});
@@ -703,6 +630,7 @@ router.post('/' + editLink, function (req, res, next) {
 							promisesEquip.push(new Promise(function (resolve, reject) {
 								Equipment.findOne({_id: posted_equip.equipID}, function (errFindEquip, equipFindDoc) {
 									if (!errFindEquip) {
+										posted_equip['quantity'] = equipFindDoc.quantity;
 										if (equipFindDoc && equipFindDoc.quantity - posted_equip.reqQty >= 0) {
 											Equipment.updateOne({_id: posted_equip.equipID}, {$inc: {quantity: -posted_equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
 												if (errorUpdateEquip) console.log(errorUpdateEquip);
@@ -747,7 +675,7 @@ router.post('/' + editLink, function (req, res, next) {
 										Staff.findOne({_id: staffMember.staffMemberID}, function (errorStaffSendEmail, staffMemberDoc) {
 											if (!errorStaffSendEmail) {
 												genFunctions.sendNotification(staffMemberDoc._id, "Event Update", "An event that you are participating has been updated.");
-												sendEmail(staffMemberDoc.email, "edited");
+												genFunctions.sendEmail(staffMemberDoc.email,null,null, "edited");
 											}
 										});
 									});
@@ -756,7 +684,7 @@ router.post('/' + editLink, function (req, res, next) {
 										Visitor.findOne({_id: visitor.visitorID}, function (errorVisitorSendEmail, visitorDoc) {
 											if (!errorVisitorSendEmail) {
 												genFunctions.sendNotification(visitorDoc._id, "Event Update", "An event that you are participating has been updated.")
-												sendEmail(visitorDoc.contactEmail, "edited");
+												genFunctions.sendEmail(visitorDoc.contactEmail,null,null, "edited");
 											}
 										});
 									});
@@ -955,7 +883,7 @@ router.post('/' + addLink, async function (req, res, next) {
 					promisesEquip.push(new Promise(function (resolve, reject) {
 						Equipment.findOne({_id: equipment_use[equipment_use.length - 1]['equipID']}, function (errFindEquip, equipmentFoundDoc) {
 							if (!errFindEquip) {
-								if (equipmentFoundDoc && equipmenFoundDoc.quantity >= equipment_use[equipment_use.length - 1]['reqQty']) {
+								if (equipmentFoundDoc && equipmentFoundDoc.quantity >= equipment_use[equipment_use.length - 1]['reqQty']) {
 									Equipment.updateOne({_id: equipment_use[equipment_use.length - 1]['equipID']}, {$inc: {quantity: -equipment_use[equipment_use.length - 1]['reqQty']}}, function (err, eqDoc) {
 										if (err) {
 											console.log("Failed to update quantity for id:" + equipment_use[equipment_use.length - 1]['equipID']);
@@ -1021,7 +949,7 @@ router.post('/' + addLink, async function (req, res, next) {
 											console.log(errUpdate);
 										} else {
 											genFunctions.sendNotification(staffDoc._id, "Participating Event", "You are a participant to a new event.");
-											sendEmail(staffDoc.email, "added");
+											genFunctions.sendEmail(staffDoc.email,null,null, "added");
 										}
 									});
 								} else { // staff not found or error with database
@@ -1038,7 +966,7 @@ router.post('/' + addLink, async function (req, res, next) {
 											console.log(errUpdate);
 										} else {
 											genFunctions.sendNotification(visitorDoc._id, "Participating Event", "You are a participant to a new event.");
-											sendEmail(visitorDoc.contactEmail, "added");
+											genFunctions.sendEmail(visitorDoc.contactEmail,null,null, "added");
 										}
 									});
 								} else { // visitor not found or error with database
@@ -1048,7 +976,6 @@ router.post('/' + addLink, async function (req, res, next) {
 						});
 
 						message = "Successfully create new event: " + req.body['Event Name'];
-						console.log(message);
 						// sendInvitationEmail(req.body.Email, password_to_insert, req.body.Role);
 					} else {
 						error_msg = validationErr(error);
