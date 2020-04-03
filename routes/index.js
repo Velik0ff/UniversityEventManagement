@@ -688,19 +688,20 @@ router.post('/filter', function (req, res, next) {
 
 	if (req.user && req.user.permission >= 0) {
 		if (req.body.type && req.body.type !== "undefined" && req.body.list && req.body.list !== "undefined") {
+			let list = [];
+			let promises = [];
+
 			switch (req.body.type) {
 				case "allList":
 					if (req.body.list && req.user.permission === 0) {
-						let list = [];
-						let promises = [];
-
 						req.body.list.forEach(function (list_element) {
 							promises.push(new Promise(function (resolve, reject) {
 								filterEventAdmin(list_element).then(function (result) {
 									if (result) {
 										list.push(list_element);
-										resolve();
-									} else resolve();
+									}
+
+									resolve();
 								});
 							}));
 						});
@@ -718,16 +719,14 @@ router.post('/filter', function (req, res, next) {
 					break;
 				case "participate":
 					if (req.body.list && req.user.permission >= 0) {
-						let list = [];
-						let promises = [];
-
 						req.body.list.forEach(function (list_element) {
 							promises.push(new Promise(function (resolve, reject) {
 								filterEventParticipant(list_element).then(function (result) {
 									if (result) {
 										list.push(list_element);
-										resolve();
-									} else resolve();
+									}
+
+									resolve();
 								});
 							}));
 						});
@@ -744,7 +743,21 @@ router.post('/filter', function (req, res, next) {
 					}
 					break;
 				case "staff":
+					if(req.body.list && req.user.permission === 1){
+						req.body.list.forEach(function(list_element){
+							promises.push(new Promise(function (resolve, reject) {
+								Staff.findOne({_id: list_element.id}, async function (errFind, staff_member) {
+									if(errFind) console.log(errFind);
 
+									if(staff_member.role.includes(req.body.staffRole)){
+										list.push(staff_member);
+									}
+
+									resolve();
+								});
+							}));
+						});
+					}
 					break;
 			}
 		} else {

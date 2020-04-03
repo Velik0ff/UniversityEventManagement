@@ -148,6 +148,51 @@ block content
                 	populateList(list);
                 }
             }
+    else if filter == "Staff"
+        script.
+            function applyFilter(){
+                filter_applied = true;
+
+                let list_to_filter = list;
+
+                if(!search_applied){
+                    list_to_filter = original_list;
+                }
+
+                $.post("../filter", {
+                    staffRole:$("#staffRoleSelect").val(),
+                    list:list_to_filter,
+                    type:!{JSON.stringify(type)}
+                }, function (data) {
+                    populateList(data.list);
+                    list = data.list;
+                });
+            }
+    else if filter == "Visitors"
+        script.
+            function applyFilter(){
+                filter_applied = true;
+
+                function filterOutResults(object){
+                	var result = true;
+
+                	let institutionSelect = $("#visitorInstitutionSelect").val();
+
+                	if(!object.institutionName.includes(institutionSelect)){
+                      result = false;
+                    }
+
+                	return result;
+                }
+
+                if(search_applied){
+                	list = list.filter(filterOutResults);
+                	populateList(list);
+                } else {
+                	list = original_list.filter(filterOutResults);
+                	populateList(list);
+                }
+            }
 
     if filter == "Events"
         script.
@@ -166,6 +211,7 @@ block content
                 $("#rangeVisitorsMax").val("");
                 $("#rangeDateFrom").val("");
                 $("#rangeDateTo").val("");
+                $("#eventTypeSelectedFilter").prop('selectedIndex',0);
             }
     else if filter == "Equipment"
         script.
@@ -195,7 +241,32 @@ block content
                 $("#rangeCapacityMin").val("");
                 $("#rangeCapacityMax").val("");
             }
+    else if filter == "Staff"
+        script.
+            function resetFilter(){
+            	filter_applied = false;
 
+                if(search_applied){
+                	searchFilter();
+                } else {
+                	populateList(original_list);
+                }
+
+                $("#staffRoleSelect").prop('selectedIndex',0);
+            }
+    else if filter == "Visitors"
+        script.
+            function resetFilter(){
+                filter_applied = false;
+
+                if(search_applied){
+                	searchFilter();
+                } else {
+                	populateList(original_list);
+                }
+
+                // TODO: reset field
+            }
     .container
         h3.title=title
         if addLink
@@ -287,8 +358,18 @@ block content
                 div#staffRoleFilter
                     h6="Staff Role"
                     select.form-control#staffRoleSelect
+                        option(selected)="Select Staff Role"
                         each staff_role in staffRoles
-                            option(value=staff_role._id)=staff_role.typeName
+                            option(value=staff_role)=staff_role
+                hr
+
+            if filter == "Visitors"
+                div#visitorInstitutionFilter
+                    h6="Visitor Institution"
+                    select.form-control#visitorInstitutionSelect
+                        option(selected)="Select Visitor Institution"
+                        each visitor_institution in visitorInstitutions
+                            option(value=visitor_institution)=visitor_institution
                 hr
 
 

@@ -95,10 +95,11 @@ async function sendInvitationEmail(email, password, role) {
 router.get('/' + listLink, function (req, res, next) {
 	if (req.user && req.user.permission === 0) {
 		let columns = ["ID", "Full Name", "Email", "Options"];
-		var error = "";
+		let error = "";
 
 		User.find({}, function (err, users) {
-			var userList = [];
+			let userList = [];
+			let staffRoles = [];
 
 			users.forEach(function (user) {
 				userList.push({
@@ -106,12 +107,29 @@ router.get('/' + listLink, function (req, res, next) {
 					name: user.fullName,
 					email: user.email
 				});
+
+				if (user.role.includes(',')) {
+					let staff_member_roles_arr = user.role.split(',');
+
+					staff_member_roles_arr.forEach(function(staff_role){
+						if(!staffRoles.includes(staff_role)) {
+							staffRoles.push(staff_role);
+						}
+					});
+				} else {
+					if (!staffRoles.includes(user.role)) {
+						staffRoles.push(user.role);
+					}
+				}
 			});
 
-			error = userList.length === 0 ? "No results to show" : ""
+			error = userList.length === 0 ? "No results to show" : "";
 
 			res.render('list', {
 				title: 'Staff List',
+				filter: 'Staff',
+				type: 'staff',
+				staffRoles: staffRoles,
 				list: userList,
 				columns: columns,
 				editLink: editLink,
@@ -351,7 +369,12 @@ router.get('/' + resetPassLink, function (req, res, next) {
 				if (!errFind) {
 					let password = short().new();
 
-					User.updateOne({_id: req.query.id}, {$set:{permission:-1,password:user.hashPassword(password)}}, function (err, userDoc) {
+					User.updateOne({_id: req.query.id}, {
+						$set: {
+							permission: -1,
+							password: user.hashPassword(password)
+						}
+					}, function (err, userDoc) {
 						if (err) {
 							console.log(err);
 							res.render('view', {
