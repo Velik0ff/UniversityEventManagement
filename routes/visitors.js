@@ -88,7 +88,7 @@ async function sendInvitationEmail(email, password) {
 
 router.get('/' + listLink, function (req, res, next) {
 	if (req.user && req.user.permission === 0) {
-		let columns = ["ID", "Lead Teacher", "Email", "Options"];
+		let columns = ["ID", "Institution Name", "Lead Teacher", "Email", "Options"];
 		var error = "";
 
 		User.find({}, function (err, users) {
