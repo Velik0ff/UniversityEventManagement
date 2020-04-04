@@ -3,7 +3,6 @@ extends layout
 block content
     script.
         var original_list = !{JSON.stringify(list)};
-        var list = !{JSON.stringify(list)};
         var filter_list = [];
         var search_list = [];
         var filter_applied = false;
@@ -170,7 +169,7 @@ block content
 
                 let list_to_filter = original_list;
 
-                if(!search_applied) list_to_filter = search_list;
+                if(search_applied) list_to_filter = search_list;
 
                 $.post("../filter", {
                     staffRole:$("#staffRoleSelect").val(),

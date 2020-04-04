@@ -49,7 +49,7 @@ router.get('/' + listLink, function (req, res, next) {
 		let columns = ["ID", "Institution Name", "Lead Teacher", "Email", "Options"];
 		var error = "";
 
-		User.find({}, function (err, users) {
+		User.find({}, null, {sort: '-leadTeacherName'}, function (err, users) {
 			var userList = [];
 
 			users.forEach(function (user) {

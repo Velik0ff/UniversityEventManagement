@@ -138,7 +138,7 @@ router.get('/participate-events-list', function (req, res, next) {
 		Staff.findOne({_id: req.user._id}, function (err, staffDoc) {
 			if (err) console.log(err)
 
-			Event.find({_id: {$in: staffDoc.attendingEvents}}, function (err, events) {
+			Event.find({_id: {$in: staffDoc.attendingEvents}}, null, {sort: {date:-1}}, function (err, events) {
 				var eventList = [];
 
 				events.forEach(function (event) {
@@ -172,7 +172,7 @@ router.get('/participate-events-list', function (req, res, next) {
 		Visitor.findOne({_id: req.user._id}, function (err, visitorDoc) {
 			if (err) console.log(err)
 
-			Event.find({_id: {$in: visitorDoc.attendingEvents}}, function (err, events) {
+			Event.find({_id: {$in: visitorDoc.attendingEvents}}, null, {sort: {date:-1}}, function (err, events) {
 				var eventList = [];
 
 				events.forEach(function (event) {
@@ -211,7 +211,7 @@ router.get('/' + listLink, function (req, res, next) {
 		var error = "";
 		let allEventTypes = genFunctions.getAllEventTypes();
 
-		Event.find({}, function (err, events) {
+		Event.find({}, null, {sort: {date:-1}}, function (err, events) {
 			var eventList = [];
 
 			events.forEach(function (event) {
@@ -226,7 +226,7 @@ router.get('/' + listLink, function (req, res, next) {
 			allEventTypes.then(function (eventTypes) {
 				res.render('list', {
 					title: 'Events List',
-					list: eventList,
+					list: eventList.reverse(),
 					columns: columns,
 					editLink: editLink,
 					viewLink: viewLink,
