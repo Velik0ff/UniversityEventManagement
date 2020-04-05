@@ -498,7 +498,7 @@ router.post('/' + editLink, function (req, res, next) {
 										if (!errFind) {
 											if (staffMemberDoc) {
 												genFunctions.sendNotification(staffMemberDoc._id, "Event Update", "You have been removed from an event.")
-												genFunctions.sendEmail(staffMemberDoc.email,null,null, "removed");
+												genFunctions.sendEmail(staffMemberDoc.email,null,null, null, null, "removed");
 											} else {
 												console.log("Staff member not found.");
 											}
@@ -524,7 +524,7 @@ router.post('/' + editLink, function (req, res, next) {
 							Staff.findOne({_id: posted_staff_member.staffMemberID}, function (errorFindStaffEmail, staffDoc) {
 								if (!errorFindStaffEmail) {
 									genFunctions.sendNotification(staffDoc._id, "Event Participation", "You have been added to participate to an event.");
-									genFunctions.sendEmail(staffDoc.email,null,null, "added");
+									genFunctions.sendEmail(staffDoc.email,null,null, null, null,"added");
 								} else {
 									console.log(errorFindStaffEmail);
 								}
@@ -557,7 +557,7 @@ router.post('/' + editLink, function (req, res, next) {
 							Visitor.findOne({_id: posted_visitor.visitorID}, function (errorFindVisitorEmail, visitorDoc) {
 								if (!errorFindVisitorEmail) {
 									genFunctions.sendNotification(visitorDoc._id, "Event Participation", "You have been added to participate to an event.");
-									genFunctions.sendEmail(visitorDoc.contactEmail,null,null, "added");
+									genFunctions.sendEmail(visitorDoc.contactEmail,null,null, null, null, "added");
 								} else {
 									console.log(errorFindVisitorEmail);
 								}
@@ -675,7 +675,7 @@ router.post('/' + editLink, function (req, res, next) {
 										Staff.findOne({_id: staffMember.staffMemberID}, function (errorStaffSendEmail, staffMemberDoc) {
 											if (!errorStaffSendEmail) {
 												genFunctions.sendNotification(staffMemberDoc._id, "Event Update", "An event that you are participating has been updated.");
-												genFunctions.sendEmail(staffMemberDoc.email,null,null, "edited");
+												genFunctions.sendEmail(staffMemberDoc.email,null,null, null, null, "edited");
 											}
 										});
 									});
@@ -684,7 +684,7 @@ router.post('/' + editLink, function (req, res, next) {
 										Visitor.findOne({_id: visitor.visitorID}, function (errorVisitorSendEmail, visitorDoc) {
 											if (!errorVisitorSendEmail) {
 												genFunctions.sendNotification(visitorDoc._id, "Event Update", "An event that you are participating has been updated.")
-												genFunctions.sendEmail(visitorDoc.contactEmail,null,null, "edited");
+												genFunctions.sendEmail(visitorDoc.contactEmail,null,null, null, null, "edited");
 											}
 										});
 									});
@@ -949,7 +949,7 @@ router.post('/' + addLink, async function (req, res, next) {
 											console.log(errUpdate);
 										} else {
 											genFunctions.sendNotification(staffDoc._id, "Participating Event", "You are a participant to a new event.");
-											genFunctions.sendEmail(staffDoc.email,null,null, "added");
+											genFunctions.sendEmail(staffDoc.email,null,null, null, null, "added");
 										}
 									});
 								} else { // staff not found or error with database
@@ -966,7 +966,7 @@ router.post('/' + addLink, async function (req, res, next) {
 											console.log(errUpdate);
 										} else {
 											genFunctions.sendNotification(visitorDoc._id, "Participating Event", "You are a participant to a new event.");
-											genFunctions.sendEmail(visitorDoc.contactEmail,null,null, "added");
+											genFunctions.sendEmail(visitorDoc.contactEmail,null,null, null, null, "added");
 										}
 									});
 								} else { // visitor not found or error with database

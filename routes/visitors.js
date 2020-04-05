@@ -290,7 +290,7 @@ router.post('/' + addLink, function (req, res, next) {
 		new_user.save(function (error, userDoc) {
 			if (!error) {
 				message = "Successfully added new visitor with email: " + req.body['Contact Email'];
-				genFunctions.sendEmail(req.body['Contact Email'], password_to_insert, null, "visitor");
+				genFunctions.sendEmail(req.body['Contact Email'], password_to_insert, null, null, null, "visitor");
 			} else {
 				error_msg = validationErr(error);
 			}
@@ -333,7 +333,7 @@ router.get('/' + resetPassLink, function (req, res, next) {
 							console.log(err);
 							error = "Unknown error has occurred please try again!";
 						} else {
-							genFunctions.sendEmail(user.contactEmail, password, null, 'reset-pass');
+							genFunctions.sendEmail(user.contactEmail, password, null, null, null, 'reset-pass');
 							message = "Successfully reset password of the user.";
 						}
 

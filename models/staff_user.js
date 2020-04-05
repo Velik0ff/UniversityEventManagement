@@ -29,7 +29,7 @@ var StaffSchema = new mongoose.Schema({
 		eventID: {type: String, required: true},
 		role: {type: String, required: true}
 	}],
-	reset_code: { type:String }
+	resetPassCode: { type:String }
 });
 
 /* Methods to Compare and Hash Password */

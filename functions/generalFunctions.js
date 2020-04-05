@@ -200,7 +200,7 @@ function sendNotification(userID,title,body){
 	});
 }
 
-async function sendEmail(email, password, role, type) {
+async function sendEmail(email, password, role, reset_code, req, type) {
 	// Generate test SMTP service account from ethereal.email
 	// Only needed if you don't have a real mail account for testing
 	let testAccount = await nodemailer.createTestAccount();
@@ -298,6 +298,23 @@ async function sendEmail(email, password, role, type) {
 					"Your new automatically generated password is: <b>" + password +
 					"</b></br>" +
 					"</br><b>If you think that this email should not be sent to you, please ignore it or report back to: sglvelik@liv.ac.uk</b>"// html body
+			});
+			break;
+		case "forgot-pass":
+			let link = req.protocol + '://' + req.get('host') + '/change-password?reset_code=' + reset_code;
+
+			info = await transporter.sendMail({
+				from: '"University of Liverpool Event System" <no-reply@uol-events.co.uk>', // sender address
+				to: email, // list of receivers
+				subject: "Reset Password", // Subject line
+				html: "Hello,</br></br>" +
+					"Your password reset link is:</br>" +
+					"<a href='" + link + "'>" + link + "</a></br>" +
+					"<b>If you have not requested this email, please ignore it.</b>" +
+					"<p>" +
+					"Best regards,</br>" +
+					"UOL Computer Science outreach staff." +
+					"</p>"
 			});
 			break;
 	}

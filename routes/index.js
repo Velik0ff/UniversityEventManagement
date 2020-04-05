@@ -158,51 +158,6 @@ function renderForgotPassword(res, req, error, message) {
 		user: req.user
 	});
 }
-
-async function sendForgotPassEmail(email, reset_code, req) {
-	// Generate test SMTP service account from ethereal.email
-	// Only needed if you don't have a real mail account for testing
-	let testAccount = await nodemailer.createTestAccount();
-
-	// create reusable transporter object using the default SMTP transport
-	let transporter = nodemailer.createTransport({
-		// host: "smtp.mailgun.org",
-		host: "smtp.ethereal.email",
-		port: 587,
-		secure: false, // true for 465, false for other ports
-		auth: {
-			user: testAccount.user,
-			pass: testAccount.pass
-			// user: 'postmaster@sandbox93442b8153754117ada8172d0ef1129f.mailgun.org', // generated ethereal user
-			// pass: 'd6b25d3e7711da468290a08b2c1db517-074fa10c-7dd01f0c' // generated ethereal password
-		}
-	});
-
-	let link = req.protocol + '://' + req.get('host') + '/change-password?reset_code=' + reset_code;
-
-	// send mail with defined transport object
-	let info = await transporter.sendMail({
-		from: '"University of Liverpool Event System" <no-reply@uol-events.co.uk>', // sender address
-		to: email, // list of receivers
-		subject: "Reset Password", // Subject line
-		html: "Hello,</br></br>" +
-			"Your password reset link is:</br>" +
-			"<a href='" + link + "'>" + link + "</a></br>" +
-			"<b>If you have not requested this email, please ignore it.</b>" +
-			"<p>" +
-			"Best regards,</br>" +
-			"UOL Computer Science outreach staff." +
-			"</p>"
-	});
-
-	console.log("Message sent: %s", info.messageId);
-	// Message sent: <b658f8ca-6296-ccf4-8306-87d57a0b4321@example.com>
-
-	// Preview only available when sending through an Ethereal account
-	console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
-	// Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
-}
-
 /* End Functions */
 
 /* GET login page. */
@@ -433,22 +388,22 @@ router.get('/forgot-password', function (req, res, next) {
 			Staff.findOne({email: req.body.username}, function (errStaff, staff_member) {
 				if (!errStaff) {
 					if (staff_member) {
-						Staff.updateOne({_id: staff_member._id}, {$set: {reset_code: reset_code}}, function (errUpdateStaff, staffUpdatedDoc) {
+						Staff.updateOne({_id: staff_member._id}, {$set: {resetPassCode: reset_code}}, function (errUpdateStaff, staffUpdatedDoc) {
 							if (!errUpdateStaff) {
 								console.log(errUpdateStaff);
 								renderForgotPassword(res, req, "Unknown error occurred please try again.", null);
 							} else {
-								sendForgotPassEmail(req.body.username, reset_code, req);
+								genFunctions.sendEmail(req.body.username,null,null, reset_code, req, "forgot-pass");
 								renderForgotPassword(res, req, null, "We have sent a reset link to your email, please follow the instructions in the email.");
 							}
 						});
 					} else {
 						Visitor.findOne({contactEmail: req.body.username}, function (errVisitor, visitor) {
 							if (!errVisitor) {
-								Visitor.updateOne({_id: visitor._id}, {$set: {reset_code: reset_code}}, function (errUpdateVisitor, visitorUpdatedDoc) {
+								Visitor.updateOne({_id: visitor._id}, {$set: {resetPassCode: reset_code}}, function (errUpdateVisitor, visitorUpdatedDoc) {
 									if (!errUpdateVisitor) {
 										if (visitorUpdatedDoc) {
-											sendForgotPassEmail(req.body.username, reset_code, req);
+											genFunctions.sendEmail(req.body.username,null,null, reset_code, req, "forgot-pass");
 											renderForgotPassword(res, req, null, "We have sent a reset link to your email, please follow the instructions in the email.");
 										} else {
 											renderForgotPassword(res, req, "User not found..", null);
