@@ -1,6 +1,8 @@
 script.
 	let all_staff = !{JSON.stringify(staff)};
 
+	let unavailable_staff = [];
+
 	function addStaffField() {
 		$('<div>').attr('class', 'row form-group').attr('id', 'rowStaff' + staff_count).appendTo('#staff');
 
@@ -15,7 +17,13 @@ script.
 				.attr('name', 'staffID' + staff_count)
 				.appendTo('#staffNameCol' + staff_count);
 		all_staff.forEach(function (staff_member) {
-			$('#selectStaff' + staff_count).append(new Option(staff_member.fullName, staff_member._id));
+			let select = $('#selectStaff' + staff_count);
+			if (unavailable_staff.includes(staff_member._id)) {
+				select.append('<option value="' + staff_member._id + '" disabled>' + staff_member.fullName + '</option>');
+			} else {
+				select.append('<option value="' + staff_member._id + '">' + staff_member.fullName + '</option>');
+				unavailable_staff.push(staff_member._id);
+			}
 		});
 
 		$('<div>').attr('class', 'col').attr('id', 'staffRoleCol' + staff_count).appendTo('#rowStaff' + staff_count);
@@ -41,4 +49,30 @@ script.
 		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeStaffIcon' + staff_count);
 
 		staff_count++;
+	}
+
+	function selectedStaffMember(event) {
+		if (!unavailable_staff.includes(event.value)) {
+			unavailable_staff.push(event.value);
+
+			checkAddedStaff();
+		}
+	}
+
+	function checkAddedStaff() {
+		let selections = $("#staff").find('select');
+
+		unavailable_staff.forEach(function (disabled_staff) {
+			selections.forEach(function (selection) {
+				if (selection.value === disabled_staff) {
+					selections.forEach(function (selection) {
+						selection.find('option').forEach(function (option) {
+							if (option.value === disabled_staff) {
+								option.removeAttribute('disabled');
+							}
+						});
+					});
+				}
+			});
+		});
 	}

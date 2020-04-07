@@ -8,6 +8,9 @@ block content
         - var staff_count = 0
         - var room_count = 0
         - var selected_equipment = [];
+        - var selected_rooms = [];
+        - var selected_staff = [];
+        - var selected_visitors = [];
 
         if customFields
             include includes/customFieldScript
@@ -50,16 +53,20 @@ block content
                                 div.row.form-group(id="rowRoom" + room_count)
                                     div.col(id="roomNameCol" + room_count)
                                         label(for="roomName" + room_count)='Room ' + room_count + ' Name'
-                                        select.form-control(id="selectRoom" + room_count name='roomID' + room_count)
+                                        select.form-control(id="selectRoom" + room_count name='roomID' + room_count onChange='selectedRoom(this)')
                                             each option in rooms
                                                 if room._id.toString() === option._id.toString()
                                                     option(value=option._id selected)=option.roomName
                                                 else
-                                                    option(value=option._id)=option.roomName
+                                                    if selected_rooms.includes(option._id.toString())
+                                                        option(value=option._id disabled)=option.roomName
+                                                    else
+                                                        option(value=option._id)=option.roomName
 
                                     div.col(id="removeRoomCol" + room_count style="flex-grow:0;position:relative;")
                                         a.options-btn(href="#" id="removeRoomIcon" + room_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
                                             i.material-icons.md-18="delete"
+                                    - selected_rooms.push(room._id)
                                     - room_count++
                     else if index === 'Equipment'
                         div#equipment
@@ -83,9 +90,9 @@ block content
                                     div.col(id="equipmentQuantityCol" + equipment_count)
                                         label(for="quantity" + equipment_count)="Quantity " + equipment_count
                                         if equip.quantity+equip.reqQty >= equip.reqQty
-                                            input.form-control(type="number" name="quantity" + equipment_count min="1" max=equip.quantity+equip.reqQty value=equip.reqQty)
+                                            input.form-control(type="number" name="quantity" + equipment_count min="1" max=equip.quantity value=equip.reqQty)
                                         else if equip.quantity > 0
-                                            input.form-control(type="number" name="quantity" + equipment_count min="1" max=equip.quantity value=equip.quantity)
+                                            input.form-control(type="number" name="quantity" + equipment_count min="1" max=equip.quantity value=equip.reqQty)
                                         else
                                             input.form-control(type="number" name="quantity" + equipment_count min="1" max=equip.quantity+equip.reqQty value=equip.quantity+equip.reqQty)
 
@@ -104,12 +111,15 @@ block content
                                 div.row.form-group(id="rowStaff" + staff_count)
                                     div.col(id="staffNameCol" + staff_count)
                                         label(for="staffID" + staff_count)='Staff Member ' + staff_count + ' Email'
-                                        select.form-control(id="selectStaff" + staff_count name='staffID' + staff_count)
+                                        select.form-control(id="selectStaff" + staff_count name='staffID' + staff_count onChange='selectedStaffMember(this)')
                                             each option in staff
                                                 if staff_member._id.toString() === option._id.toString()
                                                     option(value=option._id selected)=option.fullName
                                                 else
-                                                    option(value=option._id)=option.fullName
+                                                    if selected_staff.includes(option._id.toString())
+                                                        option(value=option._id disabled)=option.fullName
+                                                    else
+                                                        option(value=option._id)=option.fullName
                                     div.col(id="staffRoleCol" + staff_count)
                                         label(for="staffRole" + staff_count)='Staff Member ' + staff_count + ' Role'
                                         if staff_member.role
@@ -120,12 +130,13 @@ block content
                                     div.col(id="removeStaffCol" + staff_count style="flex-grow:0;position:relative;")
                                         a.options-btn(href="#" id="removeStaffIcon" + staff_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
                                             i.material-icons.md-18="delete"
+                                - selected_staff.push(staff_member._id)
                                 - staff_count++
                     else if index === 'Visitors'
                         div#visitors
                             p
                                 b="Visitors:"
-                                a.btn.btn-primary(href="javascript:void(0)" onclick="addVisitorField()") Add Visitor
+                                a.btn.btn-primary(href="javascript:void(0)" onclick="addVisitorField()" onChange='selectedVisitor(this)') Add Visitor
 
                             each visitor in info
                                 div.row.form-group(id="visitorCol" + visitor_count)
@@ -136,11 +147,15 @@ block content
                                                 if visitor._id.toString() === option._id.toString()
                                                     option(value=option._id selected)=option.leadTeacherName
                                                 else
-                                                    option(value=option._id)=option.leadTeacherName
+                                                    if selected_staff.includes(option._id.toString())
+                                                        option(value=option._id disabled)=option.leadTeacherName
+                                                    else
+                                                        option(value=option._id)=option.leadTeacherName
 
                                     div.col(id="removeVisitorCol" + visitor_count style="flex-grow:0;position:relative;")
                                         a.options-btn(href="#" id="removeVisitorIcon" + visitor_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove()")
                                             i.material-icons.md-18="delete"
+                                - selected_visitors.push(visitor._id)
                                 - visitor_count++
                     else if index !== 'customFieldsValues'
                         div.form-group
@@ -188,7 +203,7 @@ block content
         if equipmentFields
             script.
                 $(document).ready(function(){
-                    disabled_equipment = disabled_equipment.concat(!{JSON.stringify(selected_equipment)});
+                    unavailable_equipment = unavailable_equipment.concat(!{JSON.stringify(selected_equipment)});
                 });
                 var equipment_count = !{equipment_count};
         if roomsFields

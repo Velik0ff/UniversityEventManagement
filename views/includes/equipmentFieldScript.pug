@@ -5,9 +5,11 @@ script
 script.
 	let all_equipment = !{JSON.stringify(equipment)};
 
-	var disabled_equipment = [];
+	let unavailable_equipment = [];
 
 	function addEquipmentField() {
+		let max_quantity = 0;
+
 		$('<div>').attr('class', 'row form-group').attr('id', 'rowEquipment' + equipment_count).appendTo('#equipment');
 
 		$('<div>')
@@ -22,12 +24,12 @@ script.
 			.attr('onChange', 'selectedEquipment(this)')
 			.appendTo('#equipmentNameCol' + equipment_count);
 		all_equipment.forEach(function (equip) {
-			let select = $('#selectEquipment' + equipment_count)
-			let option = $("option[value='" + equip._id + "']" + equip.typeName).appendTo('selectEquipment' + equipment_count);
-			if(disabled_equipment.includes(equip._id) || equip.quantity <= 0){
+			let select = $('#selectEquipment' + equipment_count);
+			if(unavailable_equipment.includes(equip._id) || equip.quantity <= 0){
 				select.append('<option value="'+equip._id+'" disabled>'+equip.typeName+'</option>');
 			} else {
 				select.append('<option value="'+equip._id+'">'+equip.typeName+'</option>');
+				unavailable_equipment.push(equip._id);
 			}
 		});
 
@@ -38,6 +40,7 @@ script.
 			.attr('class', 'form-control')
 			.attr('name', 'quantity' + equipment_count)
 			.attr('min', '1')
+			.attr('max',all_equipment[0].quantity)
 			.appendTo('#equipmentQuantityCol' + equipment_count);
 
 		if (equipment_count === 0) {
@@ -71,7 +74,7 @@ script.
 					input.value = equip.quantity;
 				}
 
-				disabled_equipment.push(equip._id);
+				unavailable_equipment.push(equip._id);
 
 				checkAddedEquip();
 			}
@@ -81,34 +84,30 @@ script.
 	function checkAddedEquip(){
 		let selections = $("#equipment").find('select');
 
-		disabled_equipment.forEach(function(disabled_eq){
-			let exists = false;
-
+		unavailable_equipment.forEach(function(disabled_eq){
 			selections.forEach(function(selection){
-				if(selection.value === disabled_eq) exists = true;
-			});
+				if(selection.value === disabled_eq) {
+					selections.forEach(function (selection) {
+						selection.find('option').forEach(function (option) {
+							if (option.value === disabled_eq) {
+								option.removeAttribute('disabled');
+							}
+						});
+					});
 
-			if(!exists){
-				selections.forEach(function(selection){
-					selection.find('option').forEach(function(option){
-						if(option.value === disabled_eq){
-							option.removeAttribute('disabled');
+					all_equipment.forEach(function (equip) {
+						if (equip._id == disabled_eq) {
+							if (equipment_used) {
+								equipment_used.forEach(function (equip_used) {
+									if (equip_used._id == disabled_eq) {
+										equip.quantity = equip.quantity + equip_used.reqQty;
+										equip_used.reqQty = 0;
+									}
+								});
+							}
 						}
 					});
-				});
-
-				all_equipment.forEach(function(equip){
-					if(equip._id == disabled_eq){
-						if(equipment_used){
-							equipment_used.forEach(function(equip_used){
-								if(equip_used._id == disabled_eq){
-									equip.quantity = equip.quantity + equip_used.reqQty;
-									equip_used.reqQty = 0;
-								}
-							});
-						}
-					}
-				});
-			}
+				}
+			});
 		});
 	}

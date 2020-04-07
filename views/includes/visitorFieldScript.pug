@@ -1,6 +1,8 @@
 script.
 	let all_visitors = !{JSON.stringify(visitors)};
 
+	let unavailable_visitors = [];
+
 	function addVisitorField() {
 		$('<div>').attr('class', 'row form-group').attr('id', 'rowVisitor' + visitor_count).appendTo('#visitors');
 
@@ -16,7 +18,13 @@ script.
 				.appendTo('#visitorCol' + visitor_count);
 
 		all_visitors.forEach(function (visitor) {
-			$('#selectVisitor' + visitor_count).append(new Option(visitor.leadTeacherName, visitor._id));
+			let select = $('#selectStaff' + visitor_count);
+			if (unavailable_visitors.includes(visitor._id)) {
+				select.append('<option value="' + visitor._id + '" disabled>' + visitor.leadTeacherName + '</option>');
+			} else {
+				select.append('<option value="' + visitor._id + '">' + visitor.leadTeacherName + '</option>');
+				unavailable_visitors.push(visitor._id);
+			}
 		});
 
 		$('<div>')
@@ -34,4 +42,30 @@ script.
 		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeVisitorIcon' + visitor_count);
 
 		visitor_count++;
+	}
+
+	function selectedVisitor(event) {
+		if (!unavailable_staff.includes(event.value)) {
+			unavailable_staff.push(event.value);
+
+			checkAddedVisitors();
+		}
+	}
+
+	function checkAddedVisitors() {
+		let selections = $("#visitors").find('select');
+
+		unavailable_visitors.forEach(function (disabled_visitor) {
+			selections.forEach(function (selection) {
+				if (selection.value === disabled_visitor) {
+					selections.forEach(function (selection) {
+						selection.find('option').forEach(function (option) {
+							if (option.value === disabled_visitor) {
+								option.removeAttribute('disabled');
+							}
+						});
+					});
+				}
+			});
+		});
 	}

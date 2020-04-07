@@ -697,7 +697,7 @@ router.post('/filter', function (req, res, next) {
 						res.status(200).json({list: [],filterList: []});
 					}
 					break;
-				case "participate":
+				case "participate": case "archive":
 					if (req.body.list && req.body.originalList && req.user.permission >= 0) {
 						req.body.list.forEach(function (list_element) {
 							promises.push(new Promise(function (resolve, reject) {

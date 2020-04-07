@@ -411,7 +411,7 @@ block content
                                 td=info
                         if deleteLink || editLink
                             td
-                                if editLink
+                                if editLink && type !== "archive"
                                     a.options-btn(href=editLink+"?id="+item.id)
                                         i.material-icons.md-18 edit
                                 if deleteLink

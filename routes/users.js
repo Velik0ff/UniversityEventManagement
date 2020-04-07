@@ -164,6 +164,7 @@ router.get('/' + editLink, function (req, res, next) {
 	if ((req.user && req.user.permission === 0) || (req.user && req.user.permission === 0 && req.user._id === req.query.id)) {
 		User.findOne({_id: req.query.id}, function (err, user) {
 			if (!err && user) {
+				console.log(user)
 				res.render('edit', {
 					title: 'Editing staff member: ' + user.fullName,
 					error: null,
@@ -174,7 +175,7 @@ router.get('/' + editLink, function (req, res, next) {
 						Role: user.role
 					},
 					editLink: '/users/' + editLink,
-					cancelLink: req.user.permission === 0 ? viewLink + '?id=' + req.body.ID : '../events/participate-events-list',
+					cancelLink: req.user.permission === 0 ? viewLink + '?id=' + user._id : '../events/view-list',
 					user: req.user
 				});
 			} else {

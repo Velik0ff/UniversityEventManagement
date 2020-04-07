@@ -54,6 +54,7 @@ router.get('/'+listLink, function(req, res, next) {
 			res.render('list', {
 				title: 'Rooms List',
 				list: roomList,
+				filter: "Rooms",
 				columns: columns,
 				editLink: editLink,
 				viewLink: viewLink,

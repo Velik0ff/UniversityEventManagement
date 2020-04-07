@@ -48,6 +48,7 @@ router.get('/' + listLink, function (req, res, next) {
 	if (req.user && req.user.permission === 0) {
 		let columns = ["ID", "Institution Name", "Lead Teacher", "Email", "Options"];
 		var error = "";
+		let visitorInstitutions = [];
 
 		User.find({}, null, {sort: '-leadTeacherName'}, function (err, users) {
 			var userList = [];
@@ -55,10 +56,14 @@ router.get('/' + listLink, function (req, res, next) {
 			users.forEach(function (user) {
 				userList.push({
 					id: user._id,
-					name: user.leadTeacherName,
 					institutionName: user.institutionName,
+					name: user.leadTeacherName,
 					email: user.contactEmail
 				});
+
+				if(!visitorInstitutions.includes(user.institutionName)){
+					visitorInstitutions.push(user.institutionName);
+				}
 			});
 
 			error = userList.length === 0 ? "No results to show" : ""
@@ -73,6 +78,7 @@ router.get('/' + listLink, function (req, res, next) {
 				addLink: addLink,
 				deleteLink: deleteLink,
 				exportLink: exportLink,
+				visitorInstitutions: visitorInstitutions,
 				error: error,
 				user: req.user
 			});
@@ -155,7 +161,7 @@ router.get('/' + editLink, function (req, res, next) {
 						"Group Size": user.groupSize,
 						"Expiry Date": user.expiryDate
 					},
-					editLink: '/visitor/' + editLink,
+					editLink: '/visitors/' + editLink,
 					cancelLink: req.user.permission === 0 ? viewLink + '?id=' + user._id : '../events/participate-events-list',
 					user: req.user
 				});
@@ -239,7 +245,7 @@ router.post('/' + editLink, function (req, res, next) {
 					"Group Size": req.body['Group Size'],
 					"Expiry Date": req.body['Expiry Date']
 				},
-				editLink: '/visitor/' + editLink,
+				editLink: '/visitors/' + editLink,
 				cancelLink: req.user.permission === 0 ? viewLink + '?id=' + req.body.ID : '../events/participate-events-list',
 				user: req.user
 			});

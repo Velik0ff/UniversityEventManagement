@@ -1,6 +1,8 @@
 script.
 	let all_rooms = !{JSON.stringify(rooms)};
 
+	let unavailable_rooms = [];
+
 	function addRoomField() {
 		$('<div>').attr('class', 'row form-group').attr('id', 'rowRoom' + room_count).appendTo('#rooms');
 
@@ -15,7 +17,13 @@ script.
 			.attr('name', 'roomID' + room_count)
 			.appendTo('#roomNameCol' + room_count);
 		all_rooms.forEach(function (room) {
-			$('#selectRoom' + room_count).append(new Option(room.roomName, room._id));
+			let select = $('#selectRoom' + room_count);
+			if (unavailable_rooms.includes(room._id)) {
+				select.append('<option value="' + room._id + '" disabled>' + room.roomName + '</option>');
+			} else {
+				select.append('<option value="' + room._id + '">' + room.roomName + '</option>');
+				unavailable_rooms.push(room._id);
+			}
 		});
 
 		$('<div>')
@@ -33,4 +41,30 @@ script.
 		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeRoomIcon' + room_count);
 
 		room_count++;
+	}
+
+	function selectedRoom(event) {
+		if(!unavailable_rooms.includes(event.value)){
+			unavailable_rooms.push(event.value);
+
+			checkAddedRooms();
+		}
+	}
+
+	function checkAddedRooms() {
+		let selections = $("#rooms").find('select');
+
+		unavailable_rooms.forEach(function (disabled_room) {
+			selections.forEach(function (selection) {
+				if (selection.value === disabled_room) {
+					selections.forEach(function (selection) {
+						selection.find('option').forEach(function (option) {
+							if (option.value === disabled_room) {
+								option.removeAttribute('disabled');
+							}
+						});
+					});
+				}
+			});
+		});
 	}

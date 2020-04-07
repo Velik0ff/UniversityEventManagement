@@ -55,7 +55,7 @@ block content
                             div.row.form-group(id="rowRoom" + room_count)
                                 div.col(id="roomNameCol" + room_count)
                                     label(for="roomName" + room_count)='Room ' + room_count + ' Name'
-                                    select.form-control(id="selectRoom" + room_count name='roomID' + room_count)
+                                    select.form-control(id="selectRoom" + room_count name='roomID' + room_count onChange='selectedRoom(this)')
                                         each option in rooms
                                             if room.roomID === option._id
                                                 option(value=room.roomID selected)=option.roomName
@@ -106,7 +106,7 @@ block content
                             div.row.form-group(id="rowStaff" + staff_count)
                                 div.col(id="staffNameCol" + staff_count)
                                     label(for="staffID" + staff_count)='Staff Member ' + staff_count + ' Email'
-                                    select.form-control(id="selectStaff" + staff_count name='staffID' + staff_count)
+                                    select.form-control(id="selectStaff" + staff_count name='staffID' + staff_count onChange='selectedStaffMember(this)')
                                         each option in staff
                                             if staff.staffMemberID === option._id
                                                 option(value=staff.staffMemberID selected)=option.fullName
@@ -134,7 +134,7 @@ block content
                             div.row.form-group(id="visitorCol" + visitor_count)
                                 div.col(id="visitorCol" + visitor_count)
                                     label(for="visitorID" + visitor_count)='Visitor ' + visitor_count + ' Name'
-                                    select.form-control(id="selectStaff" + visitor_count name='staffID' + visitor_count)
+                                    select.form-control(id="selectVisitor" + visitor_count name='visitorID' + visitor_count onChange='selectedVisitor(this)')
                                         each option in visitors
                                             if visitor.visitorID === option._id
                                                 option(value=visitor.visitorID selected)=option.leadTeacherName

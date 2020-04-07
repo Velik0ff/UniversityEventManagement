@@ -4,13 +4,14 @@ const nodemailer = require('nodemailer');
 const smtp = require('../functions/smtp');
 
 /* Model */
-const Event = require('../models/Event');
 const EventType = require('../models/EventType');
 const Equipment = require('../models/EqInventory');
 const Staff = require('../models/staff_user');
 const Visitor = require('../models/visitor_user');
 const Room = require('../models/Room');
 const SubNotification = require('../models/SubNotification');
+const Archive = require('../models/EventArchive');
+const Event = require('../models/Event');
 /* End Model */
 
 function getEquipmentInfo(event_equipment){
@@ -27,8 +28,13 @@ function getEquipmentInfo(event_equipment){
 				event_equipment.forEach(function(equip_chosen){
 					equipment.forEach(function(equip){
 						if(equip_chosen.equipID == equip._id){
-							equipment_used.push(equip);
-							equip.reqQty = equip_chosen.reqQty;
+							equipment_used.push({
+								_id:equip._id,
+								typeName: equip.typeName,
+								quantity: equip.quantity,
+								reqQty: equip_chosen.reqQty,
+								customFields: equip.customFields
+							});
 						}
 					});
 				});
@@ -203,19 +209,19 @@ function sendNotification(userID,title,body){
 async function sendEmail(email, password, role, reset_code, req, type) {
 	// Generate test SMTP service account from ethereal.email
 	// Only needed if you don't have a real mail account for testing
-	let testAccount = await nodemailer.createTestAccount();
+	// let testAccount = await nodemailer.createTestAccount();
 
 	// create reusable transporter object using the default SMTP transport
 	let transporter = nodemailer.createTransport({
-		// host: smtp.host,
-		host: "smtp.ethereal.email",
+		host: smtp.host,
+		// host: "smtp.ethereal.email",
 		port: 587,
 		secure: false, // true for 465, false for other ports
 		auth: {
-			user: testAccount.user,
-			pass: testAccount.pass
-			// user: smtp.user,
-			// pass: smtp.pass
+			// user: testAccount.user,
+			// pass: testAccount.pass
+			user: smtp.user,
+			pass: smtp.pass
 		}
 	});
 
@@ -224,7 +230,7 @@ async function sendEmail(email, password, role, reset_code, req, type) {
 	switch (type) {
 		case "added":
 			info = await transporter.sendMail({
-				from: '"University of Liverpool Event System" <no-reply@uol-events.co.uk>', // sender address
+				from: '"University of Liverpool Event System" <postmaster@mail.uol-events.co.uk>', // sender address
 				to: email, // list of receivers
 				subject: "You have been invited to participate in an event", // Subject line
 				html: "Hello,</br></br>" +
@@ -329,6 +335,71 @@ async function sendEmail(email, password, role, reset_code, req, type) {
 	// Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
 }
 
+function deleteEvent(id,type){
+	return new Promise(function(resolve,reject){
+		switch(type){
+			case "archive":
+				Archive.deleteOne({_id: id}, function (err, deleteResult) {
+					if (!err) {
+						resolve("Successfully deleted event!")
+					} else {
+						console.log(err); // console log the error
+						reject("Error while deleting event.");
+					}
+				});
+				break;
+			case "event-list":
+				Event.findOne({_id: id}, function (err, eventDoc) {
+					if (!err && eventDoc) {
+						var promises = [];
+
+						eventDoc.equipment.forEach(function (equip) {
+							promises.push(new Promise((resolve, reject) => {
+								Equipment.updateOne({_id: equip.equipID}, {$inc: {quantity: equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
+									console.log(errorUpdateEquip);
+									resolve();
+								});
+							}));
+						});
+
+						eventDoc.staffChosen.forEach(function (staff_member_chosen) {
+							promises.push(new Promise((resolve, reject) => {
+								Staff.updateOne({_id: staff_member_chosen.staffMemberID}, {$pull: {attendingEvents: {eventID: eventDoc._id}}}, function (errorUpdateStaff, staffDoc) {
+									console.log(errorUpdateStaff);
+									resolve();
+								});
+							}));
+						});
+
+						eventDoc.visitors.forEach(function (visitor_attending) {
+							promises.push(new Promise((resolve, reject) => {
+								Visitor.updateOne({_id: visitor_attending.visitorID}, {$pull: {attendingEvents: {eventID: eventDoc._id}}}, function (errorUpdateVisitor, visitorDoc) {
+									console.log(errorUpdateVisitor);
+									resolve();
+								});
+							}));
+						});
+
+						Promise.all(promises).then(() => {
+							Event.deleteOne({_id: id}, function (err, deleteResult) {
+								if (!err) {
+									resolve("Successfully deleted event!")
+								} else {
+									console.log(err); // console log the error
+									reject("Error while deleting event.");
+								}
+							});
+						});
+					} else {
+						console.log(err); // console log the error
+						reject("Event not found.");
+					}
+				});
+				break;
+		}
+	});
+}
+
 module.exports = {
 	getEquipmentInfo:getEquipmentInfo,
 	getRoomInfo:getRoomInfo,
@@ -342,4 +413,5 @@ module.exports = {
 	getAllEventTypes:getAllEventTypes,
 	sendNotification:sendNotification,
 	sendEmail:sendEmail,
+	deleteEvent:deleteEvent
 }

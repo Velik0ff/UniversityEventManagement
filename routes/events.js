@@ -10,6 +10,7 @@ const Event = require('../models/Event');
 const Equipment = require('../models/EqInventory');
 const Staff = require('../models/staff_user');
 const Visitor = require('../models/visitor_user');
+const Archive = require('../models/EventArchive');
 /* End Model */
 
 const editLink = "edit-event";
@@ -38,10 +39,6 @@ function validationErr(error) {
 			error.errors.equipID !== null) {
 			error_msg = error.errors.equipID.message
 		}
-		// if (typeof error.errors.eventSpaces !== "undefined" &&
-		// 	error.errors.eventSpaces !== null) {
-		// 	error_msg = error.errors.eventSpaces.message
-		// }
 		if (typeof error.errors.eventTypeID !== "undefined" &&
 			error.errors.eventTypeID !== null) {
 			error_msg = error.errors.eventTypeID.message
@@ -129,16 +126,64 @@ function getPostedRooms(req) {
 }
 /* End Functions */
 
-router.get('/participate-events-list', function (req, res, next) {
-	let columns = ["ID", "Event Name"];
-	var error = "";
+router.get('/archive-list', function (req, res, next){
+	let columns = ["ID", "Event Name", "Options"];
+	let error = null;
 	let allEventTypes = genFunctions.getAllEventTypes();
+
+	if(req.user && req.user.permission === 0){
+		Archive.find({},{sort:{date:-1}},function(errArchive,archiveListDoc){
+			let eventList = [];
+
+			if(!errArchive){
+				archiveListDoc.forEach(function(archive_event){
+					eventList.push({
+						id:archive_event.eventID,
+						name:archive_event.eventName
+					});
+				});
+			} else {
+				console.log(errArchive);
+				error = "No results to show.";
+			}
+
+			allEventTypes.then(function (eventTypes) {
+				res.render('list', {
+					title: 'Archive Events List',
+					list: eventList,
+					columns: columns,
+					editLink: editLink,
+					viewLink: viewLink,
+					deleteLink: deleteLink,
+					exportLink: exportLink,
+					error: error,
+					filter: "Events",
+					type: "archive",
+					eventTypes: eventTypes,
+					user: req.user
+				});
+			});
+		});
+	} else {
+		res.redirect('/');
+	}
+});
+
+router.get('/participate-events-list', function (req, res, next) {
+	let columns = ["ID", "Event Name", "Options"];
+	var error = null;
+	let allEventTypes = genFunctions.getAllEventTypes();
+	let attendingEvents = [];
 
 	if (req.user && req.user.permission === 0) {
 		Staff.findOne({_id: req.user._id}, function (err, staffDoc) {
-			if (err) console.log(err)
+			if (err) console.log(err);
 
-			Event.find({_id: {$in: staffDoc.attendingEvents}}, null, {sort: {date:-1}}, function (err, events) {
+			staffDoc.attendingEvents.forEach(function(attending_event){
+				attendingEvents.push(attending_event.eventID);
+			});
+
+			Event.find({_id: {$in: attendingEvents}}, null, {sort: {date:-1}}, function (err, events) {
 				var eventList = [];
 
 				events.forEach(function (event) {
@@ -170,9 +215,13 @@ router.get('/participate-events-list', function (req, res, next) {
 		});
 	} else if (req.user && req.user.permission === 1) {
 		Visitor.findOne({_id: req.user._id}, function (err, visitorDoc) {
-			if (err) console.log(err)
+			if (err) console.log(err);
 
-			Event.find({_id: {$in: visitorDoc.attendingEvents}}, null, {sort: {date:-1}}, function (err, events) {
+			visitorDoc.attendingEvents.forEach(function(attending_event){
+				attendingEvents.push(attending_event.eventID);
+			});
+
+			Event.find({_id: {$in: attendingEvents}}, null, {sort: {date:-1}}, function (err, events) {
 				var eventList = [];
 
 				events.forEach(function (event) {
@@ -270,7 +319,7 @@ router.get('/' + viewLink, function (req, res, next) {
 					var numberOfSpaces = 0;
 					var numberOfVisitors = 0;
 
-					Promise.all([equipment, rooms, event_type, staff]).then((result) => {
+					Promise.all([equipment, rooms, event_type, staff, visitors]).then((result) => {
 						// equipment.forEach(function (equip) {
 						// 	equip.customFields.forEach(function (field) {
 						// 		if (field.fieldName === "Room Capacity" && parseInt(field.fieldValue)) {
@@ -353,6 +402,10 @@ router.get('/' + editLink, function (req, res, next) {
 						visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
 					});
 
+					equipment_use.forEach(function(equip){
+						equip.quantity = equip.quantity + equip.reqQty;
+					});
+
 					if (numberOfSpaces < numberOfVisitors) error = 'Not enough spaces are assigned for the event';
 
 					res.render('edit', {
@@ -419,7 +472,7 @@ router.post('/' + editLink, function (req, res, next) {
 		return equipment_posted;
 	}
 
-	function recoverQuantity(previousQuantity, equipmentNotUpdatedNames, error, error_return) {
+	function recoverQuantity(previousQuantity, equipmentNotUpdatedNames) {
 		/* Recover quantity */
 		for (let i = 0; i < previousQuantity.length; i++) {
 			Equipment.updateOne({_id: previousQuantity[i]['equipID']}, {$set: {quantity: +previousQuantity[i]['reqQty']}}, function (err, eqDoc) {
@@ -429,18 +482,6 @@ router.post('/' + editLink, function (req, res, next) {
 			});
 		}
 		/* End Recover quantity */
-
-		if(error_return) {
-			if (equipmentNotUpdatedNames.length > 0) {
-				error = 'Unable to edit event because the equipment with names: ';
-
-				equipmentNotUpdatedNames.forEach(function (equipName) {
-					error = error.concat(equipName + ",");
-				});
-
-				error = error.concat(' have insufficient quantity, please revise all the data again and try to edit event again.');
-			}
-		}
 	}
 
 	if (req.user && req.user.permission === 0) {
@@ -565,59 +606,83 @@ router.post('/' + editLink, function (req, res, next) {
 						}
 					});
 
+					/* Check for re-posted equipment */
 					equipment_use.forEach(function (prev_equip) {
 						var equipment_posted = false;
 						var equip_qty = 0;
 
 						posted_equipment.forEach(function (posted_equip) {
-							if (posted_equip.equipID == prev_equip.equipID) {
+							if (posted_equip.equipID == prev_equip._id) {
 								equipment_posted = true;
 								repostedEquip.push(posted_equip.equipID);
 								equip_qty = prev_equip.reqQty - posted_equip.reqQty;
+								posted_equip['quantity'] = prev_equip.quantity + posted_equip.reqQty + equip_qty;
 							}
 						});
 
 						if (!equipment_posted) {
 							if (prev_equip.reqQty > 0) {
 								promisesEquip.push(new Promise(function (resolve, reject) {
-									Equipment.findOne({_id: prev_equip.equipID}, function (errFindEquip, equipFindDoc) {
+									Equipment.findOne({_id: prev_equip._id}, function (errFindEquip, equipFindDoc) {
 										if (errFindEquip) console.log(errFindEquip);
 
 										if(equipFindDoc) {
 											previousQuantity.push({
-												equipID: prev_equip.equipID,
+												equipID: prev_equip._id,
 												quantity: equipFindDoc.quantity
 											});
+
+											Equipment.updateOne({_id: prev_equip._id}, {$set: {quantity: prev_equip.quantity + prev_equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
+												if (errorUpdateEquip) {
+													equipmentNotUpdated.push(prev_equip._id);
+													equipmentNotUpdatedNames.push(equipFindDoc.typeName);
+
+													console.log(errorUpdateEquip);
+												}
+											});
+										} else {
+
 										}
 
 										resolve();
 									});
 
-									Equipment.updateOne({_id: prev_equip.equipID}, {$inc: {quantity: prev_equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
-										if (errorUpdateEquip) console.log(errorUpdateEquip);
-									});
 								}));
 							}
 						} else if (equip_qty !== 0) {
 							promisesEquip.push(new Promise(function (resolve, reject) {
-								Equipment.findOne({_id: prev_equip.equipID}, function (errFindEquip, equipFindDoc) {
+								Equipment.findOne({_id: prev_equip._id}, function (errFindEquip, equipFindDoc) {
 									if (!errFindEquip) {
-										if (equipFindDoc && equipFindDoc.quantity + equip_qty >= 0) {
+										if (equipFindDoc && equipFindDoc.quantity - equip_qty >= 0) {
 											previousQuantity.push({
-												equipID: prev_equip.equipID,
+												equipID: prev_equip._id,
 												quantity: equipFindDoc.quantity
 											});
 
-											Equipment.updateOne({_id: prev_equip.equipID}, {$inc: {quantity: equip_qty}}, function (errorUpdateEquip, equipDoc) {
-												if (errorUpdateEquip) console.log(errorUpdateEquip);
+											Equipment.updateOne({_id: prev_equip._id}, {$set: {quantity: equipFindDoc.quantity + equip_qty}}, function (errorUpdateEquip, equipDoc) {
+												if (errorUpdateEquip) {
+													equipmentNotUpdated.push(prev_equip._id);
+													equipmentNotUpdatedNames.push(equipFindDoc.typeName);
+
+													console.log(errorUpdateEquip);
+												}
+
 												resolve();
 											});
 										} else {
 											console.log('Cannot update equipment, because insufficient quantity.');
+
+											equipmentNotUpdated.push(prev_equip.equipID);
+											equipmentNotUpdatedNames.push(equipFindDoc.typeName);
+
 											resolve();
 										}
 									} else {
 										console.log(errFindEquip);
+
+										equipmentNotUpdated.push(prev_equip.equipID);
+										equipmentNotUpdatedNames.push(equipFindDoc.typeName);
+
 										resolve();
 									}
 								});
@@ -625,26 +690,47 @@ router.post('/' + editLink, function (req, res, next) {
 						}
 					});
 
+					/* End Check for re-posted equipment */
+
 					posted_equipment.forEach(function (posted_equip) {
-						if (!repostedEquip.includes(posted_equip.equipID)) {
+						if (!repostedEquip.includes(posted_equip.equipID)) { // check if equipment is re-posted
 							promisesEquip.push(new Promise(function (resolve, reject) {
 								Equipment.findOne({_id: posted_equip.equipID}, function (errFindEquip, equipFindDoc) {
 									if (!errFindEquip) {
-										posted_equip['quantity'] = equipFindDoc.quantity;
-										if (equipFindDoc && equipFindDoc.quantity - posted_equip.reqQty >= 0) {
-											Equipment.updateOne({_id: posted_equip.equipID}, {$inc: {quantity: -posted_equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
-												if (errorUpdateEquip) console.log(errorUpdateEquip);
+										if(equipFindDoc) {
+											posted_equip['quantity'] = equipFindDoc.quantity;
+
+											if (equipFindDoc.quantity - posted_equip.reqQty >= 0) {
+												Equipment.updateOne({_id: posted_equip.equipID}, {$inc: {quantity: -posted_equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
+													if (errorUpdateEquip) {
+														console.log(errorUpdateEquip);
+
+														equipmentNotUpdated.push(posted_equip.equipID);
+														equipmentNotUpdatedNames.push(equipFindDoc.typeName);
+													}
+
+													resolve();
+												});
+											} else {
+												console.log('Cannot update equipment, because insufficient quantity.');
+
+												equipmentNotUpdated.push(posted_equip.equipID);
+												equipmentNotUpdatedNames.push(equipFindDoc.typeName);
+
 												resolve();
-											});
+											}
 										} else {
 											console.log('Cannot update equipment, because insufficient quantity.');
-											equipmentNotUpdated.push(posted_equip.equipID);
-											if (equipFindDoc) equipmentNotUpdatedNames.push(equipFindDoc.typeName);
 
-											resolve();
+											equipmentNotUpdated.push(posted_equip.equipID);
+											equipmentNotUpdatedNames.push(equipFindDoc.typeName);
 										}
 									} else {
 										console.log(errFindEquip);
+
+										equipmentNotUpdated.push(posted_equip.equipID);
+										equipmentNotUpdatedNames.push(equipFindDoc.typeName);
+
 										resolve();
 									}
 								});
@@ -653,7 +739,7 @@ router.post('/' + editLink, function (req, res, next) {
 					});
 
 					Promise.all(promisesEquip).then(function () {
-						if (equipmentNotUpdated.length > 0) {
+						if (!equipmentNotUpdated.length > 0) {
 							var event_type_update = {
 								$set: {
 									eventName: req.body['Event Name'],
@@ -668,12 +754,24 @@ router.post('/' + editLink, function (req, res, next) {
 								}
 							};
 
+
 							Event.updateOne({_id: req.body.ID}, event_type_update, function (errEventUpdate, eventUpdateDoc) {
 								if (!errEventUpdate) {
 									/* Notifications and emails */
 									posted_staff_use.forEach(function (staffMember) {
 										Staff.findOne({_id: staffMember.staffMemberID}, function (errorStaffSendEmail, staffMemberDoc) {
 											if (!errorStaffSendEmail) {
+												let attending = false;
+
+												staffMemberDoc.attendingEvents.forEach(function(attending_event){
+													if(attending_event.eventID == req.body.ID) attending = true;
+												});
+
+												if(!attending){
+													Staff.updateOne({_id:staffMember.staffMemberID},{$push:{attendingEvents:{eventID:req.body.ID,role:staffMember.role}}}, function(errUpdateStaff, updateStaffDoc){
+														if(errUpdateStaff) console.log(errUpdateStaff);
+													});
+												}
 												genFunctions.sendNotification(staffMemberDoc._id, "Event Update", "An event that you are participating has been updated.");
 												genFunctions.sendEmail(staffMemberDoc.email,null,null, null, null, "edited");
 											}
@@ -683,6 +781,17 @@ router.post('/' + editLink, function (req, res, next) {
 									posted_visitors.forEach(function (visitor) {
 										Visitor.findOne({_id: visitor.visitorID}, function (errorVisitorSendEmail, visitorDoc) {
 											if (!errorVisitorSendEmail) {
+												let attending = false;
+
+												visitorDoc.attendingEvents.forEach(function(attending_event){
+													if(attending_event.eventID == req.body.ID) attending = true;
+												});
+
+												if(!attending){
+													Visitor.updateOne({_id:visitorDoc.visitorID},{$push:{attendingEvents:{eventID:req.body.ID}}}, function(errUpdateVisitor, updateVisitorDoc){
+														if(errUpdateVisitor) console.log(errUpdateVisitor);
+													});
+												}
 												genFunctions.sendNotification(visitorDoc._id, "Event Update", "An event that you are participating has been updated.")
 												genFunctions.sendEmail(visitorDoc.contactEmail,null,null, null, null, "edited");
 											}
@@ -695,42 +804,58 @@ router.post('/' + editLink, function (req, res, next) {
 									console.log(errEventUpdate);
 									error = "Unknown error occurred, please try again.";
 
-									recoverQuantity(previousQuantity,equipmentNotUpdatedNames,error,false);
+									recoverQuantity(previousQuantity,equipmentNotUpdatedNames);
 								}
 
-								res.render('edit', {
-									title: 'Editing event: ' + event.eventName,
-									error: error,
-									message: message,
-									item: {
-										ID: event._id,
-										"Event Name": req.body['Event Name'],
-										Location: req.body.Location,
-										Date: moment(req.body.Date).format('YYYY-MM-DDTHH:mm'),
-										"End Date": req.body['End Date'] ? moment(req.body['End Date']).format('YYYY-MM-DDTHH:mm') : "",
-										"Event Type": req.body['Event Type'],
-										Equipment: posted_equipment,
-										Rooms: posted_rooms,
-										Staff: posted_staff_use,
-										Visitors: posted_visitors
-									},
-									eventTypes: eventTypes,
-									staff: staff,
-									equipment: equipment,
-									rooms: rooms,
-									visitors: visitors,
-									customFields: false,
-									equipmentFields: true,
-									roomsFields: true,
-									staffFields: true,
-									visitorFields: true,
-									editLink: '/events/' + editLink,
-									cancelLink: viewLink + '?id=' + event._id,
-									user: req.user
-								});
+								renderEditScreen();
 							});
 						} else {
-							recoverQuantity(previousQuantity,equipmentNotUpdatedNames,error,true);
+							recoverQuantity(previousQuantity,equipmentNotUpdatedNames);
+
+							if (equipmentNotUpdatedNames.length > 0) {
+								error = 'Unable to edit event because the equipment with names: ';
+
+								equipmentNotUpdatedNames.forEach(function (equipName) {
+									error = error.concat('"'+equipName + '",');
+								});
+
+								error = error.concat(' have insufficient quantity, please revise all the data again and try to edit event again.');
+							}
+						}
+
+						renderEditScreen();
+
+						function renderEditScreen() {
+							res.render('edit', {
+								title: 'Editing event: ' + event.eventName,
+								error: error,
+								message: message,
+								item: {
+									ID: event._id,
+									"Event Name": req.body['Event Name'],
+									Location: req.body.Location,
+									Date: moment(req.body.Date).format('YYYY-MM-DDTHH:mm'),
+									"End Date": req.body['End Date'] ? moment(req.body['End Date']).format('YYYY-MM-DDTHH:mm') : "",
+									"Event Type": req.body['Event Type'],
+									Equipment: posted_equipment,
+									Rooms: posted_rooms,
+									Staff: posted_staff_use,
+									Visitors: posted_visitors
+								},
+								eventTypes: eventTypes,
+								staff: staff,
+								equipment: equipment,
+								rooms: rooms,
+								visitors: visitors,
+								customFields: false,
+								equipmentFields: true,
+								roomsFields: true,
+								staffFields: true,
+								visitorFields: true,
+								editLink: '/events/' + editLink,
+								cancelLink: viewLink + '?id=' + event._id,
+								user: req.user
+							});
 						}
 					});
 				});
@@ -748,60 +873,40 @@ router.post('/' + editLink, function (req, res, next) {
 	}
 });
 
+router.get('/events/archive/' + deleteLink, function (req, res, next) {
+	if (req.user && req.user.permission === 0) {
+		genFunctions.deleteEvent(req.query.id,"archive").then(function(result){
+			res.render('view', {
+				deleteMsg: result,
+				listLink: listLink,
+				user: req.user
+			});
+		}).catch(function(error){
+			res.render('view', {
+				error: error,
+				listLink: listLink,
+				user: req.user
+			});
+		});
+	} else {
+		res.redirect('/');
+	}
+});
+
 router.get('/' + deleteLink, function (req, res, next) {
 	if (req.user && req.user.permission === 0) {
-		Event.findOne({_id: req.query.id}, function (err, eventDoc) {
-			if (!err && eventDoc) {
-				var promises = [];
-
-				eventDoc.equipment.forEach(function (equip) {
-					promises.push(new Promise((resolve, reject) => {
-						Equipment.updateOne({_id: equip.equipID}, {$inc: {quantity: equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
-							console.log(errorUpdateEquip);
-							resolve();
-						});
-					}));
-				});
-
-				eventDoc.staffChosen.forEach(function (staff_member_chosen) {
-					promises.push(new Promise((resolve, reject) => {
-						Staff.updateOne({_id: staff_member_chosen.staffMemberID}, {$pull: {attendingEvents: {eventID: eventDoc._id}}}, function (errorUpdateStaff, staffDoc) {
-							console.log(errorUpdateStaff);
-							resolve();
-						});
-					}));
-				});
-
-				eventDoc.visitors.forEach(function (visitor_attending) {
-					promises.push(new Promise((resolve, reject) => {
-						Visitor.updateOne({_id: visitor_attending.visitorID}, {$pull: {attendingEvents: {eventID: eventDoc._id}}}, function (errorUpdateVisitor, visitorDoc) {
-							console.log(errorUpdateVisitor);
-							resolve();
-						});
-					}));
-				});
-
-				Promise.all(promises).then(() => {
-					Event.deleteOne({_id: req.query.id}, function (err, deleteResult) {
-						if (!err) {
-							res.render('view', {
-								deleteMsg: "Successfully deleted event!",
-								listLink: listLink,
-								user: req.user
-							});
-						} else {
-							console.log(err); // console log the error
-						}
-					});
-				});
-			} else {
-				console.log(err); // console log the error
-				res.render('view', {
-					error: "Event not found!",
-					listLink: listLink,
-					user: req.user
-				});
-			}
+		genFunctions.deleteEvent(req.query.id,"event-list").then(function(result){
+			res.render('view', {
+				deleteMsg: result,
+				listLink: listLink,
+				user: req.user
+			});
+		}).catch(function(error){
+			res.render('view', {
+				error: error,
+				listLink: listLink,
+				user: req.user
+			});
 		});
 	} else {
 		res.redirect('/');
@@ -1000,7 +1105,7 @@ router.post('/' + addLink, async function (req, res, next) {
 					error_msg = 'Unable to add event because the equipment with names: ';
 
 					equipmentNotUpdatedNames.forEach(function (equipName) {
-						error_msg = error_msg.concat(equipName + ",");
+						error_msg = error_msg.concat('"'+equipName + '",');
 					});
 
 					error_msg = error_msg.concat(' have insufficient quantity, please revise all the data again and try to add event again.');
@@ -1037,5 +1142,7 @@ router.post('/' + addLink, async function (req, res, next) {
 		res.redirect('/');
 	}
 });
+
+
 
 module.exports = router;

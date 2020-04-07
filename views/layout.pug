@@ -3,6 +3,7 @@ html
     head
         title= title
         meta(name='viewport', content='width=device-width, initial-scale=1.0')
+        meta(name="theme-color" content="#021F71")
         link(rel='stylesheet', href='/bootstrap/dist/css/bootstrap.css')
 
         if title == 'Calendar'
@@ -23,33 +24,48 @@ html
         .content
             #menu.collapse.navbar-collapse(style="z-index:2")
                 ul.navbar-nav.mr-auto
-                    if user && user.permission >= 0
-                        li.nav-item
-                            a.nav-link(href='/welcome') Home
-                        li.nav-item
-                            a.nav-link(href='/calendar') Calendar
-
-                    if user && user.permission === 0
-                        li.nav-item
-                            a.nav-link(href='/users/list-users') Staff
-                        li.nav-item
-                            a.nav-link(href='/rooms/list-rooms') Rooms
-                        li.nav-item
-                            a.nav-link(href='/events/list-events') Events
-                        li.nav-item
-                            a.nav-link(href='/visitors/list-visitors') Visitors
-                        li.nav-item
-                            a.nav-link(href='/equipment/list-equipment') Equipment
-                        li.nav-item
-                            a.nav-link(href='/event-types/list-event-type') Event Types
-
-                    if user && user.permission >= 0
-                        li.nav-item
-                            a.nav-link(href='/events/export') Export
-                        li.nav-item
-                            a.nav-link(href='/events/participate-events-list') Attending Events
-
                     if user
+                        if user.permission >= 0
+                            li.nav-item
+                                a.nav-link(href='/welcome') Home
+                            li.nav-item
+                                a.nav-link(href='/calendar') Calendar
+
+                        if user.permission === 0
+                            li.nav-item
+                                a.nav-link(href='/export') Export
+
+                        hr
+                        span(style="color:gray")="Users"
+                        if user.permission === 0
+                            li.nav-item
+                                a.nav-link(href='/users/list-users') Staff
+                            li.nav-item
+                                a.nav-link(href='/visitors/list-visitors') Visitors
+
+                        hr
+                        span(style="color:gray")="Events"
+                        if user.permission === 0
+                            li.nav-item
+                                a.nav-link(href='/events/list-events') Events
+                            li.nav-item
+                                a.nav-link(href='/events/archive-list') Archive
+                        if user.permission >= 0
+                            li.nav-item
+                                a.nav-link(href='/events/participate-events-list') Attending
+
+                        hr
+                        span(style="color:gray")="Elements"
+                        if user.permission === 0
+                            li.nav-item
+                                a.nav-link(href='/rooms/list-rooms') Rooms
+                            li.nav-item
+                                a.nav-link(href='/equipment/list-equipment') Equipment
+                            li.nav-item
+                                a.nav-link(href='/event-types/list-event-type') Event Types
+
+                        hr
+                        span(style="color:gray")="Personal"
                         if user.permission === 0
                             li.nav-item
                                 a.nav-link(href='/users/edit-user?id='+user._id) Your Profile

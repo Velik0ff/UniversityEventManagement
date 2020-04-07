@@ -5936,9 +5936,10 @@ a.close.disabled {
 #menu{
   background:#021F71;
   position:fixed;
-  top:65px;
+  top:50px;
   right:0;
   bottom:0;
+  overflow-y:scroll;
 }
 
 .content{
