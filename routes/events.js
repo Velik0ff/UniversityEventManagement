@@ -821,9 +821,11 @@ router.post('/' + editLink, function (req, res, next) {
 
 								error = error.concat(' have insufficient quantity, please revise all the data again and try to edit event again.');
 							}
+
+							renderEditScreen();
 						}
 
-						renderEditScreen();
+
 
 						function renderEditScreen() {
 							res.render('edit', {
