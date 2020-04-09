@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-var SubNotificationSchema = new mongoose.Schema({
+let SubNotificationSchema = new mongoose.Schema({
 	userID: { type: String, required: true },
 	notification: {
 		endpoint: { type: String },

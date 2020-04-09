@@ -109,7 +109,7 @@ router.get('/'+editLink, function(req, res, next) {
 		Room.findOne({_id: req.query.id}, function (err, room) {
 			if (!err && room) {
 				res.render('edit', {
-					title: 'Editing equipment: ' + room.typeName,
+					title: 'Editing role: ' + room.typeName,
 					error: null,
 					// rows: rows,
 					item: {
@@ -119,13 +119,13 @@ router.get('/'+editLink, function(req, res, next) {
 						customFieldsValues: room.customFields
 					},
 					customFields: true,
-					editLink: '/equipment/' + editLink,
+					editLink: '/rooms/' + editLink,
 					cancelLink: viewLink + '?id=' + room._id,
 					user:req.user
 				});
 			} else {
 				res.render('edit', {
-					error: "Equipment not found!",
+					error: "Room not found!",
 					listLink: listLink,
 					user:req.user
 				});

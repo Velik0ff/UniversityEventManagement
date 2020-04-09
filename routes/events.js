@@ -11,6 +11,7 @@ const Equipment = require('../models/EqInventory');
 const Staff = require('../models/staff_user');
 const Visitor = require('../models/visitor_user');
 const Archive = require('../models/EventArchive');
+const Room = require('../models/Room');
 /* End Model */
 
 const editLink = "edit-event";
@@ -28,7 +29,7 @@ webpush.setVapidDetails(
 
 /* Functions */
 function validationErr(error) {
-	var error_msg = "";
+	let error_msg = "";
 
 	if (error.name === "ValidationError") { // check if the error is from the validator
 		if (typeof error.errors.eventName !== "undefined" &&
@@ -66,7 +67,7 @@ function validationErr(error) {
 }
 
 function getPostedStaff(req) {
-	var staff_use = [];
+	let staff_use = [];
 
 	for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
 		if (req.body.hasOwnProperty(field_post_key)) {
@@ -88,7 +89,7 @@ function getPostedStaff(req) {
 }
 
 function getPostedVisitors(req) {
-	var visitor_attending = [];
+	let visitor_attending = [];
 
 	for (let [field_post_key, field_post_value] of Object.entries(req.body)) {
 		if (req.body.hasOwnProperty(field_post_key)) {
@@ -107,7 +108,7 @@ function getPostedVisitors(req) {
 }
 
 function getPostedRooms(req) {
-	var rooms_used = [];
+	let rooms_used = [];
 
 	for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
 		if (req.body.hasOwnProperty(field_post_key)) {
@@ -126,13 +127,33 @@ function getPostedRooms(req) {
 }
 /* End Functions */
 
+function listElement(res,req,allEventTypes,eventList,columns,title,editLink,viewLink,deleteLink,exportLink,error,type){
+	allEventTypes.then(function (eventTypes) {
+		res.render('list', {
+			title: title,
+			list: eventList,
+			columns: columns,
+			editLink: editLink,
+			viewLink: viewLink,
+			deleteLink: deleteLink,
+			exportLink: exportLink,
+			error: error,
+			filter: "Events",
+			type: type,
+			eventTypes: eventTypes,
+			user: req.user
+		});
+	});
+}
+
 router.get('/archive-list', function (req, res, next){
 	let columns = ["ID", "Event Name", "Options"];
 	let error = null;
 	let allEventTypes = genFunctions.getAllEventTypes();
+	let delLink = '/events/archive/' + deleteLink;
 
 	if(req.user && req.user.permission === 0){
-		Archive.find({},{sort:{date:-1}},function(errArchive,archiveListDoc){
+		Archive.find({},null,{sort:{date:-1}},function(errArchive,archiveListDoc){
 			let eventList = [];
 
 			if(!errArchive){
@@ -142,27 +163,16 @@ router.get('/archive-list', function (req, res, next){
 						name:archive_event.eventName
 					});
 				});
+
+				if(eventList.length <= 0){
+					error = "No results to show.";
+				}
 			} else {
 				console.log(errArchive);
-				error = "No results to show.";
+				error = "Unknown error occurred. Please try again.";
 			}
 
-			allEventTypes.then(function (eventTypes) {
-				res.render('list', {
-					title: 'Archive Events List',
-					list: eventList,
-					columns: columns,
-					editLink: editLink,
-					viewLink: viewLink,
-					deleteLink: deleteLink,
-					exportLink: exportLink,
-					error: error,
-					filter: "Events",
-					type: "archive",
-					eventTypes: eventTypes,
-					user: req.user
-				});
-			});
+			listElement(res,req,allEventTypes,eventList,columns,'Archive Events List',editLink,viewLink,delLink,exportLink,error,"archive");
 		});
 	} else {
 		res.redirect('/');
@@ -171,7 +181,7 @@ router.get('/archive-list', function (req, res, next){
 
 router.get('/participate-events-list', function (req, res, next) {
 	let columns = ["ID", "Event Name", "Options"];
-	var error = null;
+	let error = null;
 	let allEventTypes = genFunctions.getAllEventTypes();
 	let attendingEvents = [];
 
@@ -184,7 +194,7 @@ router.get('/participate-events-list', function (req, res, next) {
 			});
 
 			Event.find({_id: {$in: attendingEvents}}, null, {sort: {date:-1}}, function (err, events) {
-				var eventList = [];
+				let eventList = [];
 
 				events.forEach(function (event) {
 					eventList.push({
@@ -195,22 +205,7 @@ router.get('/participate-events-list', function (req, res, next) {
 
 				error = eventList.length === 0 ? "No results to show" : "";
 
-				allEventTypes.then(function (eventTypes) {
-					res.render('list', {
-						title: 'Events List',
-						list: eventList,
-						columns: columns,
-						editLink: editLink,
-						viewLink: viewLink,
-						deleteLink: deleteLink,
-						exportLink: exportLink,
-						error: error,
-						filter: "Events",
-						type: "participate",
-						eventTypes: eventTypes,
-						user: req.user
-					});
-				});
+				listElement(res,req,allEventTypes,eventList.reverse(),columns,'Attending Events List',editLink,viewLink,deleteLink,exportLink,error,"participate");
 			});
 		});
 	} else if (req.user && req.user.permission === 1) {
@@ -222,7 +217,7 @@ router.get('/participate-events-list', function (req, res, next) {
 			});
 
 			Event.find({_id: {$in: attendingEvents}}, null, {sort: {date:-1}}, function (err, events) {
-				var eventList = [];
+				let eventList = [];
 
 				events.forEach(function (event) {
 					eventList.push({
@@ -233,20 +228,7 @@ router.get('/participate-events-list', function (req, res, next) {
 
 				error = eventList.length === 0 ? "You are not participating to any events. Please come back later or contact an administrator!" : ""
 
-				allEventTypes.then(function (eventTypes) {
-					res.render('list', {
-						title: 'Events List',
-						list: eventList,
-						columns: columns,
-						viewLink: viewLink,
-						exportLink: exportLink,
-						error: error,
-						filter: "Events",
-						type: "participate",
-						eventTypes: eventTypes,
-						user: req.user
-					});
-				});
+				listElement(res,req,allEventTypes,eventList.reverse(),columns,'Attending Events List',editLink,viewLink,deleteLink,exportLink,error,"participate");
 			});
 		});
 	} else {
@@ -257,11 +239,11 @@ router.get('/participate-events-list', function (req, res, next) {
 router.get('/' + listLink, function (req, res, next) {
 	if (req.user && req.user.permission === 0) {
 		let columns = ["ID", "Event Name", "Options"];
-		var error = "";
+		let error = "";
 		let allEventTypes = genFunctions.getAllEventTypes();
 
 		Event.find({}, null, {sort: {date:-1}}, function (err, events) {
-			var eventList = [];
+			let eventList = [];
 
 			events.forEach(function (event) {
 				eventList.push({
@@ -270,25 +252,9 @@ router.get('/' + listLink, function (req, res, next) {
 				});
 			});
 
-			error = eventList.length === 0 ? "No results to show" : ""
+			error = eventList.length === 0 ? "No results to show" : "";
 
-			allEventTypes.then(function (eventTypes) {
-				res.render('list', {
-					title: 'Events List',
-					list: eventList.reverse(),
-					columns: columns,
-					editLink: editLink,
-					viewLink: viewLink,
-					addLink: addLink,
-					deleteLink: deleteLink,
-					exportLink: exportLink,
-					error: error,
-					filter: "Events",
-					type: "allList",
-					eventTypes: eventTypes,
-					user: req.user
-				});
-			});
+			listElement(res,req,allEventTypes,eventList.reverse(),columns,'Events List',editLink,viewLink,deleteLink,exportLink,error,"allList");
 		});
 	} else {
 		res.redirect('/');
@@ -300,7 +266,7 @@ router.get('/' + viewLink, function (req, res, next) {
 		/* Logic to get info from database */
 		Event.findOne({_id: req.query.id}, async function (err, event) {
 			if (!err && event) {
-				var attending = false;
+				let attending = false;
 
 				if (req.user.permission === 1) {
 					event.visitors.forEach(function (visitor) {
@@ -311,23 +277,15 @@ router.get('/' + viewLink, function (req, res, next) {
 				}
 
 				if (req.user.permission === 0 || attending) {
-					var equipment = await genFunctions.getEquipmentInfo(event.equipment);
-					var rooms = await genFunctions.getRoomInfo(event.rooms);
-					var event_type = await genFunctions.getEventType(event.eventTypeID);
-					var staff = await genFunctions.getStaffInfo(event.staffChosen);
-					var visitors = await genFunctions.getVisitorInfo(event.visitors);
-					var numberOfSpaces = 0;
-					var numberOfVisitors = 0;
+					let equipment = await genFunctions.getEquipmentInfo(event.equipment);
+					let rooms = await genFunctions.getRoomInfo(event.rooms);
+					let event_type = await genFunctions.getEventType(event.eventTypeID);
+					let staff = await genFunctions.getStaffInfo(event.staffChosen);
+					let visitors = await genFunctions.getVisitorInfo(event.visitors);
+					let numberOfSpaces = 0;
+					let numberOfVisitors = 0;
 
 					Promise.all([equipment, rooms, event_type, staff, visitors]).then((result) => {
-						// equipment.forEach(function (equip) {
-						// 	equip.customFields.forEach(function (field) {
-						// 		if (field.fieldName === "Room Capacity" && parseInt(field.fieldValue)) {
-						// 			numberOfSpaces = numberOfSpaces + (parseInt(field.fieldValue)*equip.quantity)
-						// 		}
-						// 	});
-						// });
-
 						rooms.forEach(function (room) {
 							numberOfSpaces = numberOfSpaces + room.capacity;
 						});
@@ -378,21 +336,21 @@ router.get('/' + editLink, function (req, res, next) {
 	if (req.user && req.user.permission === 0) {
 		Event.findOne({_id: req.query.id}, async function (err, event) {
 			if (!err && event) {
-				var equipment_use = await genFunctions.getEquipmentInfo(event.equipment);
-				var rooms_use = await genFunctions.getRoomInfo(event.rooms);
-				var event_type = await genFunctions.getEventType(event.eventTypeID);
-				var staff_use = await genFunctions.getStaffInfo(event.staffChosen);
-				var visitor_attending = await genFunctions.getVisitorInfo(event.visitors);
-				var visitors = await genFunctions.getAllVisitor();
-				var equipment = await genFunctions.getAllEquipment();
-				var rooms = await genFunctions.getAllRooms();
-				var staff = await genFunctions.getAllStaff();
-				var eventTypes = await genFunctions.getAllEventTypes();
+				let equipment_use = await genFunctions.getEquipmentInfo(event.equipment);
+				let rooms_use = await genFunctions.getRoomInfo(event.rooms);
+				let event_type = await genFunctions.getEventType(event.eventTypeID);
+				let staff_use = await genFunctions.getStaffInfo(event.staffChosen);
+				let visitor_attending = await genFunctions.getVisitorInfo(event.visitors);
+				let visitors = await genFunctions.getAllVisitor();
+				let equipment = await genFunctions.getAllEquipment();
+				let rooms = await genFunctions.getAllRooms();
+				let staff = await genFunctions.getAllStaff();
+				let eventTypes = await genFunctions.getAllEventTypes();
 
 				Promise.all([equipment, equipment_use, event_type, staff, staff_use, visitors, visitor_attending, eventTypes]).then((result) => {
-					var numberOfSpaces = 0;
-					var numberOfVisitors = 0;
-					var error = null;
+					let numberOfSpaces = 0;
+					let numberOfVisitors = 0;
+					let error = null;
 
 					rooms.forEach(function (room) {
 						numberOfSpaces = numberOfSpaces + room.capacity;
@@ -453,7 +411,7 @@ router.get('/' + editLink, function (req, res, next) {
 
 router.post('/' + editLink, function (req, res, next) {
 	function getPostedEquipment(req) {
-		var equipment_posted = [];
+		let equipment_posted = [];
 
 		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
 			if (req.body.hasOwnProperty(field_post_key)) {
@@ -487,37 +445,102 @@ router.post('/' + editLink, function (req, res, next) {
 	if (req.user && req.user.permission === 0) {
 		Event.findOne({_id: req.body.ID}, async function (errFindEvent, event) {
 			if (!errFindEvent && event) {
-				var equipment_use = await genFunctions.getEquipmentInfo(event.equipment);
-				var rooms_user = await genFunctions.getRoomInfo(event.rooms);
-				var event_type = await genFunctions.getEventType(event.eventTypeID);
-				var staff_use = await genFunctions.getStaffInfo(event.staffChosen);
-				var visitor_attending = await genFunctions.getVisitorInfo(event.visitors);
-				var visitors = await genFunctions.getAllVisitor();
-				var equipment = await genFunctions.getAllEquipment();
-				var rooms = await genFunctions.getAllRooms();
-				var staff = await genFunctions.getAllStaff();
-				var eventTypes = await genFunctions.getAllEventTypes();
+				let equipment_use = await genFunctions.getEquipmentInfo(event.equipment);
+				let rooms_user = await genFunctions.getRoomInfo(event.rooms);
+				let event_type = await genFunctions.getEventType(event.eventTypeID);
+				let staff_use = await genFunctions.getStaffInfo(event.staffChosen);
+				let visitor_attending = await genFunctions.getVisitorInfo(event.visitors);
+				let visitors = await genFunctions.getAllVisitor();
+				let equipment = await genFunctions.getAllEquipment();
+				let rooms = await genFunctions.getAllRooms();
+				let staff = await genFunctions.getAllStaff();
+				let eventTypes = await genFunctions.getAllEventTypes();
 
-				let promisesEquip = [];
+				let promisesUpdate = [];
 				let repostedEquip = [];
 				let equipmentNotUpdated = [];
 				let equipmentNotUpdatedNames = [];
+				let roomNotUpdated = [];
+				let roomNotUpdatedNames = [];
 				let previousQuantity = [];
 
-				var posted_staff_use = getPostedStaff(req);
-				var posted_visitors = getPostedVisitors(req);
-				var posted_equipment = getPostedEquipment(req);
-				var posted_rooms = getPostedRooms(req);
+				let posted_staff_use = getPostedStaff(req);
+				let posted_visitors = getPostedVisitors(req);
+				let posted_equipment = getPostedEquipment(req);
+				let posted_rooms = getPostedRooms(req);
 
 				Promise.all([equipment, rooms, equipment_use, event_type, staff, staff_use, visitors, visitor_attending, eventTypes]).then((result) => {
-					var numberOfSpaces = 0;
-					var numberOfVisitors = 0;
-					var error = null;
-					var message = null;
+					let numberOfSpaces = 0;
+					let numberOfVisitors = 0;
+					let error = null;
+					let message = null;
 
-					posted_rooms.forEach(function (room) {
-						numberOfSpaces = numberOfSpaces + room.capacity;
-					});
+					if(req.body.date) {
+						posted_rooms.forEach(function (room) {
+							promisesUpdate.push(new Promise(function (resolve, reject) {
+								Room.findOne({_id: room._id}, function (errRoomFind, roomFindDoc) {
+									if (errRoomFind) {
+										console.log(errRoomFind);
+
+										resolve();
+									} else if (roomFindDoc) {
+										roomFindDoc.events.forEach(function (roomEvent) {
+											let startDate = Date.parse(roomEvent.date);
+											let endDate = roomEvent.endDate ? Date.parse(roomEvent.endDate) : null;
+											let eventStartDate = Date.parse(req.body.date);
+											let eventEndDate = req.body.endDate ? Date.parse(req.body.endDate) : null;
+											let now = new Date();
+											let year = now.getUTCFullYear();
+											let month = now.getUTCMonth();
+											let day = now.getUTCDate();
+
+											let startDayHour = Date.UTC(year,month,day,0,0,0,0);
+											let midnight = startDayHour + 86400000;
+
+											let time_left = midnight - now.getTime();
+
+											if ((endDate && endDate < eventStartDate) ||
+												(startDate && !endDate && ((!eventEndDate && startDate >= eventStartDate + time_left) ||
+													                         (startDate + time_left <= eventStartDate) ||
+													                         (eventEndDate && eventEndDate + time_left <= startDate)
+												))) {
+												Room.updateOne({_id: room._id},
+													{
+														$push: {
+															events: {
+																eventID: event._id,
+																eventName: event.eventName,
+																date: event.date,
+																endDate: event.endDate
+															}
+														}
+													}, function (errUpdateRoom, roomUpdateDoc) {
+														if (errUpdateRoom) {
+															console.log(errUpdateRoom);
+
+															roomNotUpdated.push(room._id);
+															roomNotUpdatedNames.push(room.roomName);
+														}
+
+														resolve();
+													});
+											} else {
+												roomNotUpdated.push(room._id);
+												roomNotUpdatedNames.push(room.roomName);
+											}
+										});
+
+
+									} else {
+										roomNotUpdated.push(room._id);
+										resolve();
+									}
+								});
+							}));
+
+							numberOfSpaces = numberOfSpaces + room.capacity;
+						});
+					}
 
 					posted_visitors.forEach(function (visitor) {
 						visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
@@ -622,11 +645,14 @@ router.post('/' + editLink, function (req, res, next) {
 
 						if (!equipment_posted) {
 							if (prev_equip.reqQty > 0) {
-								promisesEquip.push(new Promise(function (resolve, reject) {
+								promisesUpdate.push(new Promise(function (resolve, reject) {
 									Equipment.findOne({_id: prev_equip._id}, function (errFindEquip, equipFindDoc) {
-										if (errFindEquip) console.log(errFindEquip);
+										if (errFindEquip) {
+											console.log(errFindEquip);
+											equipmentNotUpdated.push(prev_equip._id);
 
-										if(equipFindDoc) {
+											resolve();
+										} else if (equipFindDoc) {
 											previousQuantity.push({
 												equipID: prev_equip._id,
 												quantity: equipFindDoc.quantity
@@ -639,18 +665,18 @@ router.post('/' + editLink, function (req, res, next) {
 
 													console.log(errorUpdateEquip);
 												}
+
+												resolve();
 											});
 										} else {
-
+											equipmentNotUpdated.push(prev_equip._id);
+											resolve();
 										}
-
-										resolve();
 									});
-
 								}));
 							}
 						} else if (equip_qty !== 0) {
-							promisesEquip.push(new Promise(function (resolve, reject) {
+							promisesUpdate.push(new Promise(function (resolve, reject) {
 								Equipment.findOne({_id: prev_equip._id}, function (errFindEquip, equipFindDoc) {
 									if (!errFindEquip) {
 										if (equipFindDoc && equipFindDoc.quantity - equip_qty >= 0) {
@@ -694,7 +720,7 @@ router.post('/' + editLink, function (req, res, next) {
 
 					posted_equipment.forEach(function (posted_equip) {
 						if (!repostedEquip.includes(posted_equip.equipID)) { // check if equipment is re-posted
-							promisesEquip.push(new Promise(function (resolve, reject) {
+							promisesUpdate.push(new Promise(function (resolve, reject) {
 								Equipment.findOne({_id: posted_equip.equipID}, function (errFindEquip, equipFindDoc) {
 									if (!errFindEquip) {
 										if(equipFindDoc) {
@@ -738,7 +764,7 @@ router.post('/' + editLink, function (req, res, next) {
 						}
 					});
 
-					Promise.all(promisesEquip).then(function () {
+					Promise.all(promisesUpdate).then(function () {
 						if (!equipmentNotUpdated.length > 0) {
 							var event_type_update = {
 								$set: {
@@ -824,8 +850,6 @@ router.post('/' + editLink, function (req, res, next) {
 
 							renderEditScreen();
 						}
-
-
 
 						function renderEditScreen() {
 							res.render('edit', {
@@ -923,11 +947,11 @@ router.get('/' + addLink, async function (req, res, next) {
 			{name: "End Date", type: "datetime-local", identifier: "endDate"},
 			{name: "Event Type", type: "select", identifier: "eventType"}];
 
-		var visitors = await genFunctions.getAllVisitor();
-		var equipment = await genFunctions.getAllEquipment();
-		var rooms = await genFunctions.getAllRooms();
-		var staff = await genFunctions.getAllStaff();
-		var eventTypes = await genFunctions.getAllEventTypes();
+		let visitors = await genFunctions.getAllVisitor();
+		let equipment = await genFunctions.getAllEquipment();
+		let rooms = await genFunctions.getAllRooms();
+		let staff = await genFunctions.getAllStaff();
+		let eventTypes = await genFunctions.getAllEventTypes();
 
 		Promise.all([equipment, eventTypes, visitors, staff]).then((result) => {
 			res.render('add', {
@@ -955,24 +979,25 @@ router.get('/' + addLink, async function (req, res, next) {
 router.post('/' + addLink, async function (req, res, next) {
 	if (req.user && req.user.permission === 0) {
 		let fields = [{name: "Event Name", type: "text", identifier: "name"},
+			{name: "Event Description", type: "text", identifier: "name"},
 			{name: "Location", type: "text", identifier: "location"},
 			{name: "Date", type: "datetime-local", identifier: "date"},
 			{name: "End Date", type: "datetime-local", identifier: "endDate"},
 			{name: "Event Type", type: "select", identifier: "eventType"}];
 
-		var error_msg = "";
-		var message = "";
-		var visitors = await genFunctions.getAllVisitor();
-		var equipment = await genFunctions.getAllEquipment();
-		var rooms = await genFunctions.getAllRooms();
-		var staff = await genFunctions.getAllStaff();
-		var eventTypes = await genFunctions.getAllEventTypes();
-		var equipment_use = [];
-		var rooms_use = getPostedRooms(req);
-		var staff_use = getPostedStaff(req);
-		var visitor_attending = getPostedVisitors(req);
-		var numberOfSpaces = 0;
-		var numberOfVisitors = 0;
+		let error_msg = "";
+		let message = "";
+		let visitors = await genFunctions.getAllVisitor();
+		let equipment = await genFunctions.getAllEquipment();
+		let rooms = await genFunctions.getAllRooms();
+		let staff = await genFunctions.getAllStaff();
+		let eventTypes = await genFunctions.getAllEventTypes();
+		let equipment_use = [];
+		let rooms_use = getPostedRooms(req);
+		let staff_use = getPostedStaff(req);
+		let visitor_attending = getPostedVisitors(req);
+		let numberOfSpaces = 0;
+		let numberOfVisitors = 0;
 		let promisesEquip = [];
 		let equipmentNotUpdated = [];
 		let equipmentNotUpdatedNames = [];
@@ -1013,7 +1038,6 @@ router.post('/' + addLink, async function (req, res, next) {
 				}
 			}
 		}
-
 
 		rooms_use.forEach(function (room) {
 			numberOfSpaces = numberOfSpaces + room.capacity;

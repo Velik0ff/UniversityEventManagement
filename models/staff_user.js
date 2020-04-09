@@ -18,7 +18,7 @@ function validateName(name) { // validate full name (can include title)
 	return name_regex.test(name);
 }
 
-var StaffSchema = new mongoose.Schema({
+let StaffSchema = new mongoose.Schema({
 	fullName:{ type: String, required: [true, "Full name must be provided"], validate: [{ validator: value => validateName(value), msg:"Full name entered is not valid"}] },
 	email:{ type: String, required: [true, "Email must be provided"], validate: [{ validator: value => validateEmail(value), msg:"Email entered is not valid"}], unique: [true, "Email already exists."] },
 	password:{ type: String, required: [true, "Password must be provided"], validate: [{ validator: value => validatePassword(value), msg: "Password must contain 1 lowercase letter, 1 uppercase letter and one number and it must be at least 6 characters long."}] },

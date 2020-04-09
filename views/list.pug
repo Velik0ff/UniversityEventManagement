@@ -285,9 +285,11 @@ block content
         if addLink
             a.btn.btn-success(href=addLink style="margin:5px;") Add New
 
-        button.btn.btn-link#filterBtn Filter
+        if filter
+            button.btn.btn-link#filterBtn Filter
 
-        a.btn.btn-primary(href=exportLink style='margin-top:5px;float:right') Export
+        if exportLink
+            a.btn.btn-primary(href=exportLink style='margin-top:5px;float:right') Export
 
         p
             div.row(style="flex-wrap:nowrap;")

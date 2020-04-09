@@ -31,21 +31,25 @@ html
                             li.nav-item
                                 a.nav-link(href='/calendar') Calendar
 
-                        if user.permission === 0
+                        if user.permission >= 0
                             li.nav-item
                                 a.nav-link(href='/export') Export
 
                         hr
                         span(style="color:gray")="Users"
-                        if user.permission === 0
+                        if user.permission >= 0
                             li.nav-item
                                 a.nav-link(href='/users/list-users') Staff
                             li.nav-item
+                                a.nav-link(href='/roles/list-roles') Staff Roles
+                        if user.permission >= 0
+                            li.nav-item
                                 a.nav-link(href='/visitors/list-visitors') Visitors
+
 
                         hr
                         span(style="color:gray")="Events"
-                        if user.permission === 0
+                        if user.permission >= 0
                             li.nav-item
                                 a.nav-link(href='/events/list-events') Events
                             li.nav-item
@@ -56,7 +60,7 @@ html
 
                         hr
                         span(style="color:gray")="Elements"
-                        if user.permission === 0
+                        if user.permission >= 0
                             li.nav-item
                                 a.nav-link(href='/rooms/list-rooms') Rooms
                             li.nav-item
@@ -66,7 +70,7 @@ html
 
                         hr
                         span(style="color:gray")="Personal"
-                        if user.permission === 0
+                        if user.permission >= 0
                             li.nav-item
                                 a.nav-link(href='/users/edit-user?id='+user._id) Your Profile
                         else

@@ -355,8 +355,17 @@ function deleteEvent(id,type){
 
 						eventDoc.equipment.forEach(function (equip) {
 							promises.push(new Promise((resolve, reject) => {
-								Equipment.updateOne({_id: equip.equipID}, {$inc: {quantity: equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
-									console.log(errorUpdateEquip);
+								Equipment.updateOne({_id: equip.equipID}, {$set: {quantity: equip.quantity + equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
+									if(errorUpdateEquip) console.log(errorUpdateEquip);
+									resolve();
+								});
+							}));
+						});
+
+						eventDoc.rooms.forEach(function (room) {
+							promises.push(new Promise((resolve, reject) => {
+								Room.updateOne({_id: room.roomID}, {$pull: {events: {eventID: eventDoc._id}}}, function (errorUpdateRoom, roomDoc) {
+									if(errorUpdateRoom) console.log(errorUpdateRoom);
 									resolve();
 								});
 							}));
@@ -365,7 +374,7 @@ function deleteEvent(id,type){
 						eventDoc.staffChosen.forEach(function (staff_member_chosen) {
 							promises.push(new Promise((resolve, reject) => {
 								Staff.updateOne({_id: staff_member_chosen.staffMemberID}, {$pull: {attendingEvents: {eventID: eventDoc._id}}}, function (errorUpdateStaff, staffDoc) {
-									console.log(errorUpdateStaff);
+									if(errorUpdateStaff) console.log(errorUpdateStaff);
 									resolve();
 								});
 							}));
@@ -374,7 +383,7 @@ function deleteEvent(id,type){
 						eventDoc.visitors.forEach(function (visitor_attending) {
 							promises.push(new Promise((resolve, reject) => {
 								Visitor.updateOne({_id: visitor_attending.visitorID}, {$pull: {attendingEvents: {eventID: eventDoc._id}}}, function (errorUpdateVisitor, visitorDoc) {
-									console.log(errorUpdateVisitor);
+									if(errorUpdateVisitor) console.log(errorUpdateVisitor);
 									resolve();
 								});
 							}));

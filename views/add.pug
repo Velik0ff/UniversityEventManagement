@@ -35,6 +35,14 @@ block content
                             input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.name)
                     else if field.type === "select"
                         div.form-group
+                            if field.identifier === "role"
+                                label(for=field.identifier)=field.name
+                                select.form-control(name=field.name)
+                                    each option in roles
+                                        if selectedRole === option._id
+                                            option(value=option._id selected)=option.roleName
+                                        else
+                                            option(value=option._id)=option.roleName
                             if field.identifier === "eventType"
                                 label(for=field.identifier)=field.name
                                 select.form-control(name=field.name)

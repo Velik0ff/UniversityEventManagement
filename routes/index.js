@@ -17,6 +17,7 @@ const Staff = require('../models/staff_user');
 const Visitor = require('../models/visitor_user');
 const Equipment = require('../models/EqInventory');
 const SubNotification = require('../models/SubNotification');
+const Archive = require('../models/EventArchive');
 /* End Models */
 
 passport.use(new LocalStrategy(
@@ -244,7 +245,7 @@ router.post('/change-password', function (req, res, next) {
 		var permission = req.user.permission;
 
 		if (!req.body.resetCode) {
-			if (req.user.permission === -1 || req.user.permission === 0) {
+			if (req.user.permission === -1 || req.user.permission >= 10) {
 				Staff.findOne({email: req.user.username}, function (errFindStaff, staff_member) {
 					if (!errFindStaff) {
 						if (staff_member) {
@@ -624,12 +625,26 @@ router.post('/filter', function (req, res, next) {
 		});
 	}
 
+	function filterEventArchive(list_element) {
+		return new Promise(function (resolve, reject) {
+			Archive.findOne({_id: list_element.id}, null, {sort:{date:-1}}, async function (errFind, event) {
+				if (!errFind) {
+					filterEvent(event).then(function (result) {
+						resolve(result);
+					})
+				} else {
+					resolve(false);
+				}
+			});
+		});
+	}
+
 	function filterEventParticipant(list_element) {
 		return new Promise(function (resolve, reject) {
 			Event.findOne({_id: list_element.id}, null, {sort:{date:-1}}, async function (errFind, event) {
 				var participant = false;
 
-				if (req.user.permission === 0) {
+				if (req.user.permission >= 10) {
 					event.staffChosen.forEach(function (staff_member) {
 						if (staff_member.staffID === req.user._id) participant = true;
 					});
@@ -653,18 +668,19 @@ router.post('/filter', function (req, res, next) {
 	/* End Filter functions */
 
 
-	if (req.user && req.user.permission >= 0) {
+	if (req.user && req.user.permission >= 1) {
 		if (req.body.type && req.body.type !== "undefined" && req.body.list && req.body.list !== "undefined") {
 			let list = [];
 			let filterList = [];
 			let promises = [];
 
 			switch (req.body.type) {
-				case "allList":
-					if (req.body.list && req.body.originalList && req.user.permission === 0) {
+				case "allList": case "archive":
+					if (req.body.list && req.body.originalList && req.user.permission >= 10) {
 						req.body.list.forEach(async function (list_element) {
+							let function_name = req.body.type === "allList" ? filterEventAdmin(list_element) : filterEventArchive(list_element);
 							promises.push(new Promise(function (resolve, reject) {
-								filterEventAdmin(list_element).then(function (result) {
+								function_name.then(function (result) {
 									if (result) {
 										list.push(list_element);
 									}
@@ -675,8 +691,9 @@ router.post('/filter', function (req, res, next) {
 						});
 
 						req.body.originalList.forEach(async function (list_element) {
+							let function_name = req.body.type === "allList" ? filterEventAdmin(list_element) : filterEventArchive(list_element);
 							promises.push(new Promise(function (resolve, reject) {
-								filterEventAdmin(list_element).then(function (result) {
+								function_name.then(function (result) {
 									if (result) {
 										filterList.push(list_element);
 									}
@@ -697,8 +714,8 @@ router.post('/filter', function (req, res, next) {
 						res.status(200).json({list: [],filterList: []});
 					}
 					break;
-				case "participate": case "archive":
-					if (req.body.list && req.body.originalList && req.user.permission >= 0) {
+				case "participate":
+					if (req.body.list && req.body.originalList && req.user.permission >= 1) {
 						req.body.list.forEach(function (list_element) {
 							promises.push(new Promise(function (resolve, reject) {
 								filterEventParticipant(list_element).then(function (result) {
@@ -735,7 +752,7 @@ router.post('/filter', function (req, res, next) {
 					}
 					break;
 				case "staff":
-					if(req.body.list && req.body.originalList && req.user.permission === 0){
+					if(req.body.list && req.body.originalList && req.user.permission >= 10){
 						function filterStaff(list_result,listToFilter){
 							listToFilter.forEach(function(list_element){
 								promises.push(new Promise(function (resolve, reject) {
@@ -847,10 +864,10 @@ router.get('/calendar', function (req, res, next) {
 		});
 	}
 
-	if (req.user && req.user.permission >= 0) {
+	if (req.user && req.user.permission >= 1) {
 		let promise = null;
 
-		if (req.user.permission === 0) {
+		if (req.user.permission >= 10) {
 			promise = getAllEvents();
 		} else if (req.user.permission === 1) {
 			promise = getVisitorEvents();
@@ -892,7 +909,7 @@ function getRoomInfo(event_rooms) {
 }
 
 router.get('/export', function (req, res, next) {
-	if (req.user && req.user.permission === 0) {
+	if (req.user && req.user.permission >= 30) {
 		let export_options = ['Events', 'Equipment', 'Staff', 'Rooms', 'Visitors', 'Еvent Types'];
 
 		if (req.query.type) {

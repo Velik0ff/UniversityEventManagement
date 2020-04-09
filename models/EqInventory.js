@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-var EqInventorySchema = new mongoose.Schema({
+let EqInventorySchema = new mongoose.Schema({
 	typeName: { type: String, required: [true, "Equipment name must be stated"] },
 	quantity: { type: Number, required: [true, "Quantity of the equipment must be stated"] },
 	customFields: [{

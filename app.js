@@ -22,6 +22,7 @@ const Archive = require('./models/EventArchive');
 /* Routes */
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
+const rolesRouter = require('./routes/roles');
 const roomsRouter = require('./routes/rooms');
 const eventsRouter = require('./routes/events');
 const visitorsRouter = require('./routes/visitors');
@@ -59,6 +60,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
+app.use('/roles', rolesRouter);
 app.use('/rooms', roomsRouter);
 app.use('/users', usersRouter);
 app.use('/events', eventsRouter);
@@ -93,23 +95,28 @@ app.use(function (err, req, res, next) {//
 
 // module.exports = app;
 
-app.listen(port, () => console.log('App listening on port ' + port + '!'));
+app.listen(port, function(){
+	console.log('App listening on port ' + port + '!');
 
-let now = new Date();
-let year = now.getUTCFullYear();
-let month = now.getUTCMonth();
-let day = now.getUTCDate();
+	let now = new Date();
+	let year = now.getUTCFullYear();
+	let month = now.getUTCMonth();
+	let day = now.getUTCDate();
 
-let startDayHour =Date.UTC(year,month,day,0,0,0,0);
-let midnight = startDayHour + 86400000;
+	let startDayHour = Date.UTC(year,month,day,0,0,0,0);
+	let midnight = startDayHour + 86400000;
 
-let time_left = midnight - now.getTime();
+	let time_left = midnight - now.getTime();
 
-setTimeout(function(){
-	setInterval(function(){
+	/* Archive events every 24 hours starting at 00:00 the next day */
+	setTimeout(function(){ // time to 00:00 the next day
 		archiveEvents();
-	},86400000);
-}, time_left);
+		setInterval(function(){ // interval of 24 hours
+			archiveEvents();
+		},86400000);
+	}, time_left);
+	/* End Archive events every 24 hours starting at 00:00 the next day */
+});
 
 async function archiveEvents() {
 	Event.find({}, null, {sort: {date: -1}}, function (err, eventDoc) {
@@ -184,7 +191,7 @@ async function archiveEvents() {
 
 								new_archive_event.save(function (errSave, saveDoc) {
 									if (!errSave) {
-										genFunctions.deleteEvent(event._id).then().catch();
+										genFunctions.deleteEvent(event._id, "event-list").then().catch();
 									} else {
 										console.log(errSave)
 									}

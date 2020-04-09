@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-var EventArchiveSchema = new mongoose.Schema({
+let EventArchiveSchema = new mongoose.Schema({
 	eventID:{ type: String, required: true },
 	eventName:{ type: String, required: true },
 	equipment:[

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-var EventTypeSchema = new mongoose.Schema({
+let EventTypeSchema = new mongoose.Schema({
 	eventTypeName: { type: String, required: [true, "Event type name must be provided"] },
 	customFields: [{
 		fieldName: { type: String },

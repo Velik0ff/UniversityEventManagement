@@ -42,6 +42,39 @@ function validationErr(error) {
 
 	return error_msg;
 }
+
+function renderAdd(res,req,fields,listLink,addLink,error_msg,message){
+	res.render('add', {
+		title: 'Add New Visitor',
+		// rows: rows,
+		fields: fields,
+		cancelLink: listLink,
+		addLink: '/visitors/' + addLink,
+		customFields: false,
+		error: error_msg,
+		message: message,
+		user: req.user
+	});
+}
+
+function renderEdit(res,req,user,error,message){
+	res.render('edit', {
+		title: 'Editing visitor: ' + user.leadTeacherName,
+		error: error,
+		message: message,
+		item: {
+			ID: req.query.id,
+			"Lead Teacher Full Name": user.leadTeacherName,
+			"Institution Name": user.institutionName,
+			"Contact Email": user.contactEmail,
+			"Contact Phone": user.contactPhone,
+			"Group Size": user.groupSize,
+		},
+		editLink: '/visitors/' + editLink,
+		cancelLink: req.user.permission === 0 ? viewLink + '?id=' + user._id : '../events/participate-events-list',
+		user: req.user
+	});
+}
 /* End Functions */
 
 router.get('/' + listLink, function (req, res, next) {
@@ -128,18 +161,47 @@ router.get('/' + addLink, function (req, res, next) {
 			{name: "Institution Name", type: "text", identifier: "institutionName"},
 			{name: "Contact Email", type: "email", identifier: "email"},
 			{name: "Contact Phone", type: "phone", identifier: "phone"},
-			{name: "Group Size", type: "number", identifier: "groupSize"},
-			{name: "Expiry Date", type: "date", identifier: "expiryDate"}];
+			{name: "Group Size", type: "number", identifier: "groupSize"}];
 
-		res.render('add', {
-			title: 'Add New Visitor',
-			fields: fields,
-			cancelLink: listLink,
-			addLink: '/visitors/' + addLink,
-			customFields: false,
-			error: null,
-			message: null
+		renderAdd(res,req,fields,listLink,addLink,null,null);
+	} else {
+		res.redirect('/');
+	}
+});
+
+router.post('/' + addLink, function (req, res, next) {
+	if (req.user && req.user.permission === 0) {
+		var error_msg = "";
+		var message = "";
+		let password_to_insert = short().new();
+		let fields = [{name: "Lead Teacher Full Name", type: "text", identifier: "name"},
+			{name: "Institution Name", type: "text", identifier: "institutionName"},
+			{name: "Contact Email", type: "email", identifier: "email"},
+			{name: "Contact Phone", type: "phone", identifier: "phone"},
+			{name: "Group Size", type: "number", identifier: "groupSize"}];
+
+		let new_user = new User({ // new user object to be inserted
+			leadTeacherName: req.body['Lead Teacher Full Name'],
+			institutionName: req.body['Institution Name'],
+			contactEmail: req.body['Contact Email'],
+			password: password_to_insert,
+			contactPhone: req.body['Contact Phone'],
+			groupSize: req.body['Group Size'],
+			permission: -2,
 		});
+
+		/* Insert new user */
+		new_user.save(function (error, userDoc) {
+			if (!error) {
+				message = "Successfully added new visitor with email: " + req.body['Contact Email'];
+				genFunctions.sendEmail(req.body['Contact Email'], password_to_insert, null, null, null, "visitor");
+			} else {
+				error_msg = validationErr(error);
+			}
+
+			renderAdd(res,req,fields,listLink,addLink,error_msg,message);
+		});
+		/* End Insert new user */
 	} else {
 		res.redirect('/');
 	}
@@ -149,22 +211,7 @@ router.get('/' + editLink, function (req, res, next) {
 	if ((req.user && req.user.permission === 0) || (req.user && req.user.permission === 1 && req.user._id === req.query.id)) {
 		User.findOne({_id: req.query.id}, function (err, user) {
 			if (!err && user) {
-				res.render('edit', {
-					title: 'Editing visitor: ' + user.leadTeacherName,
-					error: null,
-					item: {
-						ID: req.query.id,
-						"Lead Teacher Full Name": user.leadTeacherName,
-						"Institution Name": user.institutionName,
-						"Contact Email": user.contactEmail,
-						"Contact Phone": user.contactPhone,
-						"Group Size": user.groupSize,
-						"Expiry Date": user.expiryDate
-					},
-					editLink: '/visitors/' + editLink,
-					cancelLink: req.user.permission === 0 ? viewLink + '?id=' + user._id : '../events/participate-events-list',
-					user: req.user
-				});
+				renderEdit(res,req,user,null,null);
 			} else {
 				res.render('edit', {
 					error: "Visitor not found!",
@@ -172,6 +219,48 @@ router.get('/' + editLink, function (req, res, next) {
 					user: req.user
 				});
 			}
+		});
+	} else {
+		res.redirect('/');
+	}
+});
+
+router.post('/' + editLink, function (req, res, next) {
+	if ((req.user && req.user.permission === 0) || (req.user && req.user.permission === 1 && req.user._id === req.query.id)) {
+		let user = {
+			_id: req.body.ID,
+			leadTeacherName: req.body["Lead Teacher Full Name"],
+			institutionName: req.body["Institution Name"],
+			contactEmail: req.body["Contact Email"],
+			contactPhone: req.body["Contact Phone"],
+			groupSize: req.body["Group Size"]
+		};
+		let updates = {$set: {
+				leadTeacherName: req.body["Lead Teacher Full Name"],
+				institutionName: req.body["Institution Name"],
+				contactEmail: req.body["Contact Email"],
+				contactPhone: req.body["Contact Phone"],
+				groupSize: req.body["Group Size"]
+			}};
+		let message = null;
+		let error = null;
+
+		User.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
+			if (!err && update) {
+				message = "Successfully updated visitor: " + req.body["Lead Teacher Full Name"];
+
+			} else if (!update) {
+				res.render('edit', {
+					error: "User not found!",
+					errorCritical: true,
+					listLink: listLink,
+					user: req.user
+				});
+			} else {
+				error = validationErr(err);
+			}
+
+			renderEdit(res,req,user,error,message);
 		});
 	} else {
 		res.redirect('/');
@@ -196,114 +285,6 @@ router.get('/' + deleteLink, function (req, res, next) {
 				});
 			}
 		});
-	} else {
-		res.redirect('/');
-	}
-});
-
-router.post('/' + editLink, function (req, res, next) {
-	if ((req.user && req.user.permission === 0) || (req.user && req.user.permission === 1 && req.user._id === req.query.id)) {
-		let updates = {
-			$set: {
-				leadTeacherName: req.body["Lead Teacher Full Name"],
-				institutionName: req.body["Institution Name"],
-				contactEmail: req.body["Contact Email"],
-				contactPhone: req.body["Contact Phone"],
-				groupSize: req.body["Group Size"],
-				expiryDate: req.body["Expiry Date"]
-			}
-		};
-		let message = null;
-		let error = null;
-
-		User.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
-			if (!err && update) {
-				message = "Successfully updated visitor: " + req.body["Lead Teacher Full Name"];
-
-			} else if (!update) {
-				res.render('edit', {
-					error: "User not found!",
-					errorCritical: true,
-					listLink: listLink,
-					user: req.user
-				});
-			} else {
-				error = validationErr(err);
-			}
-
-			res.render('edit', {
-				title: 'Editing visitor: ' + req.body["Lead Teacher Full Name"],
-				error: error,
-				errorCritical: false,
-				message: message,
-				item: {
-					ID: req.body.ID,
-					"Lead Teacher Full Name": req.body['Lead Teacher Full Name'],
-					"Institution Name": req.body['Institution Name'],
-					"Contact Email": req.body['Contact Email'],
-					"Contact Phone": req.body['Contact Phone'],
-					"Group Size": req.body['Group Size'],
-					"Expiry Date": req.body['Expiry Date']
-				},
-				editLink: '/visitors/' + editLink,
-				cancelLink: req.user.permission === 0 ? viewLink + '?id=' + req.body.ID : '../events/participate-events-list',
-				user: req.user
-			});
-		});
-	} else {
-		res.redirect('/');
-	}
-});
-
-router.post('/' + addLink, function (req, res, next) {
-	if (req.user && req.user.permission === 0) {
-		var error_msg = "";
-		var message = "";
-		let password_to_insert = short().new();
-		let fields = [{name: "Lead Teacher Full Name", type: "text", identifier: "name"},
-			{name: "Institution Name", type: "text", identifier: "institutionName"},
-			{name: "Contact Email", type: "email", identifier: "email"},
-			{name: "Contact Phone", type: "phone", identifier: "phone"},
-			{name: "Group Size", type: "number", identifier: "groupSize"},
-			{name: "Expiry Date", type: "date", identifier: "expiryDate"}];
-
-		let new_user = new User({ // new user object to be inserted
-			leadTeacherName: req.body['Lead Teacher Full Name'],
-			institutionName: req.body['Institution Name'],
-			contactEmail: req.body['Contact Email'],
-			password: password_to_insert,
-			contactPhone: req.body['Contact Phone'],
-			groupSize: req.body['Group Size'],
-			permission: -2,
-			expiryDate: req.body['Expiry Date']
-		});
-
-		function renderScreen() {
-			res.render('add', {
-				title: 'Add New Visitor',
-				// rows: rows,
-				fields: fields,
-				cancelLink: listLink,
-				addLink: '/visitors/' + addLink,
-				customFields: false,
-				error: error_msg,
-				message: message,
-				user: req.user
-			});
-		}
-
-		/* Insert new user */
-		new_user.save(function (error, userDoc) {
-			if (!error) {
-				message = "Successfully added new visitor with email: " + req.body['Contact Email'];
-				genFunctions.sendEmail(req.body['Contact Email'], password_to_insert, null, null, null, "visitor");
-			} else {
-				error_msg = validationErr(error);
-			}
-
-			renderScreen();
-		});
-		/* End Insert new user */
 	} else {
 		res.redirect('/');
 	}

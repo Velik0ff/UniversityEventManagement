@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 
-var EventSchema = new mongoose.Schema({
+let EventSchema = new mongoose.Schema({
 	eventName:{ type: String, required: [true, "Event name must be provided"] },
+	eventDescription: { type: String },
 	equipment:[
 		{
 			equipID: { type: String, required: true },
