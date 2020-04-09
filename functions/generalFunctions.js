@@ -349,9 +349,19 @@ function deleteEvent(id,type){
 				});
 				break;
 			case "event-list":
-				Event.findOne({_id: id}, function (err, eventDoc) {
+				Event.findOne({_id: id}, async function (err, eventDoc) {
 					if (!err && eventDoc) {
-						var promises = [];
+						let promises = [];
+						let equipment_event = await getEquipmentInfo(eventDoc.equipment);
+						let rooms_event = await getRoomInfo(eventDoc.rooms);
+						let event_type = await getEventType(eventDoc.eventTypeID);
+						let staff_event = await getStaffInfo(eventDoc.staffChosen);
+						let visitors_event = await getVisitorInfo(eventDoc.visitors);
+						let equipment = [];
+						let rooms = [];
+						let staff = [];
+						let numberOfSpaces = 0;
+						let numberOfVisitors = 0;
 
 						eventDoc.equipment.forEach(function (equip) {
 							promises.push(new Promise((resolve, reject) => {
@@ -390,13 +400,49 @@ function deleteEvent(id,type){
 						});
 
 						Promise.all(promises).then(() => {
-							Event.deleteOne({_id: id}, function (err, deleteResult) {
-								if (!err) {
-									resolve("Successfully deleted event!")
-								} else {
-									console.log(err); // console log the error
-									reject("Error while deleting event.");
-								}
+							equipment_event.forEach(function (equip) {
+								equipment.push({
+									name: equip.typeName,
+									quantity: equip.quantity + equip.reqQty,
+									customFields: equip.customFields
+								});
+							});
+
+							rooms_event.forEach(function (room) {
+								rooms.push({
+									roomName: room.roomName,
+									capacity: room.capacity,
+									customFields: room.customFields
+								});
+							});
+
+							staff_event.forEach(function (staff_member) {
+								staff.push({
+									staffMemberName: staff_member.fullName,
+									staffEmail: staff_member.email,
+									role: staff_member.role
+								});
+							});
+
+							rooms_event.forEach(function (room) { // count number of spaces
+								numberOfSpaces = numberOfSpaces + room.capacity;
+							});
+
+							visitors_event.forEach(function (visitor) { //  count number of visitors
+								visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
+							});
+
+							archiveEvent(eventDoc,equipment,rooms,event_type,staff,numberOfVisitors,numberOfSpaces).then(function(){
+								Event.deleteOne({_id: id}, function (err, deleteResult) {
+									if (!err) {
+										resolve("Successfully deleted event!")
+									} else {
+										console.log(err); // console log the error
+										reject("Error while deleting event.");
+									}
+								});
+							}).catch(function(){
+								reject("Error while archiving event.");
 							});
 						});
 					} else {
@@ -405,6 +451,56 @@ function deleteEvent(id,type){
 					}
 				});
 				break;
+		}
+	});
+}
+
+function archiveEvent(event,equipment,rooms,event_type,staff,numberOfVisitors,numberOfSpaces,delete_event){
+	return new Promise(function(resolve,reject){
+		let new_archive_event = new Archive({
+			eventID: event._id,
+			eventName: event.eventName,
+			equipment: equipment,
+			rooms: rooms,
+			eventType: event_type,
+			staffChosen: staff,
+			date: event.date,
+			endDate: event.endDate,
+			location: event.location,
+			numberOfVisitors: numberOfVisitors,
+			numberOfSpaces: numberOfSpaces
+		});
+
+		new_archive_event.save(function (errSave, saveDoc) {
+			if (!errSave) {
+				resolve();
+			} else {
+				console.log(errSave);
+				reject();
+			}
+		});
+	});
+}
+
+async function archiveEvents() {
+	Event.find({}, null, {sort: {date: -1}}, function (err, eventDoc) {
+		if (!err) {
+			if (eventDoc) {
+				let today = Date.now();
+
+				if ((eventDoc[0].endDate && Date.parse(eventDoc[0].endDate) > today) ||
+					(!eventDoc[0].endDate && eventDoc[0].date && Date.parse(eventDoc[0].date) > today)) {
+
+					eventDoc.forEach(async function (event) {
+						if ((event.endDate && Date.parse(event.endDate) < today) ||
+							(!event.endDate && event.date && Date.parse(event.date) < today)) {
+								deleteEvent(event._id, "event-list").then().catch();
+						}
+					});
+				}
+			}
+		} else {
+			console.log(err);
 		}
 	});
 }
@@ -422,5 +518,7 @@ module.exports = {
 	getAllEventTypes:getAllEventTypes,
 	sendNotification:sendNotification,
 	sendEmail:sendEmail,
-	deleteEvent:deleteEvent
+	deleteEvent:deleteEvent,
+	archiveEvent:archiveEvent,
+	archiveEvents:archiveEvents
 }

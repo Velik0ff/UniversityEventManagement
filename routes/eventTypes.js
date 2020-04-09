@@ -12,28 +12,32 @@ const deleteLink = "delete-event-type";
 const listLink = "list-event-type";
 const exportLink = "../export?type=Event Types";
 
+let error_msg = null;
+let message = null;
+let fields = [{name: "Name", type: "text", identifier: "Name"}];
+
 /* Functions */
 function validationErr(error){
-	var error_msg = "";
+	let local_error_msg = "";
 
 	if(error.name === "ValidationError"){ // check if the error is from the validator
 		if (typeof error.errors.eventTypeName !== "undefined" &&
 			error.errors.eventTypeName !== null) {
-			error_msg = error.errors.eventTypeName.message
+			local_error_msg = error.errors.eventTypeName.message
 		}
-		console.log(error_msg);
+		console.log(local_error_msg);
 	} else {
-		error_msg = "Unknown error has occurred during adding event type. Please try again later.";
+		local_error_msg = "Unknown error has occurred during adding event type. Please try again later.";
 		console.log(error);
 	}
 
-	return error_msg;
+	return local_error_msg;
 }
 
-function renderEdit(res,req,eventType,error,message){
+function renderEdit(res,req,eventType){
 	res.render('edit', {
 		title: 'Editing event type: ' + eventType.eventTypeName,
-		error: error,
+		error: error_msg,
 		message: message,
 		item: {
 			ID: eventType._id,
@@ -47,7 +51,7 @@ function renderEdit(res,req,eventType,error,message){
 	});
 }
 
-function renderAdd(res,req,fields,listLink,addLink,custom_fields,error_msg,message){
+function renderAdd(res,req,custom_fields){
 	res.render('add', {
 		title: 'Add New Event Type',
 		fields: fields,
@@ -62,13 +66,12 @@ function renderAdd(res,req,fields,listLink,addLink,custom_fields,error_msg,messa
 }
 /* End Functions */
 
-router.get('/'+listLink, function(req, res, next) {
-	if(req.user && req.user.permission >= 30) {
+router.get('/'+listLink, function(req, res) {
+	if(req.user && req.user.permission >= 20) {
 		let columns = ["ID", "Name", "Options"];
-		var error = "";
 
 		EventType.find({}, function (err, eventType) {
-			var eventTypeList = [];
+			let eventTypeList = [];
 
 			eventType.forEach(function (evType) {
 				eventTypeList.push({
@@ -77,7 +80,7 @@ router.get('/'+listLink, function(req, res, next) {
 				});
 			});
 
-			error = eventTypeList.length >= 30 ? "No results to show" : ""
+			error_msg = eventTypeList.length >= 20 ? "No results to show" : "";
 
 			res.render('list', {
 				title: 'Event Type List',
@@ -88,7 +91,7 @@ router.get('/'+listLink, function(req, res, next) {
 				addLink: addLink,
 				deleteLink: deleteLink,
 				exportLink: exportLink,
-				error: error,
+				error: error_msg,
 				user:req.user
 			});
 		});
@@ -97,8 +100,8 @@ router.get('/'+listLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+viewLink, function(req, res, next) {
-	if(req.user && req.user.permission >= 30) {
+router.get('/'+viewLink, function(req, res) {
+	if(req.user && req.user.permission >= 20) {
 		/* Logic to get info from database */
 		EventType.findOne({_id: req.query.id}, function (err, eventType) {
 			if (!err && eventType) {
@@ -130,11 +133,11 @@ router.get('/'+viewLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+editLink, function(req, res, next) {
-	if(req.user && req.user.permission >= 30) {
+router.get('/'+editLink, function(req, res) {
+	if(req.user && req.user.permission >= 20) {
 		EventType.findOne({_id: req.query.id}, function (err, eventType) {
 			if (!err && eventType) {
-				renderEdit(res,req,eventType,null,null);
+				renderEdit(res,req,eventType);
 			} else {
 				res.render('edit', {
 					error: "Event type not found!",
@@ -148,10 +151,8 @@ router.get('/'+editLink, function(req, res, next) {
 	}
 });
 
-router.post('/'+editLink, function(req, res, next) {
-	if(req.user && req.user.permission >= 30) {
-		let error = null;
-		let message = null;
+router.post('/'+editLink, function(req, res) {
+	if(req.user && req.user.permission >= 20) {
 		let custom_fields = [];
 
 		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
@@ -179,7 +180,8 @@ router.post('/'+editLink, function(req, res, next) {
 		EventType.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
 			if (!err && update) {
 				message = "Successfully updated event type: " + req.body.Name;
-				renderEdit(res,req,eventType,error,message);
+
+				renderEdit(res,req,eventType);
 			} else if (!update) {
 				res.render('edit', {
 					error: "Event type not found!",
@@ -188,9 +190,9 @@ router.post('/'+editLink, function(req, res, next) {
 					user:req.user
 				});
 			} else {
-				error = validationErr(err);
+				error_msg = validationErr(err);
 
-				renderEdit(res,req,eventType,error,message);
+				renderEdit(res,req,eventType);
 			}
 		});
 	} else {
@@ -198,22 +200,16 @@ router.post('/'+editLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+addLink, function(req, res, next) {
-	if(req.user && req.user.permission >= 30) {
-		let fields = [{name: "Name", type: "text", identifier: "Name"}];
-
-		renderAdd(res,req,fields,listLink,addLink,null,null,null);
+router.get('/'+addLink, function(req, res) {
+	if(req.user && req.user.permission >= 20) {
+		renderAdd(res,req,null);
 	} else {
 		res.redirect('/');
 	}
 });
 
-router.post('/'+addLink, function(req, res, next) {
-	if(req.user && req.user.permission >= 30) {
-		let error_msg = "";
-		let message = "";
-		let fields = [{name: "Name", type: "text", identifier: "Name"}]
-
+router.post('/'+addLink, function(req, res) {
+	if(req.user && req.user.permission >= 20) {
 		let eventType_object = {};
 		let custom_fields = [];
 
@@ -239,7 +235,7 @@ router.post('/'+addLink, function(req, res, next) {
 		let new_eventType = new EventType(eventType_object);
 
 		/* Insert new event type */
-		new_eventType.save(function (error, eventTypeDoc) {
+		new_eventType.save(function (error) {
 			if (!error) {
 				message = "Successfully added new event type: " + req.body.Name;
 				console.log(message);
@@ -247,7 +243,7 @@ router.post('/'+addLink, function(req, res, next) {
 				error_msg = validationErr(error);
 			}
 
-			renderAdd(res,req,fields,listLink,addLink,custom_fields,error_msg,message);
+			renderAdd(res,req,custom_fields);
 		});
 		/* End Insert new event type */
 	} else {
@@ -255,9 +251,9 @@ router.post('/'+addLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+deleteLink, function(req, res, next) {
+router.get('/'+deleteLink, function(req, res) {
 	if(req.user && req.user.permission >= 30) {
-		EventType.deleteOne({_id: req.query.id}, function (err, deleteResult) {
+		EventType.deleteOne({_id: req.query.id}, function (err) {
 			if (!err) {
 				res.render('view', {
 					deleteMsg: "Successfully deleted event type!",

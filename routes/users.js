@@ -18,34 +18,42 @@ const resetPassLink = "reset-password";
 const exportLink = "../export?type=Staff";
 /* End Links */
 
+let error_msg = null;
+let message = null;
+let password_to_insert = short().new();
+let fields = [{name: "Name", type: "text", identifier: "name"},
+	{name: "Email", type: "email", identifier: "email"},
+	{name: "Phone", type: "tel", identifier: "phone"},
+	{name: "Role", type: "text", identifier: "role"}];
+
 /* Functions */
 function validationErr(error) {
-	var error_msg = "";
+	let local_error_msg = "";
 
 	if (error.name === "ValidationError") { // check if the error is from the validator
 		if (typeof error.errors.fullName !== "undefined" &&
 			error.errors.fullName !== null) {
-			error_msg = error.errors.fullName.message
+			local_error_msg = error.errors.fullName.message
 		}
 		if (typeof error.errors.email !== "undefined" &&
 			error.errors.email !== null) {
-			error_msg = error.errors.email.message
+			local_error_msg = error.errors.email.message
 		}
 		if (typeof error.errors.role !== "undefined" &&
 			error.errors.role !== null) {
-			error_msg = error.errors.role.message
+			local_error_msg = error.errors.role.message
 		}
-		console.log(error_msg);
+		console.log(local_error_msg);
 	} else {
 		if (error.code === 11000) { // duplicate entry
-			error_msg = "Email already exists.";
+			local_error_msg = "Email already exists.";
 		} else { // unknown error
-			error_msg = "Unknown error has occurred during adding of the user. Please try again later.";
+			local_error_msg = "Unknown error has occurred during adding of the user. Please try again later.";
 			console.log(error);
 		}
 	}
 
-	return error_msg;
+	return local_error_msg;
 }
 
 function getStaffRoles(){
@@ -60,7 +68,7 @@ function getStaffRoles(){
 	});
 }
 
-function renderAdd(res,req,fields,listLink,addLink,error_msg,message){
+function renderAdd(res,req){
 	getStaffRoles().then(function(roles) {
 		res.render('add', {
 			title: 'Add New Staff Member',
@@ -76,7 +84,7 @@ function renderAdd(res,req,fields,listLink,addLink,error_msg,message){
 	});
 }
 
-function renderEdit(res,req,user,message,error){
+function renderEdit(res,req,user){
 	getStaffRoles().then(function(roles){
 		res.render('edit', {
 			title: 'Editing staff member: ' + user.fullName,
@@ -97,10 +105,9 @@ function renderEdit(res,req,user,message,error){
 }
 /* End Functions */
 
-router.get('/' + listLink, function (req, res, next) {
+router.get('/' + listLink, function (req, res) {
 	if (req.user && req.user.permission >= 10) {
 		let columns = ["ID", "Full Name", "Email", "Options"];
-		let error = "";
 
 		User.find({}, function (err, users) {
 			let userList = [];
@@ -128,7 +135,7 @@ router.get('/' + listLink, function (req, res, next) {
 				}
 			});
 
-			error = userList.length === 0 ? "No results to show" : "";
+			error_msg = userList.length === 0 ? "No results to show" : "";
 
 			res.render('list', {
 				title: 'Staff List',
@@ -142,7 +149,7 @@ router.get('/' + listLink, function (req, res, next) {
 				addLink: req.user.permission >= 30 ? addLink : null,
 				deleteLink: req.user.permission >= 30 ? deleteLink : null,
 				exportLink: req.user.permission >= 30 ? exportLink : null,
-				error: error,
+				error: error_msg,
 				user: req.user
 			});
 		});
@@ -151,15 +158,14 @@ router.get('/' + listLink, function (req, res, next) {
 	}
 });
 
-router.get('/' + viewLink, function (req, res, next) {
-	if (req.user && req.user.permission >= 10) {
+router.get('/' + viewLink, function (req, res) {
+	if (req.user && req.user.permission >= 1) {
 		/* Logic to get info from database */
 		User.findOne({_id: req.query.id}, function (err, user) {
 			if (!err && user) {
 				res.render('view', {
 					title: 'Viewing staff member: ' + user.fullName,
 					error: null,
-					// rows: rows,
 					item: {
 						ID: user._id,
 						Name: user.fullName,
@@ -185,60 +191,56 @@ router.get('/' + viewLink, function (req, res, next) {
 		res.redirect('/');
 	}
 });
-router.get('/' + addLink, function (req, res, next) {
+router.get('/' + addLink, function (req, res) {
 	if (req.user && req.user.permission >= 30) {
-		let fields = [{name: "Name", type: "text", identifier: "name"},
-			{name: "Email", type: "email", identifier: "email"},
-			{name: "Phone", type: "tel", identifier: "phone"},
-			{name: "Role", type: "select", identifier: "role"}];
-
-		renderAdd(res,req,fields,listLink,addLink,null,null);
+		renderAdd(res,req);
 	} else {
 		res.redirect('/');
 	}
 });
 
-router.post('/' + addLink, function (req, res, next) {
-	if (req.user && req.user.permission === 0) {
-		var error_msg = null;
-		var message = null;
-		let password_to_insert = short().new();
-		let fields = [{name: "Name", type: "text", identifier: "name"},
-			{name: "Email", type: "email", identifier: "email"},
-			{name: "Phone", type: "tel", identifier: "phone"},
-			{name: "Role", type: "text", identifier: "role"}];
+router.post('/' + addLink, function (req, res) {
+	if (req.user && req.user.permission >= 30) {
+		Role.findOne({_id:req.body.Role},function(errFindRole,roleDoc){
+			let role = null;
 
-		let new_user = new User({ // new user object to be inserted
-			fullName: req.body.Name,
-			email: req.body.Email,
-			password: password_to_insert,
-			role: req.body.Role,
-			permission: -1,
-			phone: req.body.Phone ? req.body.Phone : null
+			if(errFindRole) console.log(errFindRole);
+
+			if(!errFindRole && roleDoc) role = roleDoc.roleName;
+
+			let new_user = new User({ // new user object to be inserted
+				fullName: req.body.Name,
+				email: req.body.Email,
+				password: password_to_insert,
+				role: role,
+				permission: -1,
+				phone: req.body.Phone ? req.body.Phone : null
+			});
+
+			/* Insert new user */
+
+			new_user.save(function (error) {
+				if (!error) {
+					message = "Successfully added new user with email: " + req.body.Email;
+					genFunctions.sendEmail(req.body.Email, password_to_insert, req.body.Role, null, null, 'staff');
+				} else {
+					error_msg = validationErr(error);
+				}
+
+				renderAdd(res,req);
+			});
+			/* End Insert new user */
 		});
-
-		/* Insert new user */
-		new_user.save(function (error, userDoc) {
-			if (!error) {
-				message = "Successfully added new user with email: " + req.body.Email;
-				genFunctions.sendEmail(req.body.Email, password_to_insert, req.body.Role, null, null, 'staff');
-			} else {
-				error_msg = validationErr(error);
-			}
-
-			renderAdd(res,req,fields,listLink,addLink,error_msg,message);
-		});
-		/* End Insert new user */
 	} else {
 		res.redirect('/');
 	}
 });
 
-router.get('/' + editLink, function (req, res, next) {
+router.get('/' + editLink, function (req, res) {
 	if ((req.user && req.user.permission >= 30) || (req.user && req.user.permission >= 10 && req.user._id === req.query.id)) {
 		User.findOne({_id: req.query.id}, function (err, user) {
 			if (!err && user) {
-				renderEdit(res,req,user,null,null);
+				renderEdit(res,req,user);
 			} else {
 				res.render('edit', {
 					error: "User not found!",
@@ -252,38 +254,76 @@ router.get('/' + editLink, function (req, res, next) {
 	}
 });
 
-router.post('/' + editLink, function (req, res, next) {
+router.post('/' + editLink, function (req, res) {
 	if ((req.user && req.user.permission >= 30) || (req.user && req.user.permission >= 10 && req.user._id === req.query.id)) {
-		let updates = {$set: {fullName: req.body.Name, email: req.body.Email, role: req.body.Role, phone: req.body.Phone}};
-		let message = null;
-		let error = null;
+		let updates = null;
+		let role = null;
+		let role_permission = -1;
+		let promises = [];
+		let user_permission = -1;
 
-		User.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
-			if (!err && update) {
-				message = "Successfully updated user: " + req.body.Email;
+		if(req.user.permission >= 30){
+			promises.push(new Promise(function(resolve){
+				Role.findOne({_id:req.body.Role},function(errFindRole,roleDoc){
+					if(errFindRole) console.log(errFindRole);
 
-				renderEdit(res,req,user,message,error);
-			} else if (!update) {
-				res.render('edit', {
-					error: "User not found!",
-					errorCritical: true,
-					listLink: listLink,
-					user: req.user
+					if(!errFindRole && roleDoc) {
+						role = roleDoc.roleName;
+						role_permission = roleDoc.rolePermission;
+					}
+
+					resolve();
 				});
-			} else {
-				error = validationErr(err);
+			}));
 
-				renderEdit(res,req,user,message,error);
+			promises.push(new Promise(function(resolve){
+				User.findOne({_id:req.body.ID},function(errFindUser,userDoc){
+					if(errFindUser) console.log(errFindUser);
+
+					if(!errFindUser && userDoc){
+						user_permission = userDoc.permission;
+					}
+
+					resolve();
+				});
+			}));
+		}
+
+		Promise.all(promises).then(function(){
+			if(req.user.permission >= 30){
+				if(user_permission >= 10){
+					updates = {$set: {fullName: req.body.Name, email: req.body.Email, role:role, permission: role_permission, phone: req.body.Phone}};
+				} else updates = {$set: {fullName: req.body.Name, email: req.body.Email, role:role, phone: req.body.Phone}};
+			} else {
+				updates = {$set: {fullName: req.body.Name, email: req.body.Email, phone: req.body.Phone}};
 			}
+			User.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
+				if (!err && update) {
+					message = "Successfully updated user: " + req.body.Email;
+
+					renderEdit(res,req,user);
+				} else if (!update) {
+					res.render('edit', {
+						error: "User not found!",
+						errorCritical: true,
+						listLink: listLink,
+						user: req.user
+					});
+				} else {
+					error_msg = validationErr(err);
+
+					renderEdit(res,req,user);
+				}
+			});
 		});
 	} else {
 		res.redirect('/');
 	}
 });
 
-router.get('/' + deleteLink, function (req, res, next) {
+router.get('/' + deleteLink, function (req, res) {
 	if (req.user && req.user.permission >= 30) {
-		User.deleteOne({_id: req.query.id}, function (err, deleteResult) {
+		User.deleteOne({_id: req.query.id}, function (err) {
 			if (!err) {
 				res.render('view', {
 					deleteMsg: "Successfully deleted user!",
@@ -304,7 +344,7 @@ router.get('/' + deleteLink, function (req, res, next) {
 	}
 });
 
-router.get('/' + resetPassLink, function (req, res, next) {
+router.get('/' + resetPassLink, function (req, res) {
 	if (req.user && req.user.permission === 0) {
 
 		function renderView(message,error){
@@ -329,7 +369,7 @@ router.get('/' + resetPassLink, function (req, res, next) {
 							permission: -1,
 							password: user.hashPassword(password)
 						}
-					}, function (err, userDoc) {
+					}, function (err) {
 						if (err) {
 							console.log(err);
 							error = "Unknown error has occurred please try again!";

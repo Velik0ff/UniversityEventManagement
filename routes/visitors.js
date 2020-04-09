@@ -17,25 +17,33 @@ const resetPassLink = "reset-password";
 const exportLink = "../export?type=Staff";
 /* End Links */
 
+let error_msg = null;
+let message = null;
+let fields = [{name: "Lead Teacher Full Name", type: "text", identifier: "name"},
+	{name: "Institution Name", type: "text", identifier: "institutionName"},
+	{name: "Contact Email", type: "email", identifier: "email"},
+	{name: "Contact Phone", type: "phone", identifier: "phone"},
+	{name: "Group Size", type: "number", identifier: "groupSize"}];
+
 /* Functions */
 function validationErr(error) {
-	var error_msg = "";
+	let local_error_msg = "";
 
 	if (error.name === "ValidationError") { // check if the error is from the validator
 		if (typeof error.errors.leadTeacherName !== "undefined" &&
 			error.errors.leadTeacherName !== null) {
-			error_msg = error.errors.leadTeacherName.message
+			local_error_msg = error.errors.leadTeacherName.message
 		}
 		if (typeof error.errors.contactEmail !== "undefined" &&
 			error.errors.contactEmail !== null) {
-			error_msg = error.errors.contactEmail.message
+			local_error_msg = error.errors.contactEmail.message
 		}
-		console.log(error_msg);
+		console.log(local_error_msg);
 	} else {
 		if (error.code === 11000) { // duplicate entry
-			error_msg = "Email already exists.";
+			local_error_msg = "Email already exists.";
 		} else { // unknown error
-			error_msg = "Unknown error has occurred during adding of the user. Please try again later.";
+			local_error_msg = "Unknown error has occurred during adding of the user. Please try again later.";
 			console.log(error);
 		}
 	}
@@ -43,10 +51,9 @@ function validationErr(error) {
 	return error_msg;
 }
 
-function renderAdd(res,req,fields,listLink,addLink,error_msg,message){
+function renderAdd(res,req){
 	res.render('add', {
 		title: 'Add New Visitor',
-		// rows: rows,
 		fields: fields,
 		cancelLink: listLink,
 		addLink: '/visitors/' + addLink,
@@ -57,7 +64,7 @@ function renderAdd(res,req,fields,listLink,addLink,error_msg,message){
 	});
 }
 
-function renderEdit(res,req,user,error,message){
+function renderEdit(res,req,user){
 	res.render('edit', {
 		title: 'Editing visitor: ' + user.leadTeacherName,
 		error: error,
@@ -71,20 +78,19 @@ function renderEdit(res,req,user,error,message){
 			"Group Size": user.groupSize,
 		},
 		editLink: '/visitors/' + editLink,
-		cancelLink: req.user.permission === 0 ? viewLink + '?id=' + user._id : '../events/participate-events-list',
+		cancelLink: req.user.permission >= 10 ? viewLink + '?id=' + user._id : '../events/participate-events-list',
 		user: req.user
 	});
 }
 /* End Functions */
 
-router.get('/' + listLink, function (req, res, next) {
-	if (req.user && req.user.permission === 0) {
+router.get('/' + listLink, function (req, res) {
+	if (req.user && req.user.permission >= 10) {
 		let columns = ["ID", "Institution Name", "Lead Teacher", "Email", "Options"];
-		var error = "";
 		let visitorInstitutions = [];
 
 		User.find({}, null, {sort: '-leadTeacherName'}, function (err, users) {
-			var userList = [];
+			let userList = [];
 
 			users.forEach(function (user) {
 				userList.push({
@@ -99,7 +105,7 @@ router.get('/' + listLink, function (req, res, next) {
 				}
 			});
 
-			error = userList.length === 0 ? "No results to show" : ""
+			error_msg = userList.length === 0 ? "No results to show" : ""
 
 			res.render('list', {
 				title: 'Visitor List',
@@ -112,7 +118,7 @@ router.get('/' + listLink, function (req, res, next) {
 				deleteLink: deleteLink,
 				exportLink: exportLink,
 				visitorInstitutions: visitorInstitutions,
-				error: error,
+				error: error_msg,
 				user: req.user
 			});
 		});
@@ -121,15 +127,14 @@ router.get('/' + listLink, function (req, res, next) {
 	}
 });
 
-router.get('/' + viewLink, function (req, res, next) {
-	if (req.user && req.user.permission === 0) {
+router.get('/' + viewLink, function (req, res) {
+	if (req.user && req.user.permission >= 10) {
 		/* Logic to get info from database */
 		User.findOne({_id: req.query.id}, function (err, user) {
 			if (!err && user) {
 				res.render('view', {
 					title: 'Viewing staff member: ' + user.leadTeacherName,
-					error: null,
-					// rows: rows,
+					error: error_msg,
 					item: {
 						ID: user._id,
 						"Intitution Name": user.institutionName,
@@ -155,30 +160,17 @@ router.get('/' + viewLink, function (req, res, next) {
 	}
 });
 
-router.get('/' + addLink, function (req, res, next) {
-	if (req.user && req.user.permission === 0) {
-		let fields = [{name: "Lead Teacher Full Name", type: "text", identifier: "name"},
-			{name: "Institution Name", type: "text", identifier: "institutionName"},
-			{name: "Contact Email", type: "email", identifier: "email"},
-			{name: "Contact Phone", type: "phone", identifier: "phone"},
-			{name: "Group Size", type: "number", identifier: "groupSize"}];
-
-		renderAdd(res,req,fields,listLink,addLink,null,null);
+router.get('/' + addLink, function (req, res) {
+	if (req.user && req.user.permission >= 20) {
+		renderAdd(res,req);
 	} else {
 		res.redirect('/');
 	}
 });
 
-router.post('/' + addLink, function (req, res, next) {
-	if (req.user && req.user.permission === 0) {
-		var error_msg = "";
-		var message = "";
+router.post('/' + addLink, function (req, res) {
+	if (req.user && req.user.permission >= 20) {
 		let password_to_insert = short().new();
-		let fields = [{name: "Lead Teacher Full Name", type: "text", identifier: "name"},
-			{name: "Institution Name", type: "text", identifier: "institutionName"},
-			{name: "Contact Email", type: "email", identifier: "email"},
-			{name: "Contact Phone", type: "phone", identifier: "phone"},
-			{name: "Group Size", type: "number", identifier: "groupSize"}];
 
 		let new_user = new User({ // new user object to be inserted
 			leadTeacherName: req.body['Lead Teacher Full Name'],
@@ -199,7 +191,7 @@ router.post('/' + addLink, function (req, res, next) {
 				error_msg = validationErr(error);
 			}
 
-			renderAdd(res,req,fields,listLink,addLink,error_msg,message);
+			renderAdd(res,req);
 		});
 		/* End Insert new user */
 	} else {
@@ -207,11 +199,11 @@ router.post('/' + addLink, function (req, res, next) {
 	}
 });
 
-router.get('/' + editLink, function (req, res, next) {
-	if ((req.user && req.user.permission === 0) || (req.user && req.user.permission === 1 && req.user._id === req.query.id)) {
+router.get('/' + editLink, function (req, res) {
+	if ((req.user && req.user.permission >= 20) || (req.user && req.user.permission === 1 && req.user._id === req.query.id)) {
 		User.findOne({_id: req.query.id}, function (err, user) {
 			if (!err && user) {
-				renderEdit(res,req,user,null,null);
+				renderEdit(res,req,user);
 			} else {
 				res.render('edit', {
 					error: "Visitor not found!",
@@ -225,8 +217,8 @@ router.get('/' + editLink, function (req, res, next) {
 	}
 });
 
-router.post('/' + editLink, function (req, res, next) {
-	if ((req.user && req.user.permission === 0) || (req.user && req.user.permission === 1 && req.user._id === req.query.id)) {
+router.post('/' + editLink, function (req, res) {
+	if ((req.user && req.user.permission >= 20) || (req.user && req.user.permission === 1 && req.user._id === req.query.id)) {
 		let user = {
 			_id: req.body.ID,
 			leadTeacherName: req.body["Lead Teacher Full Name"],
@@ -242,13 +234,12 @@ router.post('/' + editLink, function (req, res, next) {
 				contactPhone: req.body["Contact Phone"],
 				groupSize: req.body["Group Size"]
 			}};
-		let message = null;
-		let error = null;
 
 		User.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
 			if (!err && update) {
 				message = "Successfully updated visitor: " + req.body["Lead Teacher Full Name"];
 
+				renderEdit(res,req,user);
 			} else if (!update) {
 				res.render('edit', {
 					error: "User not found!",
@@ -257,19 +248,19 @@ router.post('/' + editLink, function (req, res, next) {
 					user: req.user
 				});
 			} else {
-				error = validationErr(err);
-			}
+				error_msg = validationErr(err);
 
-			renderEdit(res,req,user,error,message);
+				renderEdit(res,req,user);
+			}
 		});
 	} else {
 		res.redirect('/');
 	}
 });
 
-router.get('/' + deleteLink, function (req, res, next) {
-	if (req.user && req.user.permission === 0) {
-		User.deleteOne({_id: req.query.id}, function (err, deleteResult) {
+router.get('/' + deleteLink, function (req, res) {
+	if (req.user && req.user.permission >= 30) {
+		User.deleteOne({_id: req.query.id}, function (err) {
 			if (!err) {
 				res.render('view', {
 					deleteMsg: "Successfully deleted visitor!",
@@ -290,8 +281,8 @@ router.get('/' + deleteLink, function (req, res, next) {
 	}
 });
 
-router.get('/' + resetPassLink, function (req, res, next) {
-	if (req.user && req.user.permission === 0) {
+router.get('/' + resetPassLink, function (req, res) {
+	if (req.user && req.user.permission >= 20) {
 
 		function renderView(message,error){
 			res.render('view', {
@@ -315,7 +306,7 @@ router.get('/' + resetPassLink, function (req, res, next) {
 							permission: -2,
 							password: user.hashPassword(password)
 						}
-					}, function (err, userDoc) {
+					}, function (err) {
 						if (err) {
 							console.log(err);
 							error = "Unknown error has occurred please try again!";

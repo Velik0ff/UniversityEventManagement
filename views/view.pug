@@ -57,6 +57,12 @@ block content
                                     tr
                                         td(style="font-weight:bold")=fieldValue['fieldName']
                                         td=fieldValue['fieldValue']
+                            else if index === 'Location'
+                                tr
+                                    td(style="font-weight:bold")=index
+                                    td
+                                        span=info
+                                        a.btn.btn-link(href='https://www.google.com/maps/search/?api=1&query='+info) Show on map
                             else
                                 tr
                                     td(style="font-weight:bold")=index

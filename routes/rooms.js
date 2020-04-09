@@ -12,34 +12,73 @@ const deleteLink = "delete-room";
 const listLink = "list-rooms";
 const exportLink = "../export?type=Rooms";
 
+let error_msg = null;
+let message = null;
+let fields = [{name: "Name", type: "text", identifier: "Name"},
+	{name: "Capacity", type: "number", identifier: "Capacity"}];
+
+/* Functions */
 function validationErr(error){
-	var error_msg = "";
+	let local_error_msg = "";
 
 	if(error.name === "ValidationError"){ // check if the error is from the validator
 		if (typeof error.errors.roomName !== "undefined" &&
 			error.errors.roomName !== null) {
-			error_msg = error.errors.roomName.message
+			local_error_msg = error.errors.roomName.message
 		}
 		if (typeof error.errors.capacity !== "undefined" &&
 			error.errors.capacity !== null) {
-			error_msg = error.errors.capacity.message
+			local_error_msg = error.errors.capacity.message
 		}
-		console.log(error_msg);
+		console.log(local_error_msg);
 	} else {
-		error_msg = "Unknown error has occurred during adding room. Please try again later.";
+		local_error_msg = "Unknown error has occurred during adding room. Please try again later.";
 		console.log(error);
 	}
 
-	return error_msg;
+	return local_error_msg;
 }
 
-router.get('/'+listLink, function(req, res, next) {
-	if(req.user && req.user.permission === 0) {
+function renderAdd(res,req,custom_fields){
+	res.render('add', {
+		title: 'Add New Room',
+		fields: fields,
+		cancelLink: listLink,
+		addLink: '/rooms/' + addLink,
+		customFields: true,
+		customFieldsValues: custom_fields,
+		error: error_msg,
+		message: message,
+		user:req.user
+	});
+}
+
+function renderEdit(res,req,custom_fields){
+	res.render('edit', {
+		title: 'Editing room: ' + req.body.Name,
+		error: error_msg,
+		errorCritical: false,
+		message: message,
+		item: {
+			ID: req.body.ID,
+			Name: req.body.Name,
+			Capacity: req.body.Capacity,
+			customFieldsValues: custom_fields
+		},
+		customFields: true,
+		editLink: '/rooms/' + editLink,
+		cancelLink: viewLink + '?id=' + req.body.ID,
+		user:req.user
+	});
+}
+/* End Functions */
+
+router.get('/'+listLink, function(req, res) {
+	if(req.user && req.user.permission >= 20) {
 		let columns = ["ID", "Name", "Capacity", "Options"];
-		var error = "";
 
 		Room.find({}, function (err, rooms) {
-			var roomList = [];
+			let roomList = [];
 
 			rooms.forEach(function (room) {
 				roomList.push({
@@ -49,7 +88,7 @@ router.get('/'+listLink, function(req, res, next) {
 				});
 			});
 
-			error = rooms.length === 0 ? "No results to show" : ""
+			error_msg = rooms.length === 0 ? "No results to show" : ""
 
 			res.render('list', {
 				title: 'Rooms List',
@@ -59,9 +98,9 @@ router.get('/'+listLink, function(req, res, next) {
 				editLink: editLink,
 				viewLink: viewLink,
 				addLink: addLink,
-				deleteLink: deleteLink,
+				deleteLink: req.user.permission >= 30 ? deleteLink : null,
 				exportLink: exportLink,
-				error: error,
+				error: error_msg,
 				user:req.user
 			});
 		});
@@ -70,15 +109,14 @@ router.get('/'+listLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+viewLink, function(req, res, next) {
-	if(req.user && req.user.permission === 0) {
+router.get('/'+viewLink, function(req, res) {
+	if(req.user && req.user.permission >= 20) {
 		/* Logic to get info from database */
 		Room.findOne({_id: req.query.id}, function (err, room) {
 			if (!err && room) {
 				res.render('view', {
 					title: 'Viewing room: ' + room.roomName,
 					error: null,
-					// rows: rows,
 					item: {
 						ID: room._id,
 						Name: room.roomName,
@@ -86,7 +124,7 @@ router.get('/'+viewLink, function(req, res, next) {
 						customFields: room.customFields
 					},
 					listLink: listLink,
-					deleteLink: deleteLink,
+					deleteLink: req.user.permission >= 30 ? deleteLink : null,
 					editLink: editLink + '?id=' + room._id,
 					user:req.user
 				});
@@ -104,25 +142,11 @@ router.get('/'+viewLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+editLink, function(req, res, next) {
-	if(req.user && req.user.permission === 0) {
+router.get('/'+editLink, function(req, res) {
+	if(req.user && req.user.permission >= 20) {
 		Room.findOne({_id: req.query.id}, function (err, room) {
 			if (!err && room) {
-				res.render('edit', {
-					title: 'Editing role: ' + room.typeName,
-					error: null,
-					// rows: rows,
-					item: {
-						ID: room._id,
-						Name: room.roomName,
-						Capacity: room.capacity,
-						customFieldsValues: room.customFields
-					},
-					customFields: true,
-					editLink: '/rooms/' + editLink,
-					cancelLink: viewLink + '?id=' + room._id,
-					user:req.user
-				});
+				renderEdit(res,req,room.customFields);
 			} else {
 				res.render('edit', {
 					error: "Room not found!",
@@ -136,48 +160,8 @@ router.get('/'+editLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+addLink, function(req, res, next) {
-	if(req.user && req.user.permission === 0) {
-		let fields = [{name: "Name", type: "text", identifier: "Name"},
-			{name: "Capacity", type: "number", identifier: "Capacity"}];
-
-		res.render('add', {
-			title: 'Add New Room',
-			fields: fields,
-			cancelLink: listLink,
-			customFields: true,
-			user:req.user
-		});
-	} else {
-		res.redirect('/');
-	}
-});
-
-router.get('/'+deleteLink, function(req, res, next) {
-	if(req.user && req.user.permission === 0) {
-		Room.deleteOne({_id: req.query.id}, function (err, deleteResult) {
-			if (!err) {
-				res.render('view', {
-					deleteMsg: "Successfully deleted room!",
-					listLink: listLink,
-					user:req.user
-				});
-			} else {
-				console.log(err); // console log the error
-				res.render('view', {
-					error: "Room not found!",
-					listLink: listLink,
-					user:req.user
-				});
-			}
-		});
-	} else {
-		res.redirect('/');
-	}
-});
-
-router.post('/'+editLink, function(req, res, next) {
-	if(req.user && req.user.permission === 0) {
+router.post('/'+editLink, function(req, res) {
+	if(req.user && req.user.permission >= 20) {
 		var custom_fields = [];
 
 		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
@@ -199,22 +183,9 @@ router.post('/'+editLink, function(req, res, next) {
 
 		Room.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
 			if (!err && update) {
-				res.render('edit', {
-					title: 'Editing room: ' + req.body.Name,
-					error: null,
-					errorCritical: false,
-					message: "Successfully updated room: " + req.body.Name,
-					item: {
-						ID: req.body.ID,
-						Name: req.body.Name,
-						Capacity: req.body.Capacity,
-						customFieldsValues: custom_fields
-					},
-					customFields: true,
-					editLink: '/rooms/' + editLink,
-					cancelLink: viewLink + '?id=' + req.body.ID,
-					user:req.user
-				});
+				message = "Successfully updated room: " + req.body.Name;
+
+				renderEdit(res,req,custom_fields);
 			} else if (!update) {
 				res.render('edit', {
 					error: "Room not found!",
@@ -223,24 +194,9 @@ router.post('/'+editLink, function(req, res, next) {
 					user:req.user
 				});
 			} else {
-				let error = validationErr(err);
+				error_msg = validationErr(err);
 
-				res.render('edit', {
-					title: 'Editing room: ' + req.body.Name,
-					error: error,
-					errorCritical: false,
-					message: null,
-					item: {
-						ID: req.body.ID,
-						Name: req.body.Name,
-						Capacity: req.body.Capacity,
-						customFieldsValues: custom_fields
-					},
-					customFields: true,
-					editLink: '/rooms/' + editLink,
-					cancelLink: viewLink + '?id=' + req.body.ID,
-					user:req.user
-				});
+				renderEdit(res,req,custom_fields);
 			}
 		});
 	} else {
@@ -248,15 +204,18 @@ router.post('/'+editLink, function(req, res, next) {
 	}
 });
 
-router.post('/'+addLink, function(req, res, next) {
-	if(req.user && req.user.permission === 0) {
-		var error_msg = "";
-		var message = "";
-		let fields = [{name: "Name", type: "text", identifier: "Name"},
-			{name: "Capacity", type: "number", identifier: "Capacity"}]
+router.get('/'+addLink, function(req, res, ) {
+	if(req.user && req.user.permission >= 20) {
+		renderAdd(res,req,null);
+	} else {
+		res.redirect('/');
+	}
+});
 
-		var room_object = {};
-		var custom_fields = [];
+router.post('/'+addLink, function(req, res) {
+	if(req.user && req.user.permission >= 20) {
+		let room_object = {};
+		let custom_fields = [];
 
 		room_object['roomName'] = req.body.Name;
 		room_object['capacity'] = req.body.Capacity;
@@ -280,22 +239,8 @@ router.post('/'+addLink, function(req, res, next) {
 
 		let new_room = new Room(room_object);
 
-		function renderScreen() {
-			res.render('add', {
-				title: 'Add New Room',
-				fields: fields,
-				cancelLink: listLink,
-				addLink: '/rooms/' + addLink,
-				customFields: true,
-				customFieldsValues: custom_fields,
-				error: error_msg,
-				message: message,
-				user:req.user
-			});
-		}
-
 		/* Insert new equipment */
-		new_room.save(function (error, roomDoc) {
+		new_room.save(function (error) {
 			if (!error) {
 				message = "Successfully added new room: " + req.body.Name;
 				console.log(message);
@@ -303,9 +248,32 @@ router.post('/'+addLink, function(req, res, next) {
 				error_msg = validationErr(error);
 			}
 
-			renderScreen();
+			renderAdd(res,req,custom_fields);
 		});
 		/* End Insert new equipment */
+	} else {
+		res.redirect('/');
+	}
+});
+
+router.get('/'+deleteLink, function(req, res) {
+	if(req.user && req.user.permission >= 30) {
+		Room.deleteOne({_id: req.query.id}, function (err) {
+			if (!err) {
+				res.render('view', {
+					deleteMsg: "Successfully deleted room!",
+					listLink: listLink,
+					user:req.user
+				});
+			} else {
+				console.log(err); // console log the error
+				res.render('view', {
+					error: "Room not found!",
+					listLink: listLink,
+					user:req.user
+				});
+			}
+		});
 	} else {
 		res.redirect('/');
 	}

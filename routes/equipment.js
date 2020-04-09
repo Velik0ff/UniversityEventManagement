@@ -12,29 +12,35 @@ const deleteLink = "delete-equipment";
 const listLink = "list-equipment";
 const exportLink = "../export?type=Equipment";
 
+let error_msg = null;
+let message = null;
+
+let fields = [{name: "Name", type: "text", identifier: "Name"},
+	{name: "Quantity", type: "number", identifier: "Quantity"}];
+
 /* Functions */
 function validationErr(error){
-	let error_msg = "";
+	let local_error_msg = "";
 
 	if(error.name === "ValidationError"){ // check if the error is from the validator
 		if (typeof error.errors.typeName !== "undefined" &&
 			error.errors.typeName !== null) {
-			error_msg = error.errors.typeName.message
+			local_error_msg = error.errors.typeName.message
 		}
 		if (typeof error.errors.quantity !== "undefined" &&
 			error.errors.quantity !== null) {
-			error_msg = error.errors.quantity.message
+			local_error_msg = error.errors.quantity.message
 		}
-		console.log(error_msg);
+		console.log(local_error_msg);
 	} else {
-		error_msg = "Unknown error has occurred during adding equipment. Please try again later.";
+		local_error_msg = "Unknown error has occurred during adding equipment. Please try again later.";
 		console.log(error);
 	}
 
-	return error_msg;
+	return local_error_msg;
 }
 
-function renderAdd(res,req,listLink,addLink,fields,custom_fields,error_msg,message){
+function renderAdd(res,req,custom_fields){
 	res.render('add', {
 		title: 'Add New Equipment',
 		fields: fields,
@@ -48,10 +54,10 @@ function renderAdd(res,req,listLink,addLink,fields,custom_fields,error_msg,messa
 	});
 }
 
-function renderEdit(res,req,equipment,editLink,viewLink,error,message){
+function renderEdit(res,req,equipment){
 	res.render('edit', {
 		title: 'Editing equipment: ' + req.body.Name,
-		error: error,
+		error: error_msg,
 		errorCritical: false,
 		message: message,
 		item: {
@@ -71,7 +77,6 @@ function renderEdit(res,req,equipment,editLink,viewLink,error,message){
 router.get('/'+listLink, function(req, res, next) {
 	if(req.user && req.user.permission >= 20) {
 		let columns = ["ID", "Name", "Quantity", "Options"];
-		let error = "";
 
 		Equipment.find({}, function (err, equipment) {
 			let equipmentList = [];
@@ -84,7 +89,7 @@ router.get('/'+listLink, function(req, res, next) {
 				});
 			});
 
-			error = equipmentList.length === 0 ? "No results to show" : ""
+			error_msg = equipmentList.length === 0 ? "No results to show" : ""
 
 			res.render('list', {
 				title: 'Equipment List',
@@ -95,7 +100,7 @@ router.get('/'+listLink, function(req, res, next) {
 				addLink: addLink,
 				deleteLink: deleteLink,
 				exportLink: exportLink,
-				error: error,
+				error: error_msg,
 				user:req.user
 			});
 		});
@@ -104,7 +109,7 @@ router.get('/'+listLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+viewLink, function(req, res, next) {
+router.get('/'+viewLink, function(req, res) {
 	if(req.user && req.user.permission >= 20) {
 		/* Logic to get info from database */
 		Equipment.findOne({_id: req.query.id}, function (err, equipment) {
@@ -138,11 +143,11 @@ router.get('/'+viewLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+editLink, function(req, res, next) {
+router.get('/'+editLink, function(req, res) {
 	if(req.user && req.user.permission >= 20) {
 		Equipment.findOne({_id: req.query.id}, function (err, equipment) {
 			if (!err && equipment) {
-				renderEdit(res,req,equipment,editLink,viewLink,null,null);
+				renderEdit(res,req,equipment);
 			} else {
 				res.render('edit', {
 					error: "Equipment not found!",
@@ -156,10 +161,8 @@ router.get('/'+editLink, function(req, res, next) {
 	}
 });
 
-router.post('/'+editLink, function(req, res, next) {
+router.post('/'+editLink, function(req, res) {
 	if(req.user && req.user.permission >= 20) {
-		let message = null;
-		let error = null;
 		let custom_fields = [];
 
 		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
@@ -189,7 +192,7 @@ router.post('/'+editLink, function(req, res, next) {
 			if (!err && update) {
 				message = "Successfully updated equipment: " + req.body.Name;
 
-				renderEdit(res,req,equipment,editLink,viewLink,error,message);
+				renderEdit(res,req,equipment);
 			} else if (!update) {
 				res.render('edit', {
 					error: "Equipment not found!",
@@ -198,9 +201,9 @@ router.post('/'+editLink, function(req, res, next) {
 					user:req.user
 				});
 			} else {
-				error = validationErr(err);
+				error_msg = validationErr(err);
 
-				renderEdit(res,req,equipment,editLink,viewLink,error,message);
+				renderEdit(res,req,equipment);
 			}
 		});
 	} else {
@@ -208,24 +211,16 @@ router.post('/'+editLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+addLink, function(req, res, next) {
+router.get('/'+addLink, function(req, res) {
 	if(req.user && req.user.permission >= 20) {
-		let fields = [{name: "Name", type: "text", identifier: "Name"},
-			{name: "Quantity", type: "number", identifier: "Quantity"}];
-
-		renderAdd(res,req,listLink,addLink,fields,null,null,null);
+		renderAdd(res,req);
 	} else {
 		res.redirect('/');
 	}
 });
 
-router.post('/'+addLink, function(req, res, next) {
+router.post('/'+addLink, function(req, res) {
 	if(req.user && req.user.permission >= 20) {
-		let error_msg = null;
-		let message = null;
-		let fields = [{name: "Name", type: "text", identifier: "Name"},
-			{name: "Quantity", type: "number", identifier: "Quantity"}];
-
 		let equipment_object = {};
 		let custom_fields = [];
 
@@ -260,7 +255,7 @@ router.post('/'+addLink, function(req, res, next) {
 				error_msg = validationErr(error);
 			}
 
-			renderAdd(res,req,listLink,addLink,fields,custom_fields,error_msg,message);
+			renderAdd(res,req);
 		});
 		/* End Insert new equipment */
 	} else {
@@ -268,7 +263,7 @@ router.post('/'+addLink, function(req, res, next) {
 	}
 });
 
-router.get('/'+deleteLink, function(req, res, next) {
+router.get('/'+deleteLink, function(req, res) {
 	if(req.user && req.user.permission >= 30) {
 		Equipment.deleteOne({_id: req.query.id}, function (err, deleteResult) {
 			if (!err) {

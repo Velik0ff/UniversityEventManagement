@@ -164,12 +164,13 @@ block content
                                 if index === 'Date' || index === 'End Date'
                                     input.form-control(id=index type="datetime-local" placeholder="Enter " + index value=info name=index)
                                 else if index === 'Role'
-                                    select.form-control(name=index)
-                                        each option in roles
-                                            if Role === option.roleName
-                                                option(value=option._id selected)=option.roleName
-                                            else
-                                                option(value=option._id)=option.roleName
+                                    if user.permission >= 30
+                                        select.form-control(name=index)
+                                            each option in roles
+                                                if Role === option.roleName
+                                                    option(value=option._id selected)=option.roleName
+                                                else
+                                                    option(value=option._id)=option.roleName
                                 else
                                     input.form-control(id=index type="text" placeholder="Enter " + index value=info name=index)
                             else

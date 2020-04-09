@@ -108,7 +108,7 @@ function validationErr(error) {
 }
 
 function renderLogin(res, req, username, error, message) {
-	var fields = [{name: "Email", type: "email", identifier: "username"},
+	let fields = [{name: "Email", type: "email", identifier: "username"},
 		{name: "Password", type: "password", identifier: "password"}];
 
 	fields[0].value = username;
@@ -125,7 +125,7 @@ function renderLogin(res, req, username, error, message) {
 }
 
 function renderChangePassword(res, user, error, message, reset_pass) {
-	var fields = [];
+	let fields = [];
 
 	if (!reset_pass) {
 		fields.push({name: "Old Password", type: "password", identifier: "oldPass"});
@@ -162,7 +162,7 @@ function renderForgotPassword(res, req, error, message) {
 /* End Functions */
 
 /* GET login page. */
-router.get('/', function (req, res, next) {
+router.get('/', function (req, res) {
 	if (req.user && req.user.permission < 0) {
 		res.redirect('/change-password');
 	} else if (req.user) {
@@ -172,7 +172,7 @@ router.get('/', function (req, res, next) {
 	}
 });
 
-router.get('/welcome', function (req, res, next) {
+router.get('/welcome', function (req, res) {
 	res.render('index', {
 		title: "University of Liverpool Outreach Events",
 		user: req.user,
@@ -181,7 +181,7 @@ router.get('/welcome', function (req, res, next) {
 });
 
 router.post('/authorize', function (req, res, next) {
-	passport.authenticate('local', function (err, user, info) {
+	passport.authenticate('local', function (err, user) {
 		if (err) { // error has occured
 			console.log(err);
 			renderLogin(res, req, req.body.username, "Unknown error has occurred", null);
@@ -205,7 +205,7 @@ router.post('/authorize', function (req, res, next) {
 	})(req, res, next);
 });
 
-router.get('/change-password', function (req, res, next) {
+router.get('/change-password', function (req, res) {
 	if (req.user) {
 		renderChangePassword(res, req.user, null, null, false);
 	} else if (req.query.reset_code) {
@@ -239,7 +239,7 @@ router.get('/change-password', function (req, res, next) {
 	}
 });
 
-router.post('/change-password', function (req, res, next) {
+router.post('/change-password', function (req, res) {
 	if (req.user) {
 		var Entity = null;
 		var permission = req.user.permission;
@@ -373,7 +373,7 @@ router.post('/change-password', function (req, res, next) {
 	}
 });
 
-router.get('/forgot-password', function (req, res, next) {
+router.get('/forgot-password', function (req, res) {
 	if (!req.user) {
 		renderForgotPassword(res, req, null, null);
 	} else {
@@ -381,7 +381,7 @@ router.get('/forgot-password', function (req, res, next) {
 	}
 });
 
-router.get('/forgot-password', function (req, res, next) {
+router.get('/forgot-password', function (req, res) {
 	if (!req.user) {
 		if (req.body.username) {
 			let reset_code = uuidv4();
@@ -509,11 +509,11 @@ router.post('/subscribe', function (req, res) {
 	}
 });
 
-router.post('/filter', function (req, res, next) {
+router.post('/filter', function (req, res) {
 	/* Filter functions */
 	function getVisitorInfo(visitors) {
-		return new Promise((resolve, reject) => {
-			var visitors_ids_arr = [];
+		return new Promise((resolve) => {
+			let visitors_ids_arr = [];
 
 			if(visitors) {
 				visitors.forEach((visitor) => {
@@ -535,8 +535,8 @@ router.post('/filter', function (req, res, next) {
 	}
 
 	function getRoomInfo(event_rooms) {
-		return new Promise((resolve, reject) => {
-			var event_room_ids_arr = [];
+		return new Promise((resolve) => {
+			let event_room_ids_arr = [];
 
 			if(event_rooms) {
 				event_rooms.forEach((event_room) => {
@@ -559,7 +559,7 @@ router.post('/filter', function (req, res, next) {
 
 	function filterEvent(event) {
 		return new Promise(async function (resolve, reject) {
-			var result = true;
+			let result = true;
 			let visitors = await getVisitorInfo(event.visitors);
 			let rooms = await getRoomInfo(event.rooms);
 			let numberOfVisitors = 0;
@@ -612,7 +612,7 @@ router.post('/filter', function (req, res, next) {
 	}
 
 	function filterEventAdmin(list_element) {
-		return new Promise(function (resolve, reject) {
+		return new Promise(function (resolve) {
 			Event.findOne({_id: list_element.id}, null, {sort:{date:-1}}, async function (errFind, event) {
 				if (!errFind) {
 					filterEvent(event).then(function (result) {
@@ -626,7 +626,7 @@ router.post('/filter', function (req, res, next) {
 	}
 
 	function filterEventArchive(list_element) {
-		return new Promise(function (resolve, reject) {
+		return new Promise(function (resolve) {
 			Archive.findOne({_id: list_element.id}, null, {sort:{date:-1}}, async function (errFind, event) {
 				if (!errFind) {
 					filterEvent(event).then(function (result) {
@@ -640,13 +640,13 @@ router.post('/filter', function (req, res, next) {
 	}
 
 	function filterEventParticipant(list_element) {
-		return new Promise(function (resolve, reject) {
+		return new Promise(function (resolve) {
 			Event.findOne({_id: list_element.id}, null, {sort:{date:-1}}, async function (errFind, event) {
-				var participant = false;
+				let participant = false;
 
 				if (req.user.permission >= 10) {
 					event.staffChosen.forEach(function (staff_member) {
-						if (staff_member.staffID === req.user._id) participant = true;
+						if (staff_member.staffMemberID === req.user._id) participant = true;
 					});
 				} else if (req.user.permission === 1) {
 					event.visitors.forEach(function (visitor) {
@@ -664,9 +664,7 @@ router.post('/filter', function (req, res, next) {
 			});
 		});
 	}
-
 	/* End Filter functions */
-
 
 	if (req.user && req.user.permission >= 1) {
 		if (req.body.type && req.body.type !== "undefined" && req.body.list && req.body.list !== "undefined") {
@@ -679,7 +677,7 @@ router.post('/filter', function (req, res, next) {
 					if (req.body.list && req.body.originalList && req.user.permission >= 10) {
 						req.body.list.forEach(async function (list_element) {
 							let function_name = req.body.type === "allList" ? filterEventAdmin(list_element) : filterEventArchive(list_element);
-							promises.push(new Promise(function (resolve, reject) {
+							promises.push(new Promise(function (resolve) {
 								function_name.then(function (result) {
 									if (result) {
 										list.push(list_element);
@@ -692,7 +690,7 @@ router.post('/filter', function (req, res, next) {
 
 						req.body.originalList.forEach(async function (list_element) {
 							let function_name = req.body.type === "allList" ? filterEventAdmin(list_element) : filterEventArchive(list_element);
-							promises.push(new Promise(function (resolve, reject) {
+							promises.push(new Promise(function (resolve) {
 								function_name.then(function (result) {
 									if (result) {
 										filterList.push(list_element);
@@ -717,7 +715,7 @@ router.post('/filter', function (req, res, next) {
 				case "participate":
 					if (req.body.list && req.body.originalList && req.user.permission >= 1) {
 						req.body.list.forEach(function (list_element) {
-							promises.push(new Promise(function (resolve, reject) {
+							promises.push(new Promise(function (resolve) {
 								filterEventParticipant(list_element).then(function (result) {
 									if (result) {
 										list.push(list_element);
@@ -729,7 +727,7 @@ router.post('/filter', function (req, res, next) {
 						});
 
 						req.body.originalList.forEach(async function (list_element) {
-							promises.push(new Promise(function (resolve, reject) {
+							promises.push(new Promise(function (resolve) {
 								filterEventParticipant(list_element).then(function (result) {
 									if (result) {
 										filterList.push(list_element);
@@ -755,7 +753,7 @@ router.post('/filter', function (req, res, next) {
 					if(req.body.list && req.body.originalList && req.user.permission >= 10){
 						function filterStaff(list_result,listToFilter){
 							listToFilter.forEach(function(list_element){
-								promises.push(new Promise(function (resolve, reject) {
+								promises.push(new Promise(function (resolve) {
 									Staff.findOne({_id: list_element.id}, async function (errFind, staff_member) {
 										if(errFind) console.log(errFind);
 
@@ -798,18 +796,61 @@ router.post('/filter', function (req, res, next) {
 	}
 });
 
-router.get('/calendar', function (req, res, next) {
+router.get('/calendar', function (req, res) {
+	function getAllArchiveEvents(){
+		return new Promise(function (resolve) {
+			Archive.find({}, function (errFind, eventsDoc) {
+				if (!errFind) {
+					let events = [];
+					eventsDoc.forEach(function (event) {
+						let participant = false;
+
+						if(req.user.permission >= 10) {
+							event.staffChosen.forEach(function (staff_member) {
+								if (staff_member.staffMemberID.toString() === req.user._id.toString()) participant = true;
+							});
+						} else {
+							event.visitors.forEach(function (visitor) {
+								if (visitor.visitorID.toString() === req.user._id.toString()) participant = true;
+							});
+						}
+
+						if(participant || req.user.permission >= 10) {
+							events.push({
+								title: event.eventName,
+								start: event.date,
+								end: event.endDate,
+								url: '/events/view-archive-event?id=' + event._id,
+								backgroundColor: "#8a8a8a"
+							});
+						}
+					});
+					resolve(events);
+				} else {
+					console.log(errFind);
+					resolve([]);
+				}
+			});
+		});
+	}
+
 	function getAllEvents() {
-		return new Promise(function (resolve, reject) {
+		return new Promise(function (resolve) {
 			Event.find({}, function (errFind, eventsDoc) {
 				if (!errFind) {
 					let events = [];
 					eventsDoc.forEach(function (event) {
 						let participant = false;
 
-						event.staffChosen.forEach(function (staff_member) {
-							if (staff_member.staffMemberID == req.user._id) participant = true;
-						});
+						if(req.user.permission >= 10) {
+							event.staffChosen.forEach(function (staff_member) {
+								if (staff_member.staffMemberID.toString() === req.user._id.toString()) participant = true;
+							});
+						} else {
+							event.visitors.forEach(function (visitor) {
+								if (visitor.visitorID.toString() === req.user._id.toString()) participant = true;
+							});
+						}
 
 						events.push({
 							title: event.eventName,
@@ -828,106 +869,44 @@ router.get('/calendar', function (req, res, next) {
 		});
 	}
 
-	function getVisitorEvents() {
-		return new Promise(function (resolve, reject) {
-			Visitor.findOne({_id: req.user._id}, function (errFindVisitor, visitor) {
-				if (!errFindVisitor && visitor) {
-					let events = [];
-					let promises = [];
+	if (req.user && req.user.permission >= 1) {
+		let promises = [];
 
-					visitor.attendingEvents.forEach(function (attendingEvent) {
-						promises.push(new Promise(function (res, rej) {
-							Event.findOne({_id: attendingEvent.eventID}, function (errEventFind, event) {
-								if (!errEventFind && event) {
-									events.push({
-										title: event.eventName,
-										start: event.date,
-										end: event.endDate,
-										url: '/events/view-event?id=' + event._id,
-										backgroundColor: "#ff0000"
-									});
-								}
+		promises.push(getAllArchiveEvents());
+		promises.push(getAllEvents());
 
-								res();
-							});
-						}));
-					});
-
-					Promise.all(promises).then(function () {
-						resolve(events);
-					});
-				} else {
-					console.log(errFindVisitor);
-					resolve([]);
-				}
+		Promise.all(promises).then(function (result) {
+			res.render('calendar', {
+				title: "Calendar",
+				events: result,
+				user: req.user
 			});
 		});
-	}
-
-	if (req.user && req.user.permission >= 1) {
-		let promise = null;
-
-		if (req.user.permission >= 10) {
-			promise = getAllEvents();
-		} else if (req.user.permission === 1) {
-			promise = getVisitorEvents();
-		}
-
-		if (promise) {
-			promise.then(function (result) {
-				res.render('calendar', {
-					title: "Calendar",
-					events: result,
-					user: req.user
-				});
-			});
-		} else {
-			res.redirect('/welcome');
-		}
 	} else {
 		res.redirect('/login');
 	}
 });
-
-function getRoomInfo(event_rooms) {
-	return new Promise((resolve, reject) => {
-		var event_room_ids_arr = [];
-
-		event_rooms.forEach((event_room) => {
-			event_room_ids_arr.push(event_room.equipID);
-		});
-
-		Room.find({_id: {$in: event_room_ids_arr}}, function (err, rooms) {
-			if (!err) {
-				resolve(rooms);
-			} else {
-				resolve([]);
-				console.log(err);
-			}
-		});
-	});
-}
 
 router.get('/export', function (req, res, next) {
 	if (req.user && req.user.permission >= 30) {
 		let export_options = ['Events', 'Equipment', 'Staff', 'Rooms', 'Visitors', 'Еvent Types'];
 
 		if (req.query.type) {
-			var json_array = [];
-			var fileName = 'error';
-			var fields = [];
+			let json_array = [];
+			let fileName = 'error';
+			let fields = [];
 			let today = new Date();
 			let date = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
 
-			new Promise(function (resolve, reject) {
+			new Promise(function (resolve) {
 				switch (req.query.type) {
 					case export_options[0]:
 						Event.find({}, async function (errFindEvents, eventDoc) {
 							if (!errFindEvents) {
 								await Promise.all(eventDoc.map(async function (event) {
-									var event_type = await genFunctions.getEventType(event.eventTypeID);
-									var rooms = await genFunctions.getRoomInfo(event.rooms);
-									var visitors = await genFunctions.getVisitorInfo(event.visitors);
+									let event_type = await genFunctions.getEventType(event.eventTypeID);
+									let rooms = await genFunctions.getRoomInfo(event.rooms);
+									let visitors = await genFunctions.getVisitorInfo(event.visitors);
 
 									Promise.all([event_type, visitors, rooms]).then(function () {
 										let numberOfSpaces = 0;
@@ -1100,14 +1079,5 @@ router.get('/export', function (req, res, next) {
 		res.status(500).json({message: "Unable to process request, please try again."});
 	}
 });
-
-// router.post("/fix-pass",function(req, res){
-//   Staff.findOne({email:req.body.username},function(err, staff){
-//     Staff.updateOne({email:req.body.username}, {$set:{password:staff.hashPassword(staff.password)}}, function(err, update){
-//
-//     });
-//   });
-//
-// });
 
 module.exports = router;
