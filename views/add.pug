@@ -32,7 +32,10 @@ block content
                     if field.type !== "select"
                         div.form-group
                             label(for=field.identifier)=field.name
-                            input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.name)
+                            if field.type === "textarea"
+                                textarea.form-control(id=field.identifier placeholder="Enter " + field.name name=field.name style="resize:vertical")
+                            else
+                                input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.name)
                     else if field.type === "select"
                         div.form-group
                             if field.identifier === "role"

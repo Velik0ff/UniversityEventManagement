@@ -15,8 +15,8 @@ const Event = require('../models/Event');
 /* End Model */
 
 function getEquipmentInfo(event_equipment){
-	return new Promise((resolve,reject) => {
-		var event_equip_ids_arr = [];
+	return new Promise((resolve) => {
+		let event_equip_ids_arr = [];
 
 		event_equipment.forEach((event_eq)=>{
 			event_equip_ids_arr.push(event_eq.equipID);
@@ -27,7 +27,7 @@ function getEquipmentInfo(event_equipment){
 				let equipment_used = [];
 				event_equipment.forEach(function(equip_chosen){
 					equipment.forEach(function(equip){
-						if(equip_chosen.equipID == equip._id){
+						if(equip_chosen.equipID.toString() === equip._id.toString()){
 							equipment_used.push({
 								_id:equip._id,
 								typeName: equip.typeName,
@@ -48,8 +48,8 @@ function getEquipmentInfo(event_equipment){
 }
 
 function getRoomInfo(event_rooms){
-	return new Promise((resolve,reject) => {
-		var event_room_ids_arr = [];
+	return new Promise((resolve) => {
+		let event_room_ids_arr = [];
 
 		event_rooms.forEach((event_room)=>{
 			event_room_ids_arr.push(event_room.roomID);
@@ -67,7 +67,7 @@ function getRoomInfo(event_rooms){
 }
 
 function getEventType(event_type_id){
-	return new Promise((resolve,reject) => {
+	return new Promise((resolve) => {
 		EventType.findOne({_id:event_type_id}, function (err, event_type) {
 			if(!err){
 				resolve(event_type);
@@ -80,8 +80,8 @@ function getEventType(event_type_id){
 }
 
 function getStaffInfo(staff_chosen){
-	return new Promise((resolve,reject) => {
-		var staff_ids_arr = [];
+	return new Promise((resolve) => {
+		let staff_ids_arr = [];
 
 		staff_chosen.forEach((staff)=>{
 			staff_ids_arr.push(mongoose.Types.ObjectId(staff.staffMemberID));
@@ -92,7 +92,7 @@ function getStaffInfo(staff_chosen){
 				let staff_members = [];
 				staff_chosen.forEach(function(staff_member_chosen){
 					staff.forEach(function(staff_member){
-						if(staff_member_chosen.staffMemberID == staff_member._id){
+						if(staff_member_chosen.staffMemberID.toString() === staff_member._id.toString()){
 							staff_members.push(staff_member);
 							staff_members[staff_members.length-1].role = staff_member_chosen.role;
 						}
@@ -108,8 +108,8 @@ function getStaffInfo(staff_chosen){
 }
 
 function getVisitorInfo(visitors){
-	return new Promise((resolve,reject) => {
-		var visitors_ids_arr = [];
+	return new Promise((resolve) => {
+		let visitors_ids_arr = [];
 
 		visitors.forEach((visitor)=>{
 			visitors_ids_arr.push(mongoose.Types.ObjectId(visitor.visitorID))
@@ -127,7 +127,7 @@ function getVisitorInfo(visitors){
 }
 
 function getAllStaff(){
-	return new Promise((resolve,reject) => {
+	return new Promise((resolve) => {
 		Staff.find({}, function (err, staff) {
 			if(!err){
 				resolve(staff)
@@ -140,7 +140,7 @@ function getAllStaff(){
 }
 
 function getAllEquipment(){
-	return new Promise((resolve,reject) => {
+	return new Promise((resolve) => {
 		Equipment.find({}, function (err, equipment) {
 			if(!err){
 				resolve(equipment)
@@ -153,7 +153,7 @@ function getAllEquipment(){
 }
 
 function getAllRooms(){
-	return new Promise((resolve,reject) => {
+	return new Promise((resolve) => {
 		Room.find({}, function (err, rooms) {
 			if(!err){
 				resolve(rooms)
@@ -166,7 +166,7 @@ function getAllRooms(){
 }
 
 function getAllVisitor(){
-	return new Promise((resolve,reject) => {
+	return new Promise((resolve) => {
 		Visitor.find({}, function (err, visitors) {
 			if(!err){
 				resolve(visitors);
@@ -179,7 +179,7 @@ function getAllVisitor(){
 }
 
 function getAllEventTypes(){
-	return new Promise((resolve,reject) => {
+	return new Promise((resolve) => {
 		EventType.find({}, function (err, event_types) {
 			if(!err){
 				resolve(event_types);
@@ -225,7 +225,7 @@ async function sendEmail(email, password, role, reset_code, req, type) {
 		}
 	});
 
-	var info = null; // store the callback email data
+	let info = null; // store the callback email data
 	// send mail with defined transport object
 	switch (type) {
 		case "added":
@@ -285,7 +285,7 @@ async function sendEmail(email, password, role, reset_code, req, type) {
 				to: email, // list of receivers
 				subject: "You have been invited to an event", // Subject line
 				html: "Hello,</br></br>" +
-					"You have been invited to participate in an event in University of Liverpool. <br>" +
+					"You have been invited to participate in an event in University of Liverpool." +
 					"</br></br>" +
 					"Your username is this email: <b>" + email +
 					"</b></br>" +
@@ -339,9 +339,9 @@ function deleteEvent(id,type){
 	return new Promise(function(resolve,reject){
 		switch(type){
 			case "archive":
-				Archive.deleteOne({_id: id}, function (err, deleteResult) {
+				Archive.deleteOne({_id: id}, function (err) {
 					if (!err) {
-						resolve("Successfully deleted event!")
+						resolve("Successfully deleted event!");
 					} else {
 						console.log(err); // console log the error
 						reject("Error while deleting event.");
@@ -361,40 +361,41 @@ function deleteEvent(id,type){
 						let rooms = [];
 						let staff = [];
 						let numberOfSpaces = 0;
-						let numberOfVisitors = 0;
+						let visitorInfo = [];
+						let visitorIds = [];
 
 						eventDoc.equipment.forEach(function (equip) {
-							promises.push(new Promise((resolve, reject) => {
-								Equipment.updateOne({_id: equip.equipID}, {$set: {quantity: equip.quantity + equip.reqQty}}, function (errorUpdateEquip, equipDoc) {
+							promises.push(new Promise((resold) => {
+								Equipment.updateOne({_id: equip.equipID}, {$set: {quantity: equip.quantity + equip.reqQty}}, function (errorUpdateEquip) {
 									if(errorUpdateEquip) console.log(errorUpdateEquip);
-									resolve();
+									resold();
 								});
 							}));
 						});
 
 						eventDoc.rooms.forEach(function (room) {
-							promises.push(new Promise((resolve, reject) => {
-								Room.updateOne({_id: room.roomID}, {$pull: {events: {eventID: eventDoc._id}}}, function (errorUpdateRoom, roomDoc) {
+							promises.push(new Promise((resold) => {
+								Room.updateOne({_id: room.roomID}, {$pull: {events: {eventID: eventDoc._id}}}, function (errorUpdateRoom) {
 									if(errorUpdateRoom) console.log(errorUpdateRoom);
-									resolve();
+									resold();
 								});
 							}));
 						});
 
 						eventDoc.staffChosen.forEach(function (staff_member_chosen) {
-							promises.push(new Promise((resolve, reject) => {
-								Staff.updateOne({_id: staff_member_chosen.staffMemberID}, {$pull: {attendingEvents: {eventID: eventDoc._id}}}, function (errorUpdateStaff, staffDoc) {
+							promises.push(new Promise(function(resold) {
+								Staff.updateOne({_id: staff_member_chosen.staffMemberID}, {$pull: {attendingEvents: {eventID: eventDoc._id}}}, function (errorUpdateStaff) {
 									if(errorUpdateStaff) console.log(errorUpdateStaff);
-									resolve();
+									resold();
 								});
 							}));
 						});
 
 						eventDoc.visitors.forEach(function (visitor_attending) {
-							promises.push(new Promise((resolve, reject) => {
-								Visitor.updateOne({_id: visitor_attending.visitorID}, {$pull: {attendingEvents: {eventID: eventDoc._id}}}, function (errorUpdateVisitor, visitorDoc) {
+							promises.push(new Promise(function(resold) {
+								Visitor.updateOne({_id: visitor_attending.visitorID}, {$pull: {attendingEvents: {eventID: eventDoc._id}}}, function (errorUpdateVisitor) {
 									if(errorUpdateVisitor) console.log(errorUpdateVisitor);
-									resolve();
+									resold();
 								});
 							}));
 						});
@@ -428,18 +429,31 @@ function deleteEvent(id,type){
 								numberOfSpaces = numberOfSpaces + room.capacity;
 							});
 
-							visitors_event.forEach(function (visitor) { //  count number of visitors
-								visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
+							visitors_event.forEach(function (visitor) {
+								visitorIds.push(visitor._id);
+
+								visitorInfo.push({
+									institutionName:visitor.institutionName,
+									groupName:visitor.groupName
+								});
 							});
 
-							archiveEvent(eventDoc,equipment,rooms,event_type,staff,numberOfVisitors,numberOfSpaces).then(function(){
-								Event.deleteOne({_id: id}, function (err, deleteResult) {
-									if (!err) {
-										resolve("Successfully deleted event!")
-									} else {
-										console.log(err); // console log the error
-										reject("Error while deleting event.");
-									}
+							archiveEvent(eventDoc,equipment,rooms,event_type,staff,numberOfSpaces,visitorInfo).then(function(){
+								Visitor.update({_id:{$in:visitorIds}},{$push:{attendedEvents:{eventID:id}}},{multi:true},function(errUpdateVisitors){
+									if(errUpdateVisitors) console.log(errUpdateVisitors);
+
+									Visitor.update({_id:{$in:visitorIds}},{$pull:{attendingEvents:{eventID:id}}},{multi:true},function(errUpdatePullVisitors){
+										if(errUpdatePullVisitors) console.log(errUpdatePullVisitors);
+
+										Event.deleteOne({_id: id}, function (err) {
+											if (!err) {
+												resolve("Successfully deleted event!")
+											} else {
+												console.log(err); // console log the error
+												reject("Error while deleting event.");
+											}
+										});
+									});
 								});
 							}).catch(function(){
 								reject("Error while archiving event.");
@@ -455,7 +469,7 @@ function deleteEvent(id,type){
 	});
 }
 
-function archiveEvent(event,equipment,rooms,event_type,staff,numberOfVisitors,numberOfSpaces,delete_event){
+function archiveEvent(event,equipment,rooms,event_type,staff,numberOfSpaces,visitorInfo){
 	return new Promise(function(resolve,reject){
 		let new_archive_event = new Archive({
 			eventID: event._id,
@@ -467,11 +481,11 @@ function archiveEvent(event,equipment,rooms,event_type,staff,numberOfVisitors,nu
 			date: event.date,
 			endDate: event.endDate,
 			location: event.location,
-			numberOfVisitors: numberOfVisitors,
-			numberOfSpaces: numberOfSpaces
+			numberOfSpaces: numberOfSpaces,
+			visitors: visitorInfo
 		});
 
-		new_archive_event.save(function (errSave, saveDoc) {
+		new_archive_event.save(function (errSave) {
 			if (!errSave) {
 				resolve();
 			} else {
@@ -519,6 +533,5 @@ module.exports = {
 	sendNotification:sendNotification,
 	sendEmail:sendEmail,
 	deleteEvent:deleteEvent,
-	archiveEvent:archiveEvent,
 	archiveEvents:archiveEvents
-}
+};

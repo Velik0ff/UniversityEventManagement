@@ -63,11 +63,23 @@ block content
                                     td
                                         span=info
                                         a.btn.btn-link(href='https://www.google.com/maps/search/?api=1&query='+info) Show on map
+                            else if index === 'Visitors'
+                                tr
+                                    td(style="font-weight:bold")=index
+                                    td
+                                        each visitor in info
+                                            p
+                                                span="Institution Name: " + visitor.institutionName
+                                                br
+                                                span="Group Size: " + visitor.groupSize
+                                                br
                             else
                                 tr
                                     td(style="font-weight:bold")=index
                                     td=info
                 center
+                    if signUpLink
+                        a.btn.btn-success(href=signUpLink) Sign-up for Event
                     if editLink
                         a.btn.btn-warning(href=editLink) Edit
                     if resetPassLink

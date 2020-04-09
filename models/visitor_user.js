@@ -28,6 +28,9 @@ let VisitorSchema = new mongoose.Schema({
 	attendingEvents:[{
 		eventID: { type: String, required:true }
 	}],
+	attendedEvents:[{
+		eventID: { type: String, required:true }
+	}],
 	resetPassCode:{ type: String }
 });
 

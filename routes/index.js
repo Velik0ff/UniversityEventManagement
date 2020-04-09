@@ -890,8 +890,8 @@ router.get('/calendar', function (req, res) {
 });
 
 router.get('/export', function (req, res, next) {
-	if (req.user && req.user.permission >= 30) {
-		let export_options = ['Events', 'Equipment', 'Staff', 'Rooms', 'Visitors', 'Еvent Types'];
+	if (req.user && req.user.permission >= 10) {
+		let export_options = ['Events', 'Archive Events', 'Equipment', 'Staff', 'Rooms', 'Visitors', 'Еvent Types'];
 
 		if (req.query.type) {
 			let json_array = [];
@@ -944,6 +944,40 @@ router.get('/export', function (req, res, next) {
 						});
 						break;
 					case export_options[1]:
+						Archive.find({},async function(errFindArchiveEvents,eventDoc){
+							if (!errFindArchiveEvents) {
+								await Promise.all(eventDoc.map(async function (event) {
+									let visitors = await genFunctions.getVisitorInfo(event.visitors);
+
+									Promise.all([visitors]).then(function () {
+										let numberOfVisitors = 0;
+
+										visitors.forEach(function (visitor) {
+											visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
+										});
+
+										json_array.push({
+											ID: event._id,
+											Name: event.eventName,
+											'Event Type': event.eventType,
+											'Event Spaces': event.numberOfSpaces,
+											'Number of Visitors': numberOfVisitors,
+											Date: event.date,
+											'End Date': event.endDate,
+											Location: event.location
+										});
+									});
+								}));
+							} else {
+								console.log(errFindArchiveEvents);
+							}
+
+							fields = ['ID', 'Name', 'Event Type', 'Event Spaces', 'Number of Visitors', 'Date', 'End Date', 'Location'];
+							fileName = 'events' + date;
+							resolve();
+						});
+						break;
+					case export_options[2]:
 						genFunctions.getAllEquipment().then(function (eqDoc) {
 							fields = ['ID', 'Name', 'Quantity'];
 
@@ -969,7 +1003,7 @@ router.get('/export', function (req, res, next) {
 						fileName = 'equipment' + date;
 						resolve();
 						break;
-					case export_options[2]:
+					case export_options[3]:
 						genFunctions.getAllStaff().then(function (staffDoc) {
 							staffDoc.forEach(function (staff_member) {
 								json_array.push({
@@ -985,7 +1019,7 @@ router.get('/export', function (req, res, next) {
 						fileName = 'staff' + date;
 						resolve();
 						break;
-					case export_options[3]:
+					case export_options[4]:
 						genFunctions.getAllRooms().then(function (roomsDoc) {
 							fields = ['ID', 'Name', 'Quantity'];
 
@@ -1011,7 +1045,7 @@ router.get('/export', function (req, res, next) {
 						fileName = 'rooms' + date;
 						resolve();
 						break;
-					case export_options[4]:
+					case export_options[5]:
 						genFunctions.getAllVisitor().then(function (visitorDoc) {
 							fields = ['ID', 'Lead Teacher Name', 'Contact Email', 'Contact Phone', 'Group Size'];
 
@@ -1029,7 +1063,7 @@ router.get('/export', function (req, res, next) {
 							resolve();
 						});
 						break;
-					case export_options[5]:
+					case export_options[6]:
 						genFunctions.getAllEventTypes().then(function (eventTypesDoc) {
 
 							eventTypesDoc.forEach(function (type) {

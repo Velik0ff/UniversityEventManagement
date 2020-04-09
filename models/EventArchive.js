@@ -32,7 +32,10 @@ let EventArchiveSchema = new mongoose.Schema({
 	endDate: { type: Date },
 	location: { type: String, required: true },
 	numberOfSpaces: { type: Number, required: true },
-	numberOfVisitors: { type: Number, required: true }
+	visitors: [{
+		institutionName:{ type: String, required: true },
+		groupSize:{ type: Number, required: true }
+	}]
 });
 
 module.exports = mongoose.model("EventArchive",EventArchiveSchema);
