@@ -2,9 +2,6 @@ const express = require('express');
 const router = express.Router();
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy; /* this should be after passport*/
-const nodemailer = require('nodemailer');
-const uuid = require('uuid');
-const webpush = require('web-push');
 const process = require('process');
 const mongoose = require('mongoose');
 const json2csv = require('json2csv').parse;
@@ -15,9 +12,9 @@ const Room = require('../models/Room');
 const Event = require('../models/Event');
 const Staff = require('../models/staff_user');
 const Visitor = require('../models/visitor_user');
-const Equipment = require('../models/EqInventory');
 const SubNotification = require('../models/SubNotification');
 const Archive = require('../models/EventArchive');
+const Role = require('../models/Role');
 /* End Models */
 
 passport.use(new LocalStrategy(
@@ -94,7 +91,7 @@ passport.deserializeUser(function (id, done) {
 
 /* Functions */
 function validationErr(error) {
-	var error_msg = "";
+	let error_msg = "";
 
 	if (error.name === "ValidationError") { // check if the error is from the validator
 		if (typeof error.errors.password !== "undefined" &&
@@ -182,7 +179,7 @@ router.get('/welcome', function (req, res) {
 
 router.post('/authorize', function (req, res, next) {
 	passport.authenticate('local', function (err, user) {
-		if (err) { // error has occured
+		if (err) { // error has occurred
 			console.log(err);
 			renderLogin(res, req, req.body.username, "Unknown error has occurred", null);
 		}
@@ -191,7 +188,7 @@ router.post('/authorize', function (req, res, next) {
 			renderLogin(res, req, req.body.username, "Credentials are not valid", null);
 		}
 		req.logIn(user, function (err) {
-			if (err) { // error has occured
+			if (err) { // error has occurred
 				console.log(err);
 				renderLogin(res, req, req.body.username, "Unknown error has occurred", null);
 			}
@@ -209,12 +206,12 @@ router.get('/change-password', function (req, res) {
 	if (req.user) {
 		renderChangePassword(res, req.user, null, null, false);
 	} else if (req.query.reset_code) {
-		Staff.findOne({reset_code: req.query.reset_code}, function (errStaff, staff_member) {
+		Staff.findOne({resetPassCode: req.query.reset_code}, function (errStaff, staff_member) {
 			if (!errStaff) {
 				if (staff_member) {
 					renderChangePassword(res, staff_member, null, null, true);
 				} else {
-					Visitor.findOne({reset_code: req.query.reset_code}, function (errVisitor, visitor) {
+					Visitor.findOne({resetPassCode: req.query.reset_code}, function (errVisitor, visitor) {
 						if (!errVisitor) {
 							if (visitor) {
 								renderChangePassword(res, staff_member, null, null, true);
@@ -241,30 +238,35 @@ router.get('/change-password', function (req, res) {
 
 router.post('/change-password', function (req, res) {
 	if (req.user) {
-		var Entity = null;
-		var permission = req.user.permission;
-
-		if (!req.body.resetCode) {
+		if (!req.body['resetCode']) {
 			if (req.user.permission === -1 || req.user.permission >= 10) {
 				Staff.findOne({email: req.user.username}, function (errFindStaff, staff_member) {
 					if (!errFindStaff) {
 						if (staff_member) {
-							if (staff_member.comparePassword(req.body.oldPass)) {
-								let updates = {$set: {password: staff_member.hashPassword(req.body.newPass), permission: 0}};
-								let term_permission = req.user.permission;
+							if (staff_member.comparePassword(req.body['oldPass'])) {
+								Role.findOne({roleName:staff_member.role},function(errFindRole,roleDoc){
+									let rolePermission = 10;
 
-								Staff.updateOne({email: req.user.username}, updates, {runValidators: true}, function (err, update) {
-									if (!err && update) {
-										if (term_permission === -1) {
-											res.redirect('/welcome');
+									if(errFindRole) console.log(errFindRole);
+
+									if(roleDoc) rolePermission = roleDoc.rolePermission;
+
+									let updates = {$set: {password: staff_member.hashPassword(req.body['newPass']), permission: rolePermission}};
+									let term_permission = req.user.permission;
+
+									Staff.updateOne({email: req.user.username}, updates, {runValidators: true}, function (err, update) {
+										if (!err && update) {
+											if (term_permission === -1) {
+												res.redirect('/welcome');
+											} else {
+												renderChangePassword(res, req.user, null, "Successfully changed password!", false);
+											}
 										} else {
-											renderChangePassword(res, req.user, null, "Successfully changed password!", false);
-										}
-									} else {
-										let error = !update ? "User not found!" : validationErr(err);
+											let error = !update ? "User not found!" : validationErr(err);
 
-										renderChangePassword(res, req.user, error, null, false);
-									}
+											renderChangePassword(res, req.user, error, null, false);
+										}
+									});
 								});
 							} else {
 								renderChangePassword(res, req.user, "The old password is not right, please try again.", null, false);
@@ -281,8 +283,8 @@ router.post('/change-password', function (req, res) {
 				Visitor.findOne({contactEmail: req.user.username}, function (errFindVisitor, visitor) {
 					if (!errFindVisitor) {
 						if (visitor) {
-							if (visitor.comparePassword(req.body.oldPass)) {
-								let updates = {$set: {password: visitor.hashPassword(req.body.newPass), permission: 1}};
+							if (visitor.comparePassword(req.body['oldPass'])) {
+								let updates = {$set: {password: visitor.hashPassword(req.body['newPass']), permission: 1}};
 								let term_permission = req.user.permission;
 
 								Visitor.updateOne({contactEmail: req.user.username}, updates, {runValidators: true}, function (err, update) {
@@ -311,12 +313,12 @@ router.post('/change-password', function (req, res) {
 				});
 			}
 		} else {
-			Staff.findOne({reset_code: req.body.resetCode}, function (errStaff, staff_member) {
+			Staff.findOne({resetPassCode: req.body['resetCode']}, function (errStaff, staff_member) {
 				if (!errStaff) {
 					if (staff_member) {
 						let updates = {
 							$set: {
-								password: staff_member.hashPassword(req.body.newPass),
+								password: staff_member.hashPassword(req.body['newPass']),
 								permission: 0,
 								reset_code: null
 							}
@@ -332,12 +334,12 @@ router.post('/change-password', function (req, res) {
 							}
 						});
 					} else {
-						Visitor.findOne({reset_code: req.body.resetCode}, function (errVisitor, visitor) {
+						Visitor.findOne({reset_code: req.body['resetCode']}, function (errVisitor, visitor) {
 							if (!errVisitor) {
 								if (visitor) {
 									let updates = {
 										$set: {
-											password: visitor.hashPassword(req.body.newPass),
+											password: visitor.hashPassword(req.body['newPass']),
 											permission: 1,
 											reset_code: null
 										}
