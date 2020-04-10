@@ -5,8 +5,8 @@ let EventArchiveSchema = new mongoose.Schema({
 	eventName:{ type: String, required: true },
 	equipment:[
 		{
-			name: { type: String, required: true },
-			quantity: { type: Number },
+			typeName: { type: String, required: true },
+			reqQty: { type: Number },
 			customFields: [{
 				fieldName: { type: String },
 				fieldValue: { type: String }
@@ -25,8 +25,8 @@ let EventArchiveSchema = new mongoose.Schema({
 	staffChosen:[
 		{
 			staffMemberID: { type:String, required: true },
-			staffMemberName: { type: String, required: true },
-			staffEmail: { type: String, required: true },
+			fullName: { type: String, required: true },
+			email: { type: String, required: true },
 			role: { type: String, required: true }
 		}],
 	date:{ type: Date, required: true },

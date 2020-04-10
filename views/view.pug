@@ -38,8 +38,9 @@ block content
                                     td
                                         span=info.eventTypeName
                                         br
-                                        each field in info.customFields
-                                            span=field.fieldName + ": " + field.fieldValue
+                                        if !title.includes('archive')
+                                            each field in info.customFields
+                                                span=field.fieldName + ": " + field.fieldValue
                             else if index === 'Staff Chosen'
                                 tr
                                     td(style="font-weight:bold")=index

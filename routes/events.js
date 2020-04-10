@@ -165,8 +165,8 @@ function recoverRoomsAvailability(rooms,eventID){
 function listElement(res, req, allEventTypes, eventList, title, type) {
 	allEventTypes.then(function (eventTypes) {
 		if(title.includes('Archive')){
-			exportLink = '../export?type=Archive Events';
-			deleteLink = '/archive/' + deleteLink;
+			exportLink = '../../export?type=Archive Events';
+			deleteLink = '/events/archive/' + deleteLink;
 			viewLink = 'view-archive-event';
 			editLink = null;
 			addLink = null;
@@ -275,7 +275,7 @@ async function renderAdd(res, req, staff_use, equipment_use, rooms_use, visitor_
 }
 /* End Functions */
 
-router.get('/archive-list', function (req, res) {
+router.get('/archive/'+listLink, function (req, res) {
 	let allEventTypes = genFunctions.getAllEventTypes();
 
 	if (req.user && req.user.permission >= 1) {
@@ -402,10 +402,10 @@ router.get('/' + listLink, function (req, res) {
 	}
 });
 
-router.get('/view-archive-event', function (req, res) {
+router.get('/archive/view-archive-event', function (req, res) {
 	if (req.user && (req.user.permission >= 10 || req.user.permission === 1)) {
 		/* Logic to get info from database */
-		Archive.findOne({_id: req.query.id}, async function (err, event) {
+		Archive.findOne({eventID: req.query.id}, async function (err, event) {
 			if (!err && event) {
 				let attending = false;
 
@@ -418,22 +418,23 @@ router.get('/view-archive-event', function (req, res) {
 				}
 
 				if (req.user.permission >= 10 || attending) {
+					console.log(event);
 					res.render('view', {
-						title: 'Viewing event: ' + event.eventName,
+						title: 'Viewing archive event: ' + event.eventName,
 						item: {
 							ID: event._id,
 							Name: event.eventName,
 							Equipment: event.equipment,
 							Rooms: event.rooms,
 							"Event Spaces": event.numberOfSpaces,
-							"Event Type": event.eventType,
-							"Staff Chosen": staff,
+							"Event Type": {eventTypeName:event.eventType},
+							"Staff Chosen": event.staffChosen,
 							Date: event.date,
 							"End Date": event.endDate ? event.endDate : "",
 							Location: event.location,
 							Visitors: event.visitors
 						},
-						listLink: 'archive-list',
+						listLink: listLink,
 						deleteLink: req.user.permission >= 30 ? deleteLink : null,
 						user: req.user
 					});
@@ -1079,7 +1080,7 @@ router.post('/' + editLink, function (req, res) {
 	}
 });
 
-router.get('/events/archive/' + deleteLink, function (req, res) {
+router.get('/archive/' + deleteLink, function (req, res) {
 	if (req.user && req.user.permission >= 30) {
 		genFunctions.deleteEvent(req.query.id, "archive",true).then(function (result) {
 			res.render('view', {

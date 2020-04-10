@@ -444,8 +444,8 @@ function deleteEvent(id,type,archive){
 						Promise.all(promises).then(() => {
 							equipment_event.forEach(function (equip) {
 								equipment.push({
-									name: equip.typeName,
-									quantity: equip.quantity + equip.reqQty,
+									typeName: equip.typeName,
+									reqQty: equip.reqQty,
 									customFields: equip.customFields
 								});
 							});
@@ -461,8 +461,8 @@ function deleteEvent(id,type,archive){
 							staff_event.forEach(function (staff_member) {
 								staff.push({
 									staffMemberID:staff_member._id,
-									staffMemberName: staff_member.fullName,
-									staffEmail: staff_member.email,
+									fullName: staff_member.fullName,
+									email: staff_member.email,
 									role: staff_member.role
 								});
 							});
@@ -481,7 +481,13 @@ function deleteEvent(id,type,archive){
 									Visitor.update({_id: visitor._id}, {$pull: {attendingEvents: {eventID: id}}}, {multi: true}, function (errUpdatePullVisitors) {
 										if (errUpdatePullVisitors) console.log(errUpdatePullVisitors);
 									});
-								})
+								});
+
+								visitorInfo.push({
+									visitorID:visitor._id,
+									institutionName:visitor.institutionName,
+									groupSize:visitor.groupSize
+								});
 							});
 
 							if(archive) {
@@ -516,7 +522,7 @@ function archiveEvent(event,equipment,rooms,event_type,staff,numberOfSpaces,visi
 			eventName: event.eventName,
 			equipment: equipment,
 			rooms: rooms,
-			eventType: event_type,
+			eventType: event_type.eventTypeName,
 			staffChosen: staff,
 			date: event.date,
 			endDate: event.endDate,
