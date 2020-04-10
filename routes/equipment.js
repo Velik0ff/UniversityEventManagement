@@ -40,10 +40,19 @@ function validationErr(error){
 	return local_error_msg;
 }
 
+function resetErrorMessage(){
+	error_msg = null;
+	message = null;
+}
+
 function renderAdd(res,req,custom_fields){
 	res.render('add', {
 		title: 'Add New Equipment',
 		fields: fields,
+		item: {
+			Name: req.body.Name,
+			Quantity: req.body.Quantity,
+		},
 		cancelLink: listLink,
 		addLink: '/equipment/' + addLink,
 		customFields: true,
@@ -52,6 +61,8 @@ function renderAdd(res,req,custom_fields){
 		message: message,
 		user:req.user
 	});
+
+	resetErrorMessage();
 }
 
 function renderEdit(res,req,equipment){
@@ -71,6 +82,8 @@ function renderEdit(res,req,equipment){
 		cancelLink: viewLink + '?id=' + req.body.ID,
 		user:req.user
 	});
+
+	resetErrorMessage();
 }
 /* End Functions */
 
@@ -103,9 +116,13 @@ router.get('/'+listLink, function(req, res, next) {
 				error: error_msg,
 				user:req.user
 			});
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -129,17 +146,23 @@ router.get('/'+viewLink, function(req, res) {
 					editLink: editLink + '?id=' + equipment._id,
 					user:req.user
 				});
+
+				resetErrorMessage();
 			} else {
 				res.render('view', {
 					error: "Equipment not found!",
 					listLink: listLink,
 					user:req.user
 				});
+
+				resetErrorMessage();
 			}
 		});
 		/* End Logic to get info from database */
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -154,10 +177,14 @@ router.get('/'+editLink, function(req, res) {
 					listLink: listLink,
 					user:req.user
 				});
+
+				resetErrorMessage();
 			}
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -200,6 +227,8 @@ router.post('/'+editLink, function(req, res) {
 					listLink: listLink,
 					user:req.user
 				});
+
+				resetErrorMessage();
 			} else {
 				error_msg = validationErr(err);
 
@@ -208,14 +237,18 @@ router.post('/'+editLink, function(req, res) {
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
 router.get('/'+addLink, function(req, res) {
 	if(req.user && req.user.permission >= 20) {
-		renderAdd(res,req);
+		renderAdd(res,req,[]);
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -255,11 +288,13 @@ router.post('/'+addLink, function(req, res) {
 				error_msg = validationErr(error);
 			}
 
-			renderAdd(res,req);
+			renderAdd(res,req,custom_fields);
 		});
 		/* End Insert new equipment */
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -280,9 +315,13 @@ router.get('/'+deleteLink, function(req, res) {
 					user:req.user
 				});
 			}
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 

@@ -8,8 +8,6 @@ script.
 	let unavailable_equipment = [];
 
 	function addEquipmentField() {
-		let max_quantity = 0;
-
 		$('<div>').attr('class', 'row form-group').attr('id', 'rowEquipment' + equipment_count).appendTo('#equipment');
 
 		$('<div>')
@@ -23,26 +21,28 @@ script.
 			.attr('name', 'equipmentID' + equipment_count)
 			.attr('onChange', 'selectedEquipment(this)')
 			.appendTo('#equipmentNameCol' + equipment_count);
+		let select = $('#selectEquipment' + equipment_count);
 		all_equipment.forEach(function (equip) {
-			let select = $('#selectEquipment' + equipment_count);
 			if(unavailable_equipment.includes(equip._id) || equip.quantity <= 0){
 				select.append('<option value="'+equip._id+'" disabled>'+equip.typeName+'</option>');
 			} else {
 				select.append('<option value="'+equip._id+'">'+equip.typeName+'</option>');
-				unavailable_equipment.push(equip._id);
 			}
 		});
 
 		$('<div>').attr('class', 'col').attr('id', 'equipmentQuantityCol' + equipment_count).appendTo('#rowEquipment' + equipment_count);
 		$('<label>').attr('for', 'quantity' + equipment_count).appendTo('#equipmentQuantityCol' + equipment_count).text('Quantity ' + equipment_count);
-		$('<input>')
-			.attr('type', 'number')
-			.attr('class', 'form-control')
-			.attr('name', 'quantity' + equipment_count)
-			.attr('min', '1')
-			.attr('max',all_equipment[0].quantity)
-			.appendTo('#equipmentQuantityCol' + equipment_count);
-
+		all_equipment.forEach(function(equip){
+			if(equip._id == select.val()){
+				$('<input>')
+					.attr('type', 'number')
+					.attr('class', 'form-control')
+					.attr('name', 'quantity' + equipment_count)
+					.attr('min', '1')
+					.attr('max', equip.quantity)
+					.appendTo('#equipmentQuantityCol' + equipment_count);
+			}
+		});
 		if (equipment_count === 0) {
 			$('div[name=quantity' + equipment_count + ']').attr('max', all_equipment[0].quantity);
 		}
@@ -62,6 +62,22 @@ script.
 		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeEquipmentIcon' + equipment_count);
 
 		equipment_count++;
+
+		let selected_option = select.val();
+
+		unavailable_equipment.push(selected_option);
+
+		let option = $('#equipment select option[value="' + selected_option + '"]')
+		option.attr('disabled', true);
+
+		for (let i = 0; i < select.find('option').length; i++) {
+			if (select.find('option')[i].value === selected_option) {
+				select.find('option')[i].removeAttribute('disabled');
+				break;
+			}
+		}
+
+		checkAddedEquip();
 	}
 
 	function selectedEquipment(event) {
@@ -82,32 +98,11 @@ script.
 	}
 
 	function checkAddedEquip(){
-		let selections = $("#equipment").find('select');
-
-		unavailable_equipment.forEach(function(disabled_eq){
-			selections.forEach(function(selection){
-				if(selection.value === disabled_eq) {
-					selections.forEach(function (selection) {
-						selection.find('option').forEach(function (option) {
-							if (option.value === disabled_eq) {
-								option.removeAttribute('disabled');
-							}
-						});
-					});
-
-					all_equipment.forEach(function (equip) {
-						if (equip._id == disabled_eq) {
-							if (equipment_used) {
-								equipment_used.forEach(function (equip_used) {
-									if (equip_used._id == disabled_eq) {
-										equip.quantity = equip.quantity + equip_used.reqQty;
-										equip_used.reqQty = 0;
-									}
-								});
-							}
-						}
-					});
-				}
-			});
-		});
+		for (let i = 0; i < unavailable_equipment.length; i++) {
+			let option = $('#equipment select option[value="' + unavailable_equipment[i] + '"]:selected');
+			if (option.length < 1) {
+				$('#equipment select option[value="' + unavailable_equipment[i] + '"]').removeAttr('disabled');
+				unavailable_equipment.splice(i, 1);
+			}
+		}
 	}

@@ -69,6 +69,19 @@ function validationErr(error) {
 	return local_error_msg;
 }
 
+function resetErrorMessage(){
+	error_msg = null;
+	message = null;
+
+	editLink = "edit-event";
+	viewLink = "view-event";
+	addLink = "add-event";
+	deleteLink = "delete-event";
+	listLink = "list-events";
+	exportLink = "../export?type=Events";
+	signUpLink = "sign-up-event";
+}
+
 function getPostedStaff(req) {
 	let staff_use = [];
 
@@ -131,7 +144,7 @@ function getPostedRooms(req) {
 
 function recoverQuantity(previousQuantity) {
 	for (let i = 0; i < previousQuantity.length; i++) {
-		Equipment.updateOne({_id: previousQuantity[i]['equipID']}, {$set: {quantity: +previousQuantity[i]['reqQty']}}, function (err) {
+		Equipment.updateOne({_id: previousQuantity[i]['equipID']}, {$set: {quantity: previousQuantity[i]['quantity']}}, function (err) {
 			if (err) {
 				console.log(err);
 			}
@@ -163,6 +176,7 @@ function listElement(res, req, allEventTypes, eventList, title, type) {
 			title: title,
 			list: eventList,
 			columns: columns,
+			addLink: addLink,
 			editLink: editLink,
 			viewLink: viewLink,
 			deleteLink: deleteLink,
@@ -173,6 +187,8 @@ function listElement(res, req, allEventTypes, eventList, title, type) {
 			eventTypes: eventTypes,
 			user: req.user
 		});
+
+		resetErrorMessage();
 	});
 }
 
@@ -208,6 +224,8 @@ function renderEdit(res, req, event, posted_equipment, posted_rooms, posted_staf
 		cancelLink: viewLink + '?id=' + event._id,
 		user: req.user
 	});
+
+	resetErrorMessage();
 }
 
 async function renderAdd(res, req, staff_use, equipment_use, rooms_use, visitor_attending) {
@@ -217,7 +235,8 @@ async function renderAdd(res, req, staff_use, equipment_use, rooms_use, visitor_
 	let staff = await genFunctions.getAllStaff();
 	let eventTypes = await genFunctions.getAllEventTypes();
 
-	Promise.all([equipment, eventTypes, visitors, staff]).then(() => {
+	Promise.all([equipment, rooms, eventTypes, visitors, staff]).then(() => {
+		console.log(rooms_use);
 		res.render('add', {
 			title: 'Add New Event',
 			error: error_msg,
@@ -234,6 +253,15 @@ async function renderAdd(res, req, staff_use, equipment_use, rooms_use, visitor_
 			rooms: rooms,
 			eventTypes: eventTypes,
 			staff: staff,
+			item: {
+				ID: req.body.ID,
+				"Event Name": req.body['Event Name'],
+				"Description": req.body['Description'],
+				Location: req.body['Location'],
+				Date: req.body.Date ? moment(req.body.Date).format('YYYY-MM-DDTHH:mm') : "",
+				"End Date": req.body['End Date'] ? moment(req.body['End Date']).format('YYYY-MM-DDTHH:mm') : "",
+				"Event Type": req.body['Event Type'],
+			},
 			selectedEventType: req.body['Event Type'],
 			selectedStaff: staff_use,
 			selectedEquip: equipment_use,
@@ -241,6 +269,8 @@ async function renderAdd(res, req, staff_use, equipment_use, rooms_use, visitor_
 			selectedVisitors: visitor_attending,
 			user: req.user
 		});
+
+		resetErrorMessage();
 	});
 }
 /* End Functions */
@@ -297,6 +327,8 @@ router.get('/archive-list', function (req, res) {
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -340,6 +372,8 @@ router.get('/participate-events-list', function (req, res) {
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -363,6 +397,8 @@ router.get('/' + listLink, function (req, res) {
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -397,7 +433,6 @@ router.get('/view-archive-event', function (req, res) {
 							Location: event.location,
 							Visitors: event.visitors
 						},
-						signUpLink: signUpLink,
 						listLink: 'archive-list',
 						deleteLink: req.user.permission >= 30 ? deleteLink : null,
 						user: req.user
@@ -405,6 +440,8 @@ router.get('/view-archive-event', function (req, res) {
 				} else {
 					res.redirect('events/participate-events-list');
 				}
+
+				resetErrorMessage();
 			} else {
 				console.log(err);
 				res.render('view', {
@@ -412,6 +449,8 @@ router.get('/view-archive-event', function (req, res) {
 					listLink: listLink,
 					user: req.user
 				});
+
+				resetErrorMessage();
 			}
 		});
 		/* End Logic to get info from database */
@@ -443,12 +482,17 @@ router.get('/' + viewLink, function (req, res) {
 					let numberOfVisitors = 0;
 
 					Promise.all([equipment, rooms, event_type, staff, visitors]).then(() => {
+						let signedUp = false;
 						rooms.forEach(function (room) {
 							numberOfSpaces = numberOfSpaces + room.capacity;
 						});
 
 						visitors.forEach(function (visitor) {
 							visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
+						});
+
+						staff.forEach(function (staff_member){
+							if(staff_member._id.toString() === req.user._id) signedUp = true;
 						});
 
 						res.render('view', {
@@ -467,14 +511,19 @@ router.get('/' + viewLink, function (req, res) {
 								Visitors: visitors,
 								"Total Visitors": numberOfVisitors
 							},
+							signUpLink: signedUp ? signUpLink : null,
 							listLink: req.user.permission >= 10 ? listLink : 'participate-events-list',
 							deleteLink: req.user.permission >= 30 ? deleteLink : null,
 							editLink: req.user.permission >= 20 ? editLink + '?id=' + event._id : null,
 							user: req.user
 						});
+
+						resetErrorMessage();
 					});
 				} else {
 					res.redirect('events/participate-events-list');
+
+					resetErrorMessage();
 				}
 			} else {
 				console.log(err);
@@ -483,6 +532,9 @@ router.get('/' + viewLink, function (req, res) {
 					listLink: listLink,
 					user: req.user
 				});
+
+				resetErrorMessage();
+
 			}
 		});
 		/* End Logic to get info from database */
@@ -539,10 +591,14 @@ router.get('/' + editLink, function (req, res) {
 					listLink: listLink,
 					user: req.user
 				});
+
+				resetErrorMessage();
 			}
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -597,7 +653,6 @@ router.post('/' + editLink, function (req, res) {
 				Promise.all([equipment, rooms, equipment_use, event_type, staff, staff_use, visitors, visitor_attending, eventTypes]).then(() => {
 					let numberOfSpaces = 0;
 					let numberOfVisitors = 0;
-					let message = null;
 
 					if (req.body.date) {
 						posted_rooms.forEach(function (room) {
@@ -861,6 +916,7 @@ router.post('/' + editLink, function (req, res) {
 											posted_equip['quantity'] = equipFindDoc.quantity;
 
 											if (equipFindDoc.quantity - posted_equip.reqQty >= 0) {
+												console.log(equipFindDoc.quantity - posted_equip.reqQty);
 												Equipment.updateOne({_id: posted_equip.equipID}, {$inc: {quantity: -posted_equip.reqQty}}, function (errorUpdateEquip) {
 													if (errorUpdateEquip) {
 														console.log(errorUpdateEquip);
@@ -905,7 +961,7 @@ router.post('/' + editLink, function (req, res) {
 							eventDescription: req.body['Description'],
 							date: moment(req.body.Date).format('YYYY-MM-DDTHH:mm'),
 							endDate: req.body['End Date'] ? moment(req.body['End Date']).format('YYYY-MM-DDTHH:mm') : "",
-							eventType: event_type,
+							eventType: event_type._id,
 							location: req.body.Location
 						};
 
@@ -915,7 +971,7 @@ router.post('/' + editLink, function (req, res) {
 									eventName: event_object.eventName,
 									equipment: posted_equipment,
 									rooms: posted_rooms,
-									eventTypeID: event_type,
+									eventTypeID: event_type._id,
 									staffChosen: posted_staff_use,
 									date: event.date,
 									endDate: event.endDate,
@@ -965,7 +1021,7 @@ router.post('/' + editLink, function (req, res) {
 												});
 
 												if (!attending) {
-													Visitor.updateOne({_id: visitorDoc.visitorID}, {$push: {attendingEvents: {eventID: req.body.ID}}}, function (errUpdateVisitor) {
+													Visitor.updateOne({_id: visitorDoc.visitorID}, {$push: {attendingEvents: {eventID: req.body.ID,eventName:event_object.eventName}}}, function (errUpdateVisitor) {
 														if (errUpdateVisitor) console.log(errUpdateVisitor);
 													});
 												}
@@ -991,12 +1047,6 @@ router.post('/' + editLink, function (req, res) {
 							recoverQuantity(previousQuantity);
 							recoverRoomsAvailability(roomNotUpdated,req.body.ID);
 
-							if (roomNotUpdatedNames.length > 0) {
-
-							} else {
-
-							}
-
 							if (equipmentNotUpdatedNames.length > 0) {
 								error_msg = 'Unable to edit event because the equipment with names: ';
 
@@ -1018,58 +1068,76 @@ router.post('/' + editLink, function (req, res) {
 					listLink: listLink,
 					user: req.user
 				});
+
+				resetErrorMessage();
 			}
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
 router.get('/events/archive/' + deleteLink, function (req, res) {
 	if (req.user && req.user.permission >= 30) {
-		genFunctions.deleteEvent(req.query.id, "archive").then(function (result) {
+		genFunctions.deleteEvent(req.query.id, "archive",true).then(function (result) {
 			res.render('view', {
 				deleteMsg: result,
 				listLink: listLink,
 				user: req.user
 			});
+
+			resetErrorMessage();
 		}).catch(function (error) {
 			res.render('view', {
 				error: error,
 				listLink: listLink,
 				user: req.user
 			});
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
 router.get('/' + deleteLink, function (req, res) {
 	if (req.user && req.user.permission >= 30) {
-		genFunctions.deleteEvent(req.query.id, "event-list").then(function (result) {
+		genFunctions.deleteEvent(req.query.id, "event-list",true).then(function (result) {
 			res.render('view', {
 				deleteMsg: result,
 				listLink: listLink,
 				user: req.user
 			});
+
+			resetErrorMessage();
 		}).catch(function (error) {
 			res.render('view', {
 				error: error,
 				listLink: listLink,
 				user: req.user
 			});
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
 router.get('/' + addLink, async function (req, res) {
 	if (req.user && req.user.permission >= 20) {
-		renderAdd(res,req,null,null,null,null).then().catch();
+		renderAdd(res,req,null,null,null,null);
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -1081,10 +1149,13 @@ router.post('/' + addLink, async function (req, res) {
 		let visitor_attending = getPostedVisitors(req);
 		let numberOfSpaces = 0;
 		let numberOfVisitors = 0;
-		let promisesEquip = [];
+		let promises = [];
 		let equipmentNotUpdated = [];
 		let equipmentNotUpdatedNames = [];
+		let roomNotUpdated = [];
+		let roomNotUpdatedNames = [];
 
+		console.log(req.body);
 		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
 			if (req.body.hasOwnProperty(field_post_key)) {
 				if (field_post_key.includes('equipment')) {
@@ -1094,33 +1165,37 @@ router.post('/' + addLink, async function (req, res) {
 					});
 				} else if (field_post_key.includes('quantity')) {
 					equipment_use[equipment_use.length - 1]['reqQty'] = parseInt(field_post_value);
-
-					promisesEquip.push(new Promise(function (resolve) {
-						Equipment.findOne({_id: equipment_use[equipment_use.length - 1]['equipID']}, function (errFindEquip, equipmentFoundDoc) {
-							if (!errFindEquip) {
-								if (equipmentFoundDoc && equipmentFoundDoc.quantity >= equipment_use[equipment_use.length - 1]['reqQty']) {
-									Equipment.updateOne({_id: equipment_use[equipment_use.length - 1]['equipID']}, {$inc: {quantity: -equipment_use[equipment_use.length - 1]['reqQty']}}, function (err) {
-										if (err) {
-											console.log("Failed to update quantity for id:" + equipment_use[equipment_use.length - 1]['equipID']);
-											console.log(err);
-										}
-										resolve();
-									});
-								} else {
-									equipmentNotUpdated.push(equipment_use[equipment_use.length - 1]['equipID']);
-									if (equipmentFoundDoc) equipmentNotUpdatedNames.push(equipmentFoundDoc.typeName);
-
-									resolve();
-								}
-							} else {
-								console.log(errFindEquip);
-								resolve();
-							}
-						});
-					}));
 				}
 			}
 		}
+
+		equipment_use.forEach(function(equip){
+			promises.push(new Promise(function (resolve) {
+				Equipment.findOne({_id: equip.equipID}, function (errFindEquip, equipmentFoundDoc) {
+					if (!errFindEquip) {
+						if (equipmentFoundDoc && equipmentFoundDoc.quantity >= equip.reqQty) {
+							let new_quantity = equipmentFoundDoc.quantity-equip.reqQty;
+							console.log(equipmentFoundDoc.quantity+":"+equip.equipID+":"+new_quantity+":"+equip.reqQty);
+							Equipment.updateOne({_id: equip.equipID}, {$set: {quantity: new_quantity}}, function (err) {
+								if (err) {
+									console.log("Failed to update quantity for id:" + equip.equipID);
+									console.log(err);
+								}
+								resolve();
+							});
+						} else {
+							equipmentNotUpdated.push(equip.equipID);
+							if (equipmentFoundDoc) equipmentNotUpdatedNames.push(equipmentFoundDoc.typeName);
+
+							resolve();
+						}
+					} else {
+						console.log(errFindEquip);
+						resolve();
+					}
+				});
+			}));
+		});
 
 		rooms_use.forEach(function (room) {
 			numberOfSpaces = numberOfSpaces + room.capacity;
@@ -1132,7 +1207,7 @@ router.post('/' + addLink, async function (req, res) {
 
 		if (numberOfSpaces < numberOfVisitors) error_msg = 'Not enough spaces are assigned for the event';
 
-		Promise.all(promisesEquip).then(function () {
+		Promise.all(promises).then(function () {
 			if (!(equipmentNotUpdated.length > 0)) {
 				let new_event = new Event({
 					eventName: req.body['Event Name'],
@@ -1149,6 +1224,68 @@ router.post('/' + addLink, async function (req, res) {
 
 				new_event.save(function (error, eventDoc) {
 					if (!error) {
+						rooms_use.forEach(function(room){
+							let event_using_room = false;
+							let update_validated = false;
+
+							room.events.forEach(function (roomEvent) {
+								/* Get time to midnight after the event end */
+								let startDate = Date.parse(roomEvent.date);
+								let endDate = roomEvent.endDate ? Date.parse(roomEvent.endDate) : null;
+								let eventStartDate = Date.parse(req.body.date);
+								let eventEndDate = req.body.endDate ? Date.parse(req.body.endDate) : null;
+								let now = new Date();
+								let year = now.getUTCFullYear();
+								let month = now.getUTCMonth();
+								let day = now.getUTCDate();
+
+								let startDayHour = Date.UTC(year, month, day, 0, 0, 0, 0);
+								let midnight = startDayHour + 86400000;
+
+								let time_left = midnight - now.getTime();
+								/* End Get time to midnight after the event end */
+
+								if (roomEvent.eventID.toString() === event._id.toString()) event_using_room = true;
+
+								if (((endDate && endDate < eventStartDate) ||
+									(startDate && !endDate && ((!eventEndDate && startDate >= eventStartDate + time_left) ||
+										(startDate + time_left <= eventStartDate) ||
+										(eventEndDate && eventEndDate + time_left <= startDate)
+									))) && !event_using_room) {
+
+									update_validated = true;
+								} else {
+									roomNotUpdated.push(room._id);
+									roomNotUpdatedNames.push(room.roomName);
+								}
+							});
+
+							if (update_validated) {
+								promises.push(new Promise(function(resolve) {
+									Room.updateOne({_id: room._id},
+										{
+											$push: {
+												events: {
+													eventID: event._id,
+													eventName: event.eventName,
+													date: event.date,
+													endDate: event.endDate
+												}
+											}
+										}, function (errUpdateRoom) {
+											if (errUpdateRoom) {
+												console.log(errUpdateRoom);
+
+												roomNotUpdated.push(room._id);
+												roomNotUpdatedNames.push(room.roomName);
+											}
+
+											resolve();
+										});
+								}));
+							}
+						});
+
 						staff_use.forEach(function (staff_member) {
 							Staff.findOne({_id: staff_member.staffMemberID}, function (err, staffDoc) {
 								if (!err && staffDoc) {
@@ -1176,7 +1313,7 @@ router.post('/' + addLink, async function (req, res) {
 						visitor_attending.forEach(function (visitor_att) {
 							Visitor.findOne({_id: visitor_att.visitorID}, function (err, visitorDoc) {
 								if (!err && visitorDoc) {
-									Visitor.updateOne({_id: visitor_att.visitorID}, {$push: {attendingEvents: {eventID: eventDoc._id}}}, function (errUpdate, visitorDoc) {
+									Visitor.updateOne({_id: visitor_att.visitorID}, {$push: {attendingEvents: {eventID: eventDoc._id,eventName:eventDoc.eventName}}}, function (errUpdate, visitorDoc) {
 										if (errUpdate) {
 											console.log(errUpdate);
 										} else {
@@ -1190,13 +1327,30 @@ router.post('/' + addLink, async function (req, res) {
 							});
 						});
 
-						message = "Successfully create new event: " + req.body['Event Name'];
-						// sendInvitationEmail(req.body.Email, password_to_insert, req.body.Role);
+						Promise.all(promises).then(function () {
+							if(roomNotUpdated.length !== 0){
+								recoverRoomsAvailability(rooms_use,eventDoc._id);
+
+								genFunctions.deleteEvent(eventDoc._id,"events-list",false);
+
+								error_msg = 'Unable to add event because rooms with names: ';
+
+								roomNotUpdatedNames.forEach(function (roomName) {
+									error_msg = error_msg.concat('"' + roomName + '",');
+								});
+
+								error_msg = error_msg.concat(' are not available, please revise all the data again and try to add event again.');
+							} else {
+								message = "Successfully create new event: " + req.body['Event Name'];
+							}
+
+							renderAdd(res,req,staff_use,equipment_use,rooms_use,visitor_attending);
+						});
 					} else {
 						error_msg = validationErr(error);
-					}
 
-					renderAdd(res,req,staff_use,equipment_use,rooms_use,visitor_attending).then().catch();
+						renderAdd(res,req,staff_use,equipment_use,rooms_use,visitor_attending);
+					}
 				});
 			} else {
 				recoverQuantity(equipment_use);
@@ -1211,11 +1365,13 @@ router.post('/' + addLink, async function (req, res) {
 					error_msg = error_msg.concat(' have insufficient quantity, please revise all the data again and try to add event again.');
 				}
 
-				renderAdd(res,req,staff_use,equipment_use,rooms_use,visitor_attending).then().catch();
+				renderAdd(res,req,staff_use,equipment_use,rooms_use,visitor_attending);
 			}
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -1227,6 +1383,8 @@ router.get('/' + signUpLink, async function (req, res) {
 				listLink: listLink,
 				user: req.user
 			});
+
+			resetErrorMessage();
 		}
 
 		Event.findOne({_id:req.query.id},function(errFindEvent,eventDoc){
@@ -1271,14 +1429,18 @@ router.get('/' + signUpLink, async function (req, res) {
 								errorRender();
 							} else {
 								res.render('view', {
-									message: "Successfully signed up for event:" + eventDoc.eventName + ".",
+									signUpMsg: "Successfully signed up for event:" + eventDoc.eventName + ".",
 									listLink: listLink,
 									user: req.user
 								});
+
+								resetErrorMessage();
 							}
 						});
 					} else {
 						res.redirect('/');
+
+						resetErrorMessage();
 					}
 				});
 			} else {
@@ -1287,10 +1449,14 @@ router.get('/' + signUpLink, async function (req, res) {
 					listLink: listLink,
 					user: req.user
 				});
+
+				resetErrorMessage();
 			}
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 

@@ -39,10 +39,19 @@ function validationErr(error){
 	return local_error_msg;
 }
 
+function resetErrorMessage(){
+	error_msg = null;
+	message = null;
+}
+
 function renderAdd(res,req,custom_fields){
 	res.render('add', {
 		title: 'Add New Room',
 		fields: fields,
+		item: {
+			Name: req.body.Name,
+			Capacity: req.body.Capacity,
+		},
 		cancelLink: listLink,
 		addLink: '/rooms/' + addLink,
 		customFields: true,
@@ -51,25 +60,29 @@ function renderAdd(res,req,custom_fields){
 		message: message,
 		user:req.user
 	});
+
+	resetErrorMessage();
 }
 
-function renderEdit(res,req,custom_fields){
+function renderEdit(res,req,room,custom_fields){
 	res.render('edit', {
-		title: 'Editing room: ' + req.body.Name,
+		title: 'Editing room: ' + room.roomName,
 		error: error_msg,
 		errorCritical: false,
 		message: message,
 		item: {
-			ID: req.body.ID,
-			Name: req.body.Name,
-			Capacity: req.body.Capacity,
+			ID: room._id,
+			Name: room.roomName,
+			Capacity: room.capacity,
 			customFieldsValues: custom_fields
 		},
 		customFields: true,
 		editLink: '/rooms/' + editLink,
-		cancelLink: viewLink + '?id=' + req.body.ID,
+		cancelLink: viewLink + '?id=' + room._id,
 		user:req.user
 	});
+
+	resetErrorMessage();
 }
 /* End Functions */
 
@@ -103,9 +116,13 @@ router.get('/'+listLink, function(req, res) {
 				error: error_msg,
 				user:req.user
 			});
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -135,10 +152,14 @@ router.get('/'+viewLink, function(req, res) {
 					user:req.user
 				});
 			}
+
+			resetErrorMessage();
 		});
 		/* End Logic to get info from database */
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -146,23 +167,27 @@ router.get('/'+editLink, function(req, res) {
 	if(req.user && req.user.permission >= 20) {
 		Room.findOne({_id: req.query.id}, function (err, room) {
 			if (!err && room) {
-				renderEdit(res,req,room.customFields);
+				renderEdit(res,req,room,room.customFields);
 			} else {
 				res.render('edit', {
 					error: "Room not found!",
 					listLink: listLink,
 					user:req.user
 				});
+
+				resetErrorMessage();
 			}
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
 router.post('/'+editLink, function(req, res) {
 	if(req.user && req.user.permission >= 20) {
-		var custom_fields = [];
+		let custom_fields = [];
 
 		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
 			if (req.body.hasOwnProperty(field_post_key)) {
@@ -179,13 +204,19 @@ router.post('/'+editLink, function(req, res) {
 			}
 		}
 
-		let updates = {$set: {roomName: req.body.Name, capacity: req.body.Capacity, customFields: custom_fields}}
+		let updates = {$set: {roomName: req.body.Name, capacity: req.body.Capacity, customFields: custom_fields}};
+
+		let room = {
+			_id:req.body.ID,
+			roomName:req.body.Name,
+			capacity:req.body.Capacity
+		};
 
 		Room.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
 			if (!err && update) {
 				message = "Successfully updated room: " + req.body.Name;
 
-				renderEdit(res,req,custom_fields);
+				renderEdit(res,req,room,custom_fields);
 			} else if (!update) {
 				res.render('edit', {
 					error: "Room not found!",
@@ -193,14 +224,18 @@ router.post('/'+editLink, function(req, res) {
 					listLink: listLink,
 					user:req.user
 				});
+
+				resetErrorMessage();
 			} else {
 				error_msg = validationErr(err);
 
-				renderEdit(res,req,custom_fields);
+				renderEdit(res,req,room,custom_fields);
 			}
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -209,6 +244,8 @@ router.get('/'+addLink, function(req, res, ) {
 		renderAdd(res,req,null);
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -253,6 +290,8 @@ router.post('/'+addLink, function(req, res) {
 		/* End Insert new equipment */
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -273,9 +312,13 @@ router.get('/'+deleteLink, function(req, res) {
 					user:req.user
 				});
 			}
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 

@@ -51,18 +51,22 @@ function getRoomInfo(event_rooms){
 	return new Promise((resolve) => {
 		let event_room_ids_arr = [];
 
-		event_rooms.forEach((event_room)=>{
-			event_room_ids_arr.push(event_room.roomID);
-		});
+		if(event_rooms) {
+			event_rooms.forEach((event_room) => {
+				event_room_ids_arr.push(event_room.roomID);
+			});
 
-		Room.find({_id:{$in:event_room_ids_arr}}, function (err, rooms) {
-			if(!err){
-				resolve(rooms);
-			} else {
-				resolve([]);
-				console.log(err);
-			}
-		});
+			Room.find({_id: {$in: event_room_ids_arr}}, function (err, rooms) {
+				if (!err) {
+					resolve(rooms);
+				} else {
+					resolve([]);
+					console.log(err);
+				}
+			});
+		} else {
+			resolve([]);
+		}
 	});
 }
 
@@ -87,7 +91,15 @@ function getStaffInfo(staff_chosen){
 			staff_ids_arr.push(mongoose.Types.ObjectId(staff.staffMemberID));
 		});
 
-		Staff.find({_id:{$in:staff_ids_arr}}, function (err, staff) {
+		Staff.find({_id:{$in:staff_ids_arr}}, {
+			_id:1,
+			fullName:1,
+			email:1,
+			phone:1,
+			role:1,
+			groupSize:1,
+			attendingEvents:1
+		}, function (err, staff) {
 			if(!err){
 				let staff_members = [];
 				staff_chosen.forEach(function(staff_member_chosen){
@@ -115,7 +127,16 @@ function getVisitorInfo(visitors){
 			visitors_ids_arr.push(mongoose.Types.ObjectId(visitor.visitorID))
 		});
 
-		Visitor.find({_id:{$in:visitors_ids_arr}}, function (err, visitorsDoc) {
+		Visitor.find({_id:{$in:visitors_ids_arr}}, {
+			_id:1,
+			leadTeacherName:1,
+			institutionName:1,
+			contactEmail:1,
+			contactPhone:1,
+			groupSize:1,
+			attendingEvents:1,
+			attendedEvents:1
+		}, function (err, visitorsDoc) {
 			if(!err){
 				resolve(visitorsDoc);
 			} else {
@@ -128,7 +149,15 @@ function getVisitorInfo(visitors){
 
 function getAllStaff(){
 	return new Promise((resolve) => {
-		Staff.find({}, function (err, staff) {
+		Staff.find({}, {
+			_id:1,
+			fullName:1,
+			email:1,
+			phone:1,
+			role:1,
+			groupSize:1,
+			attendingEvents:1
+		}, function (err, staff) {
 			if(!err){
 				resolve(staff)
 			} else {
@@ -167,7 +196,16 @@ function getAllRooms(){
 
 function getAllVisitor(){
 	return new Promise((resolve) => {
-		Visitor.find({}, function (err, visitors) {
+		Visitor.find({}, {
+			_id:1,
+			leadTeacherName:1,
+			institutionName:1,
+			contactEmail:1,
+			contactPhone:1,
+			groupSize:1,
+			attendingEvents:1,
+			attendedEvents:1
+		}, function (err, visitors) {
 			if(!err){
 				resolve(visitors);
 			} else {
@@ -335,7 +373,7 @@ async function sendEmail(email, password, role, reset_code, req, type) {
 	// Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
 }
 
-function deleteEvent(id,type){
+function deleteEvent(id,type,archive){
 	return new Promise(function(resolve,reject){
 		switch(type){
 			case "archive":
@@ -362,13 +400,16 @@ function deleteEvent(id,type){
 						let staff = [];
 						let numberOfSpaces = 0;
 						let visitorInfo = [];
-						let visitorIds = [];
 
 						eventDoc.equipment.forEach(function (equip) {
 							promises.push(new Promise((resold) => {
-								Equipment.updateOne({_id: equip.equipID}, {$set: {quantity: equip.quantity + equip.reqQty}}, function (errorUpdateEquip) {
-									if(errorUpdateEquip) console.log(errorUpdateEquip);
-									resold();
+								Equipment.findOne({_id:equip.equipID},function(errFindEquip,equipFindDoc){
+									if(!errFindEquip){
+										Equipment.updateOne({_id: equip.equipID}, {$set: {quantity: equipFindDoc.quantity + equip.reqQty}}, function (errorUpdateEquip) {
+											if(errorUpdateEquip) console.log(errorUpdateEquip);
+											resold();
+										});
+									} else console.log(errFindEquip);
 								});
 							}));
 						});
@@ -419,6 +460,7 @@ function deleteEvent(id,type){
 
 							staff_event.forEach(function (staff_member) {
 								staff.push({
+									staffMemberID:staff_member._id,
 									staffMemberName: staff_member.fullName,
 									staffEmail: staff_member.email,
 									role: staff_member.role
@@ -430,34 +472,32 @@ function deleteEvent(id,type){
 							});
 
 							visitors_event.forEach(function (visitor) {
-								visitorIds.push(visitor._id);
+								Visitor.updateOne({_id:visitor._id},{$push:{attendedEvents:{
+											eventID:id,
+											institutionName:visitor.institutionName,
+											groupSize:visitor.groupSize}}},{multi:true},function(errUpdateVisitors) {
+									if (errUpdateVisitors) console.log(errUpdateVisitors);
 
-								visitorInfo.push({
-									institutionName:visitor.institutionName,
-									groupName:visitor.groupName
-								});
-							});
-
-							archiveEvent(eventDoc,equipment,rooms,event_type,staff,numberOfSpaces,visitorInfo).then(function(){
-								Visitor.update({_id:{$in:visitorIds}},{$push:{attendedEvents:{eventID:id}}},{multi:true},function(errUpdateVisitors){
-									if(errUpdateVisitors) console.log(errUpdateVisitors);
-
-									Visitor.update({_id:{$in:visitorIds}},{$pull:{attendingEvents:{eventID:id}}},{multi:true},function(errUpdatePullVisitors){
-										if(errUpdatePullVisitors) console.log(errUpdatePullVisitors);
-
-										Event.deleteOne({_id: id}, function (err) {
-											if (!err) {
-												resolve("Successfully deleted event!")
-											} else {
-												console.log(err); // console log the error
-												reject("Error while deleting event.");
-											}
-										});
+									Visitor.update({_id: visitor._id}, {$pull: {attendingEvents: {eventID: id}}}, {multi: true}, function (errUpdatePullVisitors) {
+										if (errUpdatePullVisitors) console.log(errUpdatePullVisitors);
 									});
-								});
-							}).catch(function(){
-								reject("Error while archiving event.");
+								})
 							});
+
+							if(archive) {
+								archiveEvent(eventDoc, equipment, rooms, event_type, staff, numberOfSpaces, visitorInfo).then(function () {
+									Event.deleteOne({_id: id}, function (err) {
+										if (!err) {
+											resolve("Successfully deleted event!")
+										} else {
+											console.log(err); // console log the error
+											reject("Error while deleting event.");
+										}
+									});
+								}).catch(function () {
+									reject("Error while archiving event.");
+								});
+							}
 						});
 					} else {
 						console.log(err); // console log the error
@@ -502,15 +542,17 @@ async function archiveEvents() {
 			if (eventDoc) {
 				let today = Date.now();
 
-				if ((eventDoc[0].endDate && Date.parse(eventDoc[0].endDate) > today) ||
-					(!eventDoc[0].endDate && eventDoc[0].date && Date.parse(eventDoc[0].date) > today)) {
+				if(eventDoc.length > 0) {
+					if ((eventDoc[0].endDate && Date.parse(eventDoc[0].endDate) < today) ||
+						(!eventDoc[0].endDate && eventDoc[0].date && Date.parse(eventDoc[0].date) < today)) {
 
-					eventDoc.forEach(async function (event) {
-						if ((event.endDate && Date.parse(event.endDate) < today) ||
-							(!event.endDate && event.date && Date.parse(event.date) < today)) {
-								deleteEvent(event._id, "event-list").then().catch();
-						}
-					});
+						eventDoc.forEach(async function (event) {
+							if ((event.endDate && Date.parse(event.endDate) < today) ||
+								(!event.endDate && event.date && Date.parse(event.date) < today)) {
+								deleteEvent(event._id, "event-list",true).then().catch();
+							}
+						});
+					}
 				}
 			}
 		} else {

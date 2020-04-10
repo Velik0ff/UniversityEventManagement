@@ -26,10 +26,12 @@ let VisitorSchema = new mongoose.Schema({
 	groupSize:{ type: Number, required: [true, "Group size must be provided"] },
 	permission:{ type: Number, required: true },
 	attendingEvents:[{
-		eventID: { type: String, required:true }
+		eventID: { type: String, required: true },
+		eventName: { type: String, required: true },
 	}],
 	attendedEvents:[{
-		eventID: { type: String, required:true }
+		eventID: { type: String, required:true },
+		eventName: { type: String, required: true }
 	}],
 	resetPassCode:{ type: String }
 });

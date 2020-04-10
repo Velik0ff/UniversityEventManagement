@@ -184,7 +184,6 @@ router.post('/authorize', function (req, res, next) {
 			renderLogin(res, req, req.body.username, "Unknown error has occurred", null);
 		}
 		if (!user) { // authentication failed
-			console.log(user)
 			renderLogin(res, req, req.body.username, "Credentials are not valid", null);
 		}
 		req.logIn(user, function (err) {
@@ -396,7 +395,7 @@ router.get('/forgot-password', function (req, res) {
 								console.log(errUpdateStaff);
 								renderForgotPassword(res, req, "Unknown error occurred please try again.", null);
 							} else {
-								genFunctions.sendEmail(req.body.username,null,null, reset_code, req, "forgot-pass");
+								genFunctions.sendEmail(req.body.username,null,null, reset_code, req, "forgot-pass").then().catch();
 								renderForgotPassword(res, req, null, "We have sent a reset link to your email, please follow the instructions in the email.");
 							}
 						});
@@ -406,7 +405,7 @@ router.get('/forgot-password', function (req, res) {
 								Visitor.updateOne({_id: visitor._id}, {$set: {resetPassCode: reset_code}}, function (errUpdateVisitor, visitorUpdatedDoc) {
 									if (!errUpdateVisitor) {
 										if (visitorUpdatedDoc) {
-											genFunctions.sendEmail(req.body.username,null,null, reset_code, req, "forgot-pass");
+											genFunctions.sendEmail(req.body.username,null,null, reset_code, req, "forgot-pass").then().catch();
 											renderForgotPassword(res, req, null, "We have sent a reset link to your email, please follow the instructions in the email.");
 										} else {
 											renderForgotPassword(res, req, "User not found..", null);
@@ -560,10 +559,10 @@ router.post('/filter', function (req, res) {
 	}
 
 	function filterEvent(event) {
-		return new Promise(async function (resolve, reject) {
+		return new Promise(async function (resolve) {
 			let result = true;
-			let visitors = await getVisitorInfo(event.visitors);
-			let rooms = await getRoomInfo(event.rooms);
+			let visitors = await genFunctions.getVisitorInfo(event.visitors);
+			let rooms = await genFunctions.getRoomInfo(event.rooms);
 			let numberOfVisitors = 0;
 			let numberOfSpaces = 0;
 
@@ -798,7 +797,7 @@ router.post('/filter', function (req, res) {
 	}
 });
 
-router.get('/calendar', function (req, res) {
+router.get('/calendar', async function (req, res) {
 	function getAllArchiveEvents(){
 		return new Promise(function (resolve) {
 			Archive.find({}, function (errFind, eventsDoc) {
@@ -809,11 +808,11 @@ router.get('/calendar', function (req, res) {
 
 						if(req.user.permission >= 10) {
 							event.staffChosen.forEach(function (staff_member) {
-								if (staff_member.staffMemberID.toString() === req.user._id.toString()) participant = true;
+								if (staff_member.staffMemberID && staff_member.staffMemberID.toString() === req.user._id.toString()) participant = true;
 							});
 						} else {
 							event.visitors.forEach(function (visitor) {
-								if (visitor.visitorID.toString() === req.user._id.toString()) participant = true;
+								if (visitor.visitorID && visitor.visitorID.toString() === req.user._id.toString()) participant = true;
 							});
 						}
 
@@ -854,13 +853,15 @@ router.get('/calendar', function (req, res) {
 							});
 						}
 
-						events.push({
-							title: event.eventName,
-							start: event.date,
-							end: event.endDate,
-							url: '/events/view-event?id=' + event._id,
-							backgroundColor: participant ? "#ff0000" : "#007bff"
-						});
+						if(participant || req.user.permission >= 10) {
+							events.push({
+								title: event.eventName,
+								start: event.date,
+								end: event.endDate,
+								url: '/events/view-event?id=' + event._id,
+								backgroundColor: participant ? "#ff0000" : "#007bff"
+							});
+						}
 					});
 					resolve(events);
 				} else {
@@ -872,15 +873,14 @@ router.get('/calendar', function (req, res) {
 	}
 
 	if (req.user && req.user.permission >= 1) {
-		let promises = [];
+		let archive_events = await getAllArchiveEvents();
+		let all_active_events = await getAllEvents();
 
-		promises.push(getAllArchiveEvents());
-		promises.push(getAllEvents());
-
-		Promise.all(promises).then(function (result) {
+		Promise.all([archive_events,all_active_events]).then(function () {
+			let events = archive_events.concat(all_active_events);
 			res.render('calendar', {
 				title: "Calendar",
-				events: result,
+				events: events,
 				user: req.user
 			});
 		});

@@ -15,15 +15,15 @@ script.
 				.attr('class', 'form-control')
 				.attr('id', 'selectVisitor' + visitor_count)
 				.attr('name', 'visitorID' + visitor_count)
+				.attr('onChange', 'selectedVisitor(this)')
 				.appendTo('#visitorCol' + visitor_count);
 
+		let select = $('#selectVisitor' + visitor_count);
 		all_visitors.forEach(function (visitor) {
-			let select = $('#selectStaff' + visitor_count);
 			if (unavailable_visitors.includes(visitor._id)) {
 				select.append('<option value="' + visitor._id + '" disabled>' + visitor.leadTeacherName + '</option>');
 			} else {
 				select.append('<option value="' + visitor._id + '">' + visitor.leadTeacherName + '</option>');
-				unavailable_visitors.push(visitor._id);
 			}
 		});
 
@@ -42,30 +42,42 @@ script.
 		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeVisitorIcon' + visitor_count);
 
 		visitor_count++;
+
+		let selected_option = select.val();
+
+		unavailable_visitors.push(selected_option);
+
+		let option = $('#visitors select option[value="' + selected_option + '"]')
+		option.attr('disabled', true);
+
+		for (let i = 0; i < select.find('option').length; i++) {
+			if (select.find('option')[i].value === selected_option) {
+				select.find('option')[i].removeAttribute('disabled');
+				break;
+			}
+		}
+
+		checkAddedVisitors();
 	}
 
 	function selectedVisitor(event) {
-		if (!unavailable_staff.includes(event.value)) {
-			unavailable_staff.push(event.value);
-
-			checkAddedVisitors();
+		if (!unavailable_visitors.includes(event.value)) {
+			unavailable_visitors.push(event.value);
 		}
+
+		$('#visitors select option[value="' + event.value + '"]').attr('disabled', true);
+
+		event.options[event.selectedIndex].removeAttribute('disabled');
+
+		checkAddedVisitors();
 	}
 
 	function checkAddedVisitors() {
-		let selections = $("#visitors").find('select');
-
-		unavailable_visitors.forEach(function (disabled_visitor) {
-			selections.forEach(function (selection) {
-				if (selection.value === disabled_visitor) {
-					selections.forEach(function (selection) {
-						selection.find('option').forEach(function (option) {
-							if (option.value === disabled_visitor) {
-								option.removeAttribute('disabled');
-							}
-						});
-					});
-				}
-			});
-		});
+		for(let i=0;i<unavailable_visitors.length;i++){
+			let option = $('#visitors select option[value="'+unavailable_visitors[i]+'"]:selected');
+			if(option.length < 1){
+				$('#visitors select option[value="' + unavailable_visitors[i] + '"]').removeAttr('disabled');
+				unavailable_visitors.splice(i,1);
+			}
+		}
 	}

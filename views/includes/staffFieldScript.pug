@@ -15,14 +15,14 @@ script.
 				.attr('class', 'form-control')
 				.attr('id', 'selectStaff' + staff_count)
 				.attr('name', 'staffID' + staff_count)
+				.attr('onChange', 'selectedStaffMember(this)')
 				.appendTo('#staffNameCol' + staff_count);
+		let select = $('#selectStaff' + staff_count);
 		all_staff.forEach(function (staff_member) {
-			let select = $('#selectStaff' + staff_count);
 			if (unavailable_staff.includes(staff_member._id)) {
 				select.append('<option value="' + staff_member._id + '" disabled>' + staff_member.fullName + '</option>');
 			} else {
 				select.append('<option value="' + staff_member._id + '">' + staff_member.fullName + '</option>');
-				unavailable_staff.push(staff_member._id);
 			}
 		});
 
@@ -49,30 +49,42 @@ script.
 		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeStaffIcon' + staff_count);
 
 		staff_count++;
+
+		let selected_option = select.val();
+
+		unavailable_staff.push(select.val());
+
+		let option = $('#staff select option[value="' + selected_option + '"]')
+		option.attr('disabled', true);
+
+		for(let i=0; i < select.find('option').length; i++){
+			if(select.find('option')[i].value === selected_option){
+				select.find('option')[i].removeAttribute('disabled');
+				break;
+			}
+		}
+
+		checkAddedStaff();
 	}
 
 	function selectedStaffMember(event) {
 		if (!unavailable_staff.includes(event.value)) {
 			unavailable_staff.push(event.value);
-
-			checkAddedStaff();
 		}
+
+		$('#staff select option[value="' + event.value + '"]').attr('disabled', true);
+
+		event.options[event.selectedIndex].removeAttribute('disabled');
+
+		checkAddedStaff();
 	}
 
 	function checkAddedStaff() {
-		let selections = $("#staff").find('select');
-
-		unavailable_staff.forEach(function (disabled_staff) {
-			selections.forEach(function (selection) {
-				if (selection.value === disabled_staff) {
-					selections.forEach(function (selection) {
-						selection.find('option').forEach(function (option) {
-							if (option.value === disabled_staff) {
-								option.removeAttribute('disabled');
-							}
-						});
-					});
-				}
-			});
-		});
+		for (let i = 0; i < unavailable_staff.length; i++) {
+			let option = $('#staff select option[value="' + unavailable_staff[i] + '"]:selected');
+			if (option.length < 1) {
+				$('#staff select option[value="' + unavailable_staff[i] + '"]').removeAttr('disabled');
+				unavailable_staff.splice(i, 1);
+			}
+		}
 	}

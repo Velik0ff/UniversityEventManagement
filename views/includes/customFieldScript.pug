@@ -1,6 +1,6 @@
 script.
 	function addCustomField() {
-		$('<div>').attr('class', 'row form-group').attr('id', 'row' + field_count).appendTo('#fields');
+		$('<div>').attr('class', 'row form-group').attr('id', 'row' + field_count).appendTo('#customFields');
 
 		$('<div>').attr('class', 'col').attr('id', 'nameCol' + field_count).appendTo('#row' + field_count);
 		$('<label>').attr('for', 'fieldName' + field_count).appendTo('#nameCol' + field_count).text('Custom Field ' + field_count + ' Name');

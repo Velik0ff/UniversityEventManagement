@@ -27,7 +27,7 @@ let fields = [{name: "Lead Teacher Full Name", type: "text", identifier: "name"}
 
 /* Functions */
 function validationErr(error) {
-	let local_error_msg = "";
+	let local_error_msg = null;
 
 	if (error.name === "ValidationError") { // check if the error is from the validator
 		if (typeof error.errors.leadTeacherName !== "undefined" &&
@@ -44,16 +44,28 @@ function validationErr(error) {
 			local_error_msg = "Email already exists.";
 		} else { // unknown error
 			local_error_msg = "Unknown error has occurred during adding of the user. Please try again later.";
-			console.log(error);
+			console.log(local_error_msg);
 		}
 	}
 
-	return error_msg;
+	return local_error_msg;
+}
+
+function resetErrorMessage(){
+	error_msg = null;
+	message = null;
 }
 
 function renderAdd(res,req){
 	res.render('add', {
 		title: 'Add New Visitor',
+		item: {
+			"Lead Teacher Full Name": req.body["Lead Teacher Full Name"],
+			"Institution Name": req.body["Institution Name"],
+			"Contact Email": req.body["Contact Email"],
+			"Contact Phone": req.body["Contact Phone"],
+			"Group Size": req.body["Group Size"],
+		},
 		fields: fields,
 		cancelLink: listLink,
 		addLink: '/visitors/' + addLink,
@@ -62,15 +74,17 @@ function renderAdd(res,req){
 		message: message,
 		user: req.user
 	});
+
+	resetErrorMessage();
 }
 
 function renderEdit(res,req,user){
 	res.render('edit', {
 		title: 'Editing visitor: ' + user.leadTeacherName,
-		error: error,
+		error: error_msg,
 		message: message,
 		item: {
-			ID: req.query.id,
+			ID: req.user._id,
 			"Lead Teacher Full Name": user.leadTeacherName,
 			"Institution Name": user.institutionName,
 			"Contact Email": user.contactEmail,
@@ -81,6 +95,8 @@ function renderEdit(res,req,user){
 		cancelLink: req.user.permission >= 10 ? viewLink + '?id=' + user._id : '../events/participate-events-list',
 		user: req.user
 	});
+
+	resetErrorMessage();
 }
 /* End Functions */
 
@@ -121,9 +137,13 @@ router.get('/' + listLink, function (req, res) {
 				error: error_msg,
 				user: req.user
 			});
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -140,7 +160,9 @@ router.get('/' + viewLink, function (req, res) {
 						"Intitution Name": user.institutionName,
 						"Lead Teacher": user.leadTeacherName,
 						Email: user.contactEmail,
-						"Group Size": user.groupSize
+						"Group Size": user.groupSize,
+						"Attending Events": user.attendingEvents,
+						"Attended Events": user.attendedEvents
 					},
 					listLink: listLink,
 					deleteLink: deleteLink + '?id=' + user._id,
@@ -153,10 +175,14 @@ router.get('/' + viewLink, function (req, res) {
 					listLink: listLink
 				});
 			}
+
+			resetErrorMessage();
 		});
 		/* End Logic to get info from database */
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -165,6 +191,8 @@ router.get('/' + addLink, function (req, res) {
 		renderAdd(res,req);
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -183,10 +211,10 @@ router.post('/' + addLink, function (req, res) {
 		});
 
 		/* Insert new user */
-		new_user.save(function (error, userDoc) {
+		new_user.save(function (error) {
 			if (!error) {
 				message = "Successfully added new visitor with email: " + req.body['Contact Email'];
-				genFunctions.sendEmail(req.body['Contact Email'], password_to_insert, null, null, null, "visitor");
+				genFunctions.sendEmail(req.body['Contact Email'], password_to_insert, null, null, null, "visitor").then().catch();
 			} else {
 				error_msg = validationErr(error);
 			}
@@ -196,6 +224,8 @@ router.post('/' + addLink, function (req, res) {
 		/* End Insert new user */
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -210,10 +240,14 @@ router.get('/' + editLink, function (req, res) {
 					listLink: listLink,
 					user: req.user
 				});
+
+				resetErrorMessage();
 			}
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -247,6 +281,8 @@ router.post('/' + editLink, function (req, res) {
 					listLink: listLink,
 					user: req.user
 				});
+
+				resetErrorMessage();
 			} else {
 				error_msg = validationErr(err);
 
@@ -255,6 +291,8 @@ router.post('/' + editLink, function (req, res) {
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -275,27 +313,31 @@ router.get('/' + deleteLink, function (req, res) {
 					user: req.user
 				});
 			}
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
 router.get('/' + resetPassLink, function (req, res) {
 	if (req.user && req.user.permission >= 20) {
 
-		function renderView(message,error){
+		function renderView(){
 			res.render('view', {
 				resetMsg: message,
-				error: error,
+				error: error_msg,
 				listLink: listLink,
 				user: req.user
 			});
+
+			resetErrorMessage();
 		}
 
 		if (req.query.id) {
-			let error = null;
-			let message = null;
 
 			User.findOne({_id: req.query.id}, function (errFind, user) {
 				if (!errFind) {
@@ -309,25 +351,33 @@ router.get('/' + resetPassLink, function (req, res) {
 					}, function (err) {
 						if (err) {
 							console.log(err);
-							error = "Unknown error has occurred please try again!";
+							error_msg = "Unknown error has occurred please try again!";
 						} else {
-							genFunctions.sendEmail(user.contactEmail, password, null, null, null, 'reset-pass');
+							genFunctions.sendEmail(user.contactEmail, password, null, null, null, 'reset-pass').then().catch();
 							message = "Successfully reset password of the user.";
 						}
 
-						renderView(message,error);
+						renderView();
 					});
 				} else {
 					console.log(errFind);
-					renderView(message,"Unknown error has occurred please try again!");
+
+					error_msg = "Unknown error has occurred please try again!";
+
+					renderView();
 				}
 			});
 		} else {
 			console.log('No id is posted for reset password of the user.');
-			renderView(message,"Unknown error has occurred please try again!");
+
+			error_msg = "Unknown error has occurred please try again!";
+
+			renderView();
 		}
 	} else {
 		res.redirect('/welcome');
+
+		resetErrorMessage();
 	}
 });
 

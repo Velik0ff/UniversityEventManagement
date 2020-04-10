@@ -3,7 +3,7 @@ extends layout
 block content
     .container
         if !error
-            if !deleteMsg && !resetMsg
+            if !deleteMsg && !resetMsg && !signUpMsg
                 h3.title=title
                 table.table
                     tbody
@@ -73,13 +73,33 @@ block content
                                                 br
                                                 span="Group Size: " + visitor.groupSize
                                                 br
+
+                            else if index === 'Attending Events'
+                                tr
+                                    td(style="font-weight:bold")=index
+                                    td
+                                        each attending_event in info
+                                            p
+                                                span="Event Name: " + attending_event.eventName
+                                                br
+
+                            else if index === 'Attended Events'
+                                tr
+                                    td(style="font-weight:bold")=index
+                                    td
+                                        each attending_event in info
+                                            p
+                                                span="Event Name: " + attending_event.eventName
+                                                br
+                                                span="Group Size: " + attending_event.groupSize
+                                                br
                             else
                                 tr
                                     td(style="font-weight:bold")=index
                                     td=info
                 center
                     if signUpLink
-                        a.btn.btn-success(href=signUpLink) Sign-up for Event
+                        a.btn.btn-success(href=signUpLink+'?id='+item.ID) Sign-up for Event
                     if editLink
                         a.btn.btn-warning(href=editLink) Edit
                     if resetPassLink
@@ -91,6 +111,8 @@ block content
                 div.alert.alert-success(role="alert")=deleteMsg
             else if resetMsg
                 div.alert.alert-success(role="alert")=resetMsg
+            else if signUpMsg
+                div.alert.alert-success(role="alert")=signUpMsg
         else
             div.alert.alert-danger(role="alert")=error
 

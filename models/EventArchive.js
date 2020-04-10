@@ -24,6 +24,7 @@ let EventArchiveSchema = new mongoose.Schema({
 	eventType:{ type: String, required: true },
 	staffChosen:[
 		{
+			staffMemberID: { type:String, required: true },
 			staffMemberName: { type: String, required: true },
 			staffEmail: { type: String, required: true },
 			role: { type: String, required: true }
@@ -33,6 +34,7 @@ let EventArchiveSchema = new mongoose.Schema({
 	location: { type: String, required: true },
 	numberOfSpaces: { type: Number, required: true },
 	visitors: [{
+		visitorID: { type: String, required: true },
 		institutionName:{ type: String, required: true },
 		groupSize:{ type: Number, required: true }
 	}]

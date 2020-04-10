@@ -24,7 +24,7 @@ let password_to_insert = short().new();
 let fields = [{name: "Name", type: "text", identifier: "name"},
 	{name: "Email", type: "email", identifier: "email"},
 	{name: "Phone", type: "tel", identifier: "phone"},
-	{name: "Role", type: "text", identifier: "role"}];
+	{name: "Role", type: "select", identifier: "role"}];
 
 /* Functions */
 function validationErr(error) {
@@ -56,6 +56,11 @@ function validationErr(error) {
 	return local_error_msg;
 }
 
+function resetErrorMessage(){
+	error_msg = null;
+	message = null;
+}
+
 function getStaffRoles(){
 	return new Promise(function(resolve,reject){
 		Role.find({},function(errRoleFind,roleDoc){
@@ -73,6 +78,12 @@ function renderAdd(res,req){
 		res.render('add', {
 			title: 'Add New Staff Member',
 			fields: fields,
+			item: {
+				Name: req.body.Name,
+				Email: req.body.Email,
+				Phone: req.body.Phone,
+				Role: req.body.Role
+			},
 			roles: roles,
 			cancelLink: listLink,
 			addLink: '/users/' + addLink,
@@ -81,6 +92,8 @@ function renderAdd(res,req){
 			message: message,
 			user: req.user
 		});
+
+		resetErrorMessage();
 	});
 }
 
@@ -90,17 +103,19 @@ function renderEdit(res,req,user){
 			title: 'Editing staff member: ' + user.fullName,
 			error: null,
 			item: {
-				ID: req.body.ID,
-				Name: req.body.Name,
-				Email: req.body.Email,
-				Phone: req.body.Phone,
-				Role: req.body.Role
+				ID: user._id,
+				Name: user.fullName,
+				Email: user.email,
+				Phone: user.phone,
+				Role: user.role
 			},
 			roles: roles,
 			editLink: '/users/' + editLink,
 			cancelLink: req.user.permission >= 10 ? viewLink + '?id=' + user._id : '../events/view-list',
 			user: req.user
 		});
+
+		resetErrorMessage();
 	});
 }
 /* End Functions */
@@ -152,9 +167,13 @@ router.get('/' + listLink, function (req, res) {
 				error: error_msg,
 				user: req.user
 			});
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -185,10 +204,14 @@ router.get('/' + viewLink, function (req, res) {
 					user: req.user
 				});
 			}
+
+			resetErrorMessage();
 		});
 		/* End Logic to get info from database */
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 router.get('/' + addLink, function (req, res) {
@@ -196,6 +219,8 @@ router.get('/' + addLink, function (req, res) {
 		renderAdd(res,req);
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -233,6 +258,8 @@ router.post('/' + addLink, function (req, res) {
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -247,10 +274,14 @@ router.get('/' + editLink, function (req, res) {
 					listLink: listLink,
 					user: req.user
 				});
+
+				resetErrorMessage();
 			}
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -297,6 +328,14 @@ router.post('/' + editLink, function (req, res) {
 			} else {
 				updates = {$set: {fullName: req.body.Name, email: req.body.Email, phone: req.body.Phone}};
 			}
+
+			let user = {
+				_id:req.body.ID,
+				email:req.body.Email,
+				fullName:req.body.Name,
+				phone:req.body.Phone,
+				role:req.body.Role
+			};
 			User.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
 				if (!err && update) {
 					message = "Successfully updated user: " + req.body.Email;
@@ -309,6 +348,8 @@ router.post('/' + editLink, function (req, res) {
 						listLink: listLink,
 						user: req.user
 					});
+
+					resetErrorMessage();
 				} else {
 					error_msg = validationErr(err);
 
@@ -318,6 +359,8 @@ router.post('/' + editLink, function (req, res) {
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -338,9 +381,13 @@ router.get('/' + deleteLink, function (req, res) {
 					user: req.user
 				});
 			}
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -354,6 +401,8 @@ router.get('/' + resetPassLink, function (req, res) {
 				listLink: listLink,
 				user: req.user
 			});
+
+			resetErrorMessage();
 		}
 
 		if (req.query.id) {
@@ -374,7 +423,7 @@ router.get('/' + resetPassLink, function (req, res) {
 							console.log(err);
 							error = "Unknown error has occurred please try again!";
 						} else {
-							genFunctions.sendEmail(user.email, password, null, null, null, 'reset-pass');
+							genFunctions.sendEmail(user.email, password, null, null, null, 'reset-pass').then().catch();
 							message = "Successfully reset password of the user.";
 						}
 
@@ -391,6 +440,8 @@ router.get('/' + resetPassLink, function (req, res) {
 		}
 	} else {
 		res.redirect('/welcome');
+
+		resetErrorMessage();
 	}
 });
 

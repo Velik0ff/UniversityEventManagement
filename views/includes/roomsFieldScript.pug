@@ -4,6 +4,12 @@ script.
 	let unavailable_rooms = [];
 
 	function addRoomField() {
+		all_rooms.forEach(function(room){
+			if (!checkRoomAvailability(room)) {
+				unavailable_rooms.push(room._id);
+			}
+		});
+
 		$('<div>').attr('class', 'row form-group').attr('id', 'rowRoom' + room_count).appendTo('#rooms');
 
 		$('<div>')
@@ -15,14 +21,14 @@ script.
 			.attr('class', 'form-control')
 			.attr('id', 'selectRoom' + room_count)
 			.attr('name', 'roomID' + room_count)
+			.attr('onChange', 'selectedRoom(this)')
 			.appendTo('#roomNameCol' + room_count);
+		let select = $('#selectRoom' + room_count);
 		all_rooms.forEach(function (room) {
-			let select = $('#selectRoom' + room_count);
 			if (unavailable_rooms.includes(room._id)) {
 				select.append('<option value="' + room._id + '" disabled>' + room.roomName + '</option>');
 			} else {
 				select.append('<option value="' + room._id + '">' + room.roomName + '</option>');
-				unavailable_rooms.push(room._id);
 			}
 		});
 
@@ -41,30 +47,74 @@ script.
 		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeRoomIcon' + room_count);
 
 		room_count++;
+
+		let selected_option = select.val();
+
+		unavailable_rooms.push(selected_option);
+
+		let option = $('#rooms select option[value="' + selected_option + '"]')
+		option.attr('disabled', true);
+
+		for (let i = 0; i < select.find('option').length; i++) {
+			if (select.find('option')[i].value === selected_option) {
+				select.find('option')[i].removeAttribute('disabled');
+				break;
+			}
+		}
+
+		checkAddedRooms();
 	}
 
 	function selectedRoom(event) {
-		if(!unavailable_rooms.includes(event.value)){
+		if (!unavailable_rooms.includes(event.value)) {
 			unavailable_rooms.push(event.value);
-
-			checkAddedRooms();
 		}
+
+		$('#rooms select option[value="' + event.value + '"]').attr('disabled', true);
+
+		event.options[event.selectedIndex].removeAttribute('disabled');
+
+		checkAddedRooms();
 	}
 
 	function checkAddedRooms() {
-		let selections = $("#rooms").find('select');
+		for (let i = 0; i < unavailable_rooms.length; i++) {
+			let option = $('#rooms select option[value="' + unavailable_rooms[i] + '"]:selected');
+			if (option.length < 1 && checkRoomAvailability(unavailable_rooms[i])) {
+				$('#staff select option[value="' + unavailable_rooms[i] + '"]').removeAttr('disabled');
+				unavailable_rooms.splice(i, 1);
+			}
+		}
+	}
 
-		unavailable_rooms.forEach(function (disabled_room) {
-			selections.forEach(function (selection) {
-				if (selection.value === disabled_room) {
-					selections.forEach(function (selection) {
-						selection.find('option').forEach(function (option) {
-							if (option.value === disabled_room) {
-								option.removeAttribute('disabled');
-							}
-						});
-					});
+	function checkRoomAvailability(room){
+		if(room && room.events) {
+			if(room.events.length === 0) return true;
+
+			room.events.forEach(function (roomEvent) {
+				let startDate = Date.parse(roomEvent.date);
+				let endDate = roomEvent.endDate ? Date.parse(roomEvent.endDate) : null;
+				let eventStartDate = Date.parse($("#date").val());
+				let eventEndDate = $("#endDate").val() ? Date.parse($("#endDate").val()) : null;
+				let now = new Date();
+				let year = now.getUTCFullYear();
+				let month = now.getUTCMonth();
+				let day = now.getUTCDate();
+
+				let startDayHour = Date.UTC(year, month, day, 0, 0, 0, 0);
+				let midnight = startDayHour + 86400000;
+
+				let time_left = midnight - now.getTime();
+
+				if (((endDate && endDate < eventStartDate) ||
+						(startDate && !endDate && ((!eventEndDate && startDate >= eventStartDate + time_left) ||
+								(startDate + time_left <= eventStartDate) ||
+								(eventEndDate && eventEndDate + time_left <= startDate)
+						)))) {
+					return true;
+				} else {
+					return false;
 				}
 			});
-		});
+		} else return false;
 	}

@@ -31,11 +31,16 @@ function validationErr(error){
 		}
 		console.log(local_error_msg);
 	} else {
-		local_error_msg = "Unknown error has occurred during adding room. Please try again later.";
+		local_error_msg = "Unknown error has occurred during adding role. Please try again later.";
 		console.log(error);
 	}
 
 	return local_error_msg;
+}
+
+function resetErrorMessage(){
+	error_msg = null;
+	message = null;
 }
 
 function renderEdit(res,req,role){
@@ -53,12 +58,18 @@ function renderEdit(res,req,role){
 		cancelLink: viewLink + '?id=' + role._id,
 		user:req.user
 	});
+
+	resetErrorMessage();
 }
 
 function renderAdd(res,req){
 	res.render('add', {
 		title: 'Add New Role',
 		fields: fields,
+		item: {
+			'Role Name': req.body['Role Name'],
+			'Permission Level': req.body['Permission Level']
+		},
 		cancelLink: listLink,
 		addLink: '/roles/' + addLink,
 		customFields: false,
@@ -66,6 +77,8 @@ function renderAdd(res,req){
 		message: message,
 		user:req.user
 	});
+
+	resetErrorMessage();
 }
 /* End Functions */
 
@@ -97,17 +110,21 @@ router.get('/'+listLink, function(req, res) {
 				error: error_msg,
 				user:req.user
 			});
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
-router.get('/'+viewLink, function(req, res, next) {
+router.get('/'+viewLink, function(req, res) {
 	if(req.user && req.user.permission >= 30) {
 		/* Logic to get info from database */
 		Role.findOne({_id: req.query.id}, function (err, role) {
-			if (!err && room) {
+			if (!err && role) {
 				res.render('view', {
 					title: 'Viewing role: ' + role.roleName,
 					error: error_msg,
@@ -128,10 +145,14 @@ router.get('/'+viewLink, function(req, res, next) {
 					user:req.user
 				});
 			}
+
+			resetErrorMessage();
 		});
 		/* End Logic to get info from database */
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -146,10 +167,14 @@ router.get('/'+editLink, function(req, res) {
 					listLink: listLink,
 					user:req.user
 				});
+
+				resetErrorMessage();
 			}
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -175,6 +200,8 @@ router.post('/'+editLink, function(req, res) {
 					listLink: listLink,
 					user:req.user
 				});
+
+				resetErrorMessage();
 			} else {
 				error_msg = validationErr(err);
 
@@ -183,15 +210,18 @@ router.post('/'+editLink, function(req, res) {
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
 router.get('/'+addLink, function(req, res) {
 	if(req.user && req.user.permission >= 30) {
-
 		renderAdd(res,req);
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -216,6 +246,8 @@ router.post('/'+addLink, function(req, res) {
 		/* End Insert new equipment */
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -236,9 +268,13 @@ router.get('/'+deleteLink, function(req, res) {
 					user:req.user
 				});
 			}
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 

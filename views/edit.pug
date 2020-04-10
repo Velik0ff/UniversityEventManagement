@@ -163,6 +163,8 @@ block content
                             if index !== 'ID'
                                 if index === 'Date' || index === 'End Date'
                                     input.form-control(id=index type="datetime-local" placeholder="Enter " + index value=info name=index)
+                                else if index === 'Permission Level' || index === 'Capacity' || index === 'Quantity'
+                                    input.form-control(id=index type="number" placeholder="Enter " + index value=info name=index)
                                 else if index === 'Role'
                                     if user.permission >= 30
                                         select.form-control(name=index)
@@ -179,7 +181,7 @@ block content
                         p
                             b='Custom Fields:'
                             a.btn.btn-primary(href="javascript:void(0)" onclick="addCustomField()") Add Custom Field
-                        div#fields
+                        div#customFields
                             each fieldValue in info
                                 div.row.form-group
                                     div.col

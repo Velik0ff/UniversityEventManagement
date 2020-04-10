@@ -34,6 +34,11 @@ function validationErr(error){
 	return local_error_msg;
 }
 
+function resetErrorMessage(){
+	error_msg = null;
+	message = null;
+}
+
 function renderEdit(res,req,eventType){
 	res.render('edit', {
 		title: 'Editing event type: ' + eventType.eventTypeName,
@@ -49,12 +54,17 @@ function renderEdit(res,req,eventType){
 		cancelLink: viewLink + '?id=' + eventType._id,
 		user:req.user
 	});
+
+	resetErrorMessage();
 }
 
 function renderAdd(res,req,custom_fields){
 	res.render('add', {
 		title: 'Add New Event Type',
 		fields: fields,
+		item: {
+			Name: req.body.Name,
+		},
 		cancelLink: listLink,
 		addLink: '/event-types/' + addLink,
 		customFields: true,
@@ -63,6 +73,8 @@ function renderAdd(res,req,custom_fields){
 		message: message,
 		user:req.user
 	});
+
+	resetErrorMessage();
 }
 /* End Functions */
 
@@ -94,9 +106,13 @@ router.get('/'+listLink, function(req, res) {
 				error: error_msg,
 				user:req.user
 			});
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -126,10 +142,14 @@ router.get('/'+viewLink, function(req, res) {
 					user:req.user
 				});
 			}
+
+			resetErrorMessage();
 		});
 		/* End Logic to get info from database */
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -144,10 +164,14 @@ router.get('/'+editLink, function(req, res) {
 					listLink: listLink,
 					user:req.user
 				});
+
+				resetErrorMessage();
 			}
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -189,6 +213,8 @@ router.post('/'+editLink, function(req, res) {
 					listLink: listLink,
 					user:req.user
 				});
+
+				resetErrorMessage();
 			} else {
 				error_msg = validationErr(err);
 
@@ -197,6 +223,8 @@ router.post('/'+editLink, function(req, res) {
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -205,6 +233,8 @@ router.get('/'+addLink, function(req, res) {
 		renderAdd(res,req,null);
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -248,6 +278,8 @@ router.post('/'+addLink, function(req, res) {
 		/* End Insert new event type */
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 
@@ -268,9 +300,13 @@ router.get('/'+deleteLink, function(req, res) {
 					user:req.user
 				});
 			}
+
+			resetErrorMessage();
 		});
 	} else {
 		res.redirect('/');
+
+		resetErrorMessage();
 	}
 });
 

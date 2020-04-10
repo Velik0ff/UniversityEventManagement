@@ -33,16 +33,16 @@ block content
                         div.form-group
                             label(for=field.identifier)=field.name
                             if field.type === "textarea"
-                                textarea.form-control(id=field.identifier placeholder="Enter " + field.name name=field.name style="resize:vertical")
+                                textarea.form-control(id=field.identifier placeholder="Enter " + field.name name=field.name style="resize:vertical")=item[field.name]
                             else
-                                input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.name)
+                                input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.name value=item[field.name])
                     else if field.type === "select"
                         div.form-group
                             if field.identifier === "role"
                                 label(for=field.identifier)=field.name
                                 select.form-control(name=field.name)
                                     each option in roles
-                                        if selectedRole === option._id
+                                        if item.Role == option._id
                                             option(value=option._id selected)=option.roleName
                                         else
                                             option(value=option._id)=option.roleName
@@ -50,7 +50,7 @@ block content
                                 label(for=field.identifier)=field.name
                                 select.form-control(name=field.name)
                                     each option in eventTypes
-                                        if selectedEventType === option._id
+                                        if selectedEventType == option._id
                                             option(value=option._id selected)=option.eventTypeName
                                         else
                                             option(value=option._id)=option.eventTypeName
@@ -68,8 +68,8 @@ block content
                                     label(for="roomName" + room_count)='Room ' + room_count + ' Name'
                                     select.form-control(id="selectRoom" + room_count name='roomID' + room_count onChange='selectedRoom(this)')
                                         each option in rooms
-                                            if room.roomID === option._id
-                                                option(value=room.roomID selected)=option.roomName
+                                            if room._id == option._id
+                                                option(value=room._id selected)=option.roomName
                                             else
                                                 option(value=option._id)=option.roomName
                                 div.col(id="removeRoomCol" + room_count style="flex-grow:0;position:relative;")
@@ -90,7 +90,7 @@ block content
                                     label(for="equipmentName" + equipment_count)='Equipment ' + equipment_count + ' Name'
                                     select.form-control(id="selectEquipment" + equipment_count name='equipmentID' + equipment_count onChange='selectedEquipment(this)')
                                         each option in equipment
-                                            if equip.equipID === option._id && option.quantity > 0
+                                            if equip.equipID == option._id && option.quantity > 0
                                                 option(value=equip.equipID selected)=option.typeName
                                             else
                                                 if option.quantity <= 0
@@ -113,20 +113,20 @@ block content
                         a.btn.btn-primary(href="javascript:void(0)" onclick="addStaffField()") Add Staff
 
                     if selectedStaff && selectedStaff.length > 0
-                        each staff in selectedStaff
+                        each staff_member in selectedStaff
                             div.row.form-group(id="rowStaff" + staff_count)
                                 div.col(id="staffNameCol" + staff_count)
                                     label(for="staffID" + staff_count)='Staff Member ' + staff_count + ' Email'
                                     select.form-control(id="selectStaff" + staff_count name='staffID' + staff_count onChange='selectedStaffMember(this)')
                                         each option in staff
-                                            if staff.staffMemberID === option._id
-                                                option(value=staff.staffMemberID selected)=option.fullName
+                                            if staff_member.staffMemberID == option._id
+                                                option(value=staff_member.staffMemberID selected)=option.fullName
                                             else
                                                 option(value=option._id)=option.fullName
                                 div.col(id="staffRoleCol" + staff_count)
                                     label(for="staffRole" + staff_count)='Staff Member ' + staff_count + ' Role'
-                                    if staff.role
-                                        input.form-control(type="text" name="staffRole" + staff_count value=staff.role)
+                                    if staff_member.role
+                                        input.form-control(type="text" name="staffRole" + staff_count value=staff_member.role)
                                     else
                                         input.form-control(type="text" name="staffRole" + staff_count)
 
@@ -147,7 +147,7 @@ block content
                                     label(for="visitorID" + visitor_count)='Visitor ' + visitor_count + ' Name'
                                     select.form-control(id="selectVisitor" + visitor_count name='visitorID' + visitor_count onChange='selectedVisitor(this)')
                                         each option in visitors
-                                            if visitor.visitorID === option._id
+                                            if visitor.visitorID == option._id
                                                 option(value=visitor.visitorID selected)=option.leadTeacherName
                                             else
                                                 option(value=option._id)=option.leadTeacherName
@@ -160,8 +160,8 @@ block content
                 p
                     b='Custom Fields:'
                     a.btn.btn-primary(href="javascript:void(0)" onclick="addCustomField()") Add Custom Field
+                div#customFields
                 if customFieldsValues
-                    div#fields
                         each fieldValue in customFieldsValues
                             div.row.form-group
                                 div.col
@@ -174,12 +174,6 @@ block content
                                     a.options-btn(href="#" style="position:absolute;bottom:0;left:0;" onclick='$(this).parent().parent().remove()')
                                         i.material-icons.md-18 delete
                         - field_count++
-            center
-                if customFields
-                    p
-                        a.btn.btn-primary(href="javascript:void(0)" onclick="addCustomField()") Add Custom Field
-
-
 
             center
                 button.btn.btn-primary(type="submit") Add
