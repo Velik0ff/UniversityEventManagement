@@ -237,7 +237,13 @@ function sendNotification(userID,title,body){
         body: body
    		});
 
-			webpush.sendNotification(subNotifDoc.notification, payload);
+			console.log(payload);
+
+			webpush.sendNotification(subNotifDoc.notification, payload).then(function(result){
+				console.log(result);
+			}).catch(function(pederas){
+				console.log(pederas)
+			});
 		} else {
 			console.log(errFind);
 		}

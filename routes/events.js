@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const moment = require('moment');
 const genFunctions = require('../functions/generalFunctions');
+const process = require('process');
+const webpush = require('web-push');
 
 /* Model */
 const Event = require('../models/Event');
@@ -29,6 +31,12 @@ let fields = [{name: "Event Name", type: "text", identifier: "name"},
 	{name: "Date", type: "datetime-local", identifier: "date"},
 	{name: "End Date", type: "datetime-local", identifier: "endDate"},
 	{name: "Event Type", type: "select", identifier: "eventType"}];
+
+webpush.setVapidDetails(
+	"mailto:sglvelik@liv.ac.uk",
+	process.env.PUBLIC_VAPID_KEY,
+	process.env.PRIVATE_VAPID_KEY
+);
 
 /* Functions */
 function validationErr(error) {
