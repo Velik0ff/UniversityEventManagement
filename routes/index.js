@@ -6,6 +6,7 @@ const process = require('process');
 const mongoose = require('mongoose');
 const json2csv = require('json2csv').parse;
 const genFunctions = require('../functions/generalFunctions');
+const uuid = require('uuid');
 
 /* Models */
 const Room = require('../models/Room');
@@ -47,7 +48,7 @@ passport.use(new LocalStrategy(
 						return done(null, {
 							_id: visitor._id,
 							username: visitor.contactEmail,
-							permission: 'visitor',
+							permission: visitor.permission,
 							role: null
 						});
 					} else {
@@ -122,23 +123,26 @@ function renderLogin(res, req, username, error, message) {
 }
 
 function renderChangePassword(res, user, error, message, reset_pass) {
-	let fields = [];
+		let fields = [];
 
-	if (!reset_pass) {
-		fields.push({name: "Old Password", type: "password", identifier: "oldPass"});
-	} else {
-		fields.push({name: "Reset Code", type: "hidden", identifier: "resetCode"});
+	if(!message) {
+		if (!reset_pass) {
+			fields.push({name: "Old Password", type: "password", identifier: "oldPass"});
+		} else {
+			fields.push({name: "Reset Code", type: "hidden", identifier: "resetCode", value: reset_pass});
+		}
+		fields = fields.concat([{name: "New Password", type: "password", identifier: "newPass"},
+			{name: "Confirm Password", type: "password", identifier: "confirmPass"}]);
 	}
-	fields = fields.concat([{name: "New Password", type: "password", identifier: "newPass"},
-		{name: "Confirm Password", type: "password", identifier: "confirmPass"}]);
 
-	return res.render('small', {
+	res.render('small', {
 		title: "Change Password",
 		message: message,
 		error: error,
 		fields: fields,
-		submitButton: {title: "Submit"},
-		formAction: "/change-password",
+		submitButton: !message ? {title: "Submit"} : null,
+		formAction: !message ? "/change-password" : null,
+		linkButton: message ? {title: "Login", link: '/'} : null,
 		user: user
 	});
 }
@@ -156,6 +160,7 @@ function renderForgotPassword(res, req, error, message) {
 		user: req.user
 	});
 }
+
 /* End Functions */
 
 /* GET login page. */
@@ -208,85 +213,55 @@ router.get('/change-password', function (req, res) {
 		Staff.findOne({resetPassCode: req.query.reset_code}, function (errStaff, staff_member) {
 			if (!errStaff) {
 				if (staff_member) {
-					renderChangePassword(res, staff_member, null, null, true);
+					renderChangePassword(res, staff_member, null, null, req.query.reset_code);
 				} else {
 					Visitor.findOne({resetPassCode: req.query.reset_code}, function (errVisitor, visitor) {
 						if (!errVisitor) {
 							if (visitor) {
-								renderChangePassword(res, staff_member, null, null, true);
+								renderChangePassword(res, staff_member, null, null, req.query.reset_code);
 							} else {
 								console.log(errVisitor);
-								res.redirect('/login');
+								renderForgotPassword(res, req, 'Code is not longer valid.', null);
 							}
 						} else {
 							console.log(errVisitor);
-							res.redirect('/login');
+							renderForgotPassword(res, req, 'Unknown error occurred. Please try again.', null);
 						}
 					});
 				}
 			} else {
 				console.log(errStaff);
-				res.redirect('/login');
+				res.redirect('/');
 			}
 		});
-		renderChangePassword(res, req.user, null, null);
 	} else {
-		res.redirect('/login');
+		res.redirect('/');
 	}
 });
 
 router.post('/change-password', function (req, res) {
-	if (req.user) {
-		if (!req.body['resetCode']) {
-			if (req.user.permission === -1 || req.user.permission >= 10) {
-				Staff.findOne({email: req.user.username}, function (errFindStaff, staff_member) {
-					if (!errFindStaff) {
-						if (staff_member) {
-							if (staff_member.comparePassword(req.body['oldPass'])) {
-								Role.findOne({roleName:staff_member.role},function(errFindRole,roleDoc){
-									let rolePermission = 10;
+	if (!req.body['resetCode'] && req.user) {
+		if (req.user.permission === -1 || req.user.permission >= 10) {
+			Staff.findOne({_id: req.user._id}, function (errFindStaff, staff_member) {
+				if (!errFindStaff) {
+					if (staff_member) {
+						if (staff_member.comparePassword(req.body['oldPass'])) {
+							Role.findOne({roleName: staff_member.role}, function (errFindRole, roleDoc) {
+								let rolePermission = 10;
 
-									if(errFindRole) console.log(errFindRole);
+								if (errFindRole) console.log(errFindRole);
 
-									if(roleDoc) rolePermission = roleDoc.rolePermission;
+								if (roleDoc) rolePermission = roleDoc.rolePermission;
 
-									let updates = {$set: {password: staff_member.hashPassword(req.body['newPass']), permission: rolePermission}};
-									let term_permission = req.user.permission;
-
-									Staff.updateOne({email: req.user.username}, updates, {runValidators: true}, function (err, update) {
-										if (!err && update) {
-											if (term_permission === -1) {
-												res.redirect('/welcome');
-											} else {
-												renderChangePassword(res, req.user, null, "Successfully changed password!", false);
-											}
-										} else {
-											let error = !update ? "User not found!" : validationErr(err);
-
-											renderChangePassword(res, req.user, error, null, false);
-										}
-									});
-								});
-							} else {
-								renderChangePassword(res, req.user, "The old password is not right, please try again.", null, false);
-							}
-						} else {
-							renderChangePassword(res, req.user, "User not found!", null, false);
-						}
-					} else {
-						console.log(errFindStaff);
-						renderChangePassword(res, req.user, errFindStaff, null, false);
-					}
-				});
-			} else if (req.user.permission === -2 || req.user.permission === 1) {
-				Visitor.findOne({contactEmail: req.user.username}, function (errFindVisitor, visitor) {
-					if (!errFindVisitor) {
-						if (visitor) {
-							if (visitor.comparePassword(req.body['oldPass'])) {
-								let updates = {$set: {password: visitor.hashPassword(req.body['newPass']), permission: 1}};
+								let updates = {
+									$set: {
+										password: staff_member.hashPassword(req.body['newPass']),
+										permission: rolePermission
+									}
+								};
 								let term_permission = req.user.permission;
 
-								Visitor.updateOne({contactEmail: req.user.username}, updates, {runValidators: true}, function (err, update) {
+								Staff.updateOne({_id: req.user._id}, updates, {runValidators: true}, function (err, update) {
 									if (!err && update) {
 										if (term_permission === -1) {
 											res.redirect('/welcome');
@@ -299,78 +274,106 @@ router.post('/change-password', function (req, res) {
 										renderChangePassword(res, req.user, error, null, false);
 									}
 								});
-							} else {
-								renderChangePassword(res, req.user, "The old password is not right, please try again.", null, false);
-							}
+							});
 						} else {
-							renderChangePassword(res, req.user, "User not found!", null, false);
+							renderChangePassword(res, req.user, "The old password is not right, please try again.", null, false);
 						}
 					} else {
-						console.log(errFindVisitor);
-						renderChangePassword(res, req.user, errFindVisitor, null, false);
-					}
-				});
-			}
-		} else {
-			Staff.findOne({resetPassCode: req.body['resetCode']}, function (errStaff, staff_member) {
-				if (!errStaff) {
-					if (staff_member) {
-						let updates = {
-							$set: {
-								password: staff_member.hashPassword(req.body['newPass']),
-								permission: 0,
-								reset_code: null
-							}
-						};
-
-						Staff.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
-							if (!err && update) {
-								renderChangePassword(res, req.user, null, "Successfully changed password!");
-							} else {
-								let error = !update ? "User not found!" : validationErr(err);
-
-								renderChangePassword(res, req.user, error, null);
-							}
-						});
-					} else {
-						Visitor.findOne({reset_code: req.body['resetCode']}, function (errVisitor, visitor) {
-							if (!errVisitor) {
-								if (visitor) {
-									let updates = {
-										$set: {
-											password: visitor.hashPassword(req.body['newPass']),
-											permission: 1,
-											reset_code: null
-										}
-									};
-
-									Visitor.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
-										if (!err && update) {
-											renderChangePassword(res, req.user, null, "Successfully changed password!");
-										} else {
-											let error = !update ? "User not found!" : validationErr(err);
-
-											renderChangePassword(res, req.user, error, null);
-										}
-									});
-								} else {
-									console.log(errVisitor);
-									res.redirect('/login');
-								}
-							} else {
-								console.log(errVisitor);
-								res.redirect('/login');
-							}
-						});
+						renderChangePassword(res, req.user, "User not found!", null, false);
 					}
 				} else {
-					console.log(errStaff);
-					res.redirect('/login');
+					console.log(errFindStaff);
+					renderChangePassword(res, req.user, errFindStaff, null, false);
+				}
+			});
+		} else if (req.user.permission === -2 || req.user.permission === 1) {
+			Visitor.findOne({_id: req.user._id}, function (errFindVisitor, visitor) {
+				if (!errFindVisitor) {
+					if (visitor) {
+						if (visitor.comparePassword(req.body['oldPass'])) {
+							let updates = {$set: {password: visitor.hashPassword(req.body['newPass']), permission: 1}};
+							let term_permission = req.user.permission;
+
+							Visitor.updateOne({_id: req.user._id}, updates, {runValidators: true}, function (err, update) {
+								if (!err && update) {
+									if (term_permission > -1) {
+										res.redirect('/welcome');
+									} else {
+										renderChangePassword(res, req.user, null, "Successfully changed password!", false);
+									}
+								} else {
+									let error = !update ? "User not found!" : validationErr(err);
+
+									renderChangePassword(res, req.user, error, null, false);
+								}
+							});
+						} else {
+							renderChangePassword(res, req.user, "The old password is not right, please try again.", null, false);
+						}
+					} else {
+						renderChangePassword(res, req.user, "User not found!", null, false);
+					}
+				} else {
+					console.log(errFindVisitor);
+					renderChangePassword(res, req.user, errFindVisitor, null, false);
 				}
 			});
 		}
 	} else {
-		res.redirect('/login');
+		Staff.findOne({resetPassCode: req.body['resetCode']}, function (errStaff, staff_member) {
+			if (!errStaff) {
+				if (staff_member) {
+					let updates = {
+						$set: {
+							password: staff_member.hashPassword(req.body['newPass']),
+							reset_code: null
+						}
+					};
+
+					Staff.updateOne({_id: staff_member._id}, updates, {runValidators: true}, function (err, update) {
+						if (!err && update) {
+							renderChangePassword(res, req.user, null, "Successfully changed password!");
+						} else {
+							let error = !update ? "User not found!" : validationErr(err);
+
+							renderChangePassword(res, req.user, error, null);
+						}
+					});
+				} else {
+					Visitor.findOne({resetPassCode: req.body['resetCode']}, function (errVisitor, visitor) {
+						if (!errVisitor) {
+							if (visitor) {
+								let updates = {
+									$set: {
+										password: visitor.hashPassword(req.body['newPass']),
+										resetPassCode: null
+									}
+								};
+
+								Visitor.updateOne({_id: visitor._id}, updates, {runValidators: true}, function (err, update) {
+									if (!err && update) {
+										renderChangePassword(res, req.user, null, "Successfully changed password!");
+									} else {
+										let error = !update ? "User not found!" : validationErr(err);
+
+										renderChangePassword(res, req.user, error, null);
+									}
+								});
+							} else {
+								console.log(errVisitor);
+								res.redirect('/');
+							}
+						} else {
+							console.log(errVisitor);
+							res.redirect('/');
+						}
+					});
+				}
+			} else {
+				console.log(errStaff);
+				res.redirect('/');
+			}
+		});
 	}
 });
 
@@ -382,20 +385,20 @@ router.get('/forgot-password', function (req, res) {
 	}
 });
 
-router.get('/forgot-password', function (req, res) {
+router.post('/forgot-password', function (req, res) {
 	if (!req.user) {
 		if (req.body.username) {
-			let reset_code = uuidv4();
+			let reset_code = uuid.v4();
 
 			Staff.findOne({email: req.body.username}, function (errStaff, staff_member) {
 				if (!errStaff) {
 					if (staff_member) {
 						Staff.updateOne({_id: staff_member._id}, {$set: {resetPassCode: reset_code}}, function (errUpdateStaff, staffUpdatedDoc) {
-							if (!errUpdateStaff) {
+							if (errUpdateStaff) {
 								console.log(errUpdateStaff);
 								renderForgotPassword(res, req, "Unknown error occurred please try again.", null);
 							} else {
-								genFunctions.sendEmail(req.body.username,null,null, reset_code, req, "forgot-pass").then().catch();
+								genFunctions.sendEmail(req.body.username, null, null, reset_code, req, "forgot-pass").then().catch();
 								renderForgotPassword(res, req, null, "We have sent a reset link to your email, please follow the instructions in the email.");
 							}
 						});
@@ -405,7 +408,7 @@ router.get('/forgot-password', function (req, res) {
 								Visitor.updateOne({_id: visitor._id}, {$set: {resetPassCode: reset_code}}, function (errUpdateVisitor, visitorUpdatedDoc) {
 									if (!errUpdateVisitor) {
 										if (visitorUpdatedDoc) {
-											genFunctions.sendEmail(req.body.username,null,null, reset_code, req, "forgot-pass").then().catch();
+											genFunctions.sendEmail(req.body.username, null, null, reset_code, req, "forgot-pass").then().catch();
 											renderForgotPassword(res, req, null, "We have sent a reset link to your email, please follow the instructions in the email.");
 										} else {
 											renderForgotPassword(res, req, "User not found..", null);
@@ -466,7 +469,7 @@ router.post('/subscribe', function (req, res) {
 							}
 						};
 
-						SubNotification.updateOne({userID: req.user._id}, updates, function (errUpdate, updateDoc) {
+						SubNotification.updateOne({userID: req.user._id}, updates, function (errUpdate) {
 							if (errUpdate) {
 								console.log(errUpdate);
 								res.status(500).json({message: "Unable to update subscription to notifications."});
@@ -475,7 +478,7 @@ router.post('/subscribe', function (req, res) {
 							}
 						});
 					} else {
-						var new_subscription = new SubNotification({
+						let new_subscription = new SubNotification({
 							userID: req.user._id,
 							notification: {
 								endpoint: subscription.endpoint,
@@ -492,7 +495,7 @@ router.post('/subscribe', function (req, res) {
 								console.log(errSave);
 								res.status(500).json({message: "Unable to subscribe for notifications."});
 							} else {
-								res.status(200);
+								res.status(200).json({message: "Subscribed!"});
 							}
 						})
 					}
@@ -516,7 +519,7 @@ router.post('/filter', function (req, res) {
 		return new Promise((resolve) => {
 			let visitors_ids_arr = [];
 
-			if(visitors) {
+			if (visitors) {
 				visitors.forEach((visitor) => {
 					visitors_ids_arr.push(mongoose.Types.ObjectId(visitor.visitorID))
 				});
@@ -539,7 +542,7 @@ router.post('/filter', function (req, res) {
 		return new Promise((resolve) => {
 			let event_room_ids_arr = [];
 
-			if(event_rooms) {
+			if (event_rooms) {
 				event_rooms.forEach((event_room) => {
 					event_room_ids_arr.push(event_room.equipID);
 				});
@@ -614,7 +617,7 @@ router.post('/filter', function (req, res) {
 
 	function filterEventAdmin(list_element) {
 		return new Promise(function (resolve) {
-			Event.findOne({_id: list_element.id}, null, {sort:{date:-1}}, async function (errFind, event) {
+			Event.findOne({_id: list_element.id}, null, {sort: {date: -1}}, async function (errFind, event) {
 				if (!errFind) {
 					filterEvent(event).then(function (result) {
 						resolve(result);
@@ -628,7 +631,7 @@ router.post('/filter', function (req, res) {
 
 	function filterEventArchive(list_element) {
 		return new Promise(function (resolve) {
-			Archive.findOne({_id: list_element.id}, null, {sort:{date:-1}}, async function (errFind, event) {
+			Archive.findOne({_id: list_element.id}, null, {sort: {date: -1}}, async function (errFind, event) {
 				if (!errFind) {
 					filterEvent(event).then(function (result) {
 						resolve(result);
@@ -642,16 +645,16 @@ router.post('/filter', function (req, res) {
 
 	function filterEventParticipant(list_element) {
 		return new Promise(function (resolve) {
-			Event.findOne({_id: list_element.id}, null, {sort:{date:-1}}, async function (errFind, event) {
+			Event.findOne({_id: list_element.id}, null, {sort: {date: -1}}, async function (errFind, event) {
 				let participant = false;
 
 				if (req.user.permission >= 10) {
 					event.staffChosen.forEach(function (staff_member) {
-						if (staff_member.staffMemberID === req.user._id) participant = true;
+						if (staff_member.staffMemberID === req.user._id.toString()) participant = true;
 					});
 				} else if (req.user.permission === 1) {
 					event.visitors.forEach(function (visitor) {
-						if (visitor.visitorID === req.user._id) participant = true;
+						if (visitor.visitorID === req.user._id.toString()) participant = true;
 					});
 				}
 
@@ -665,6 +668,7 @@ router.post('/filter', function (req, res) {
 			});
 		});
 	}
+
 	/* End Filter functions */
 
 	if (req.user && req.user.permission >= 1) {
@@ -674,7 +678,8 @@ router.post('/filter', function (req, res) {
 			let promises = [];
 
 			switch (req.body.type) {
-				case "allList": case "archive":
+				case "allList":
+				case "archive":
 					if (req.body.list && req.body.originalList && req.user.permission >= 10) {
 						req.body.list.forEach(async function (list_element) {
 							let function_name = req.body.type === "allList" ? filterEventAdmin(list_element) : filterEventArchive(list_element);
@@ -704,13 +709,13 @@ router.post('/filter', function (req, res) {
 
 						if (promises.length > 0) {
 							Promise.all(promises).then(function () {
-								res.status(200).json({list: list,filterList: filterList});
+								res.status(200).json({list: list, filterList: filterList});
 							});
 						} else {
-							res.status(200).json({list: [],filterList: []});
+							res.status(200).json({list: [], filterList: []});
 						}
 					} else {
-						res.status(200).json({list: [],filterList: []});
+						res.status(200).json({list: [], filterList: []});
 					}
 					break;
 				case "participate":
@@ -741,27 +746,27 @@ router.post('/filter', function (req, res) {
 
 						if (promises.length > 0) {
 							Promise.all(promises).then(function () {
-								res.status(200).json({list: list,filterList: filterList});
+								res.status(200).json({list: list, filterList: filterList});
 							});
 						} else {
-							res.status(200).json({list: [],filterList: []});
+							res.status(200).json({list: [], filterList: []});
 						}
 					} else {
-						res.status(200).json({list: [],filterList: []});
+						res.status(200).json({list: [], filterList: []});
 					}
 					break;
 				case "staff":
-					if(req.body.list && req.body.originalList && req.user.permission >= 10){
-						function filterStaff(list_result,listToFilter){
-							listToFilter.forEach(function(list_element){
+					if (req.body.list && req.body.originalList && req.user.permission >= 10) {
+						function filterStaff(list_result, listToFilter) {
+							listToFilter.forEach(function (list_element) {
 								promises.push(new Promise(function (resolve) {
 									Staff.findOne({_id: list_element.id}, async function (errFind, staff_member) {
-										if(errFind) console.log(errFind);
+										if (errFind) console.log(errFind);
 
-										if((req.body.staffRole && req.body.staffRole === 'Select Staff Role') ||
-											(req.body.staffRole && staff_member.role.includes(req.body.staffRole))){
+										if ((req.body.staffRole && req.body.staffRole === 'Select Staff Role') ||
+											(req.body.staffRole && staff_member.role.includes(req.body.staffRole))) {
 											list_result.push({
-												id:staff_member._id,
+												id: staff_member._id,
 												name: staff_member.fullName,
 												email: staff_member.email
 											});
@@ -774,18 +779,18 @@ router.post('/filter', function (req, res) {
 						}
 
 
-						filterStaff(list,req.body.list);
-						filterStaff(filterList,req.body.originalList);
+						filterStaff(list, req.body.list);
+						filterStaff(filterList, req.body.originalList);
 
 						if (promises.length > 0) {
 							Promise.all(promises).then(function () {
-								res.status(200).json({list: list,filterList: filterList});
+								res.status(200).json({list: list, filterList: filterList});
 							});
 						} else {
-							res.status(200).json({list: [],filterList: []});
+							res.status(200).json({list: [], filterList: []});
 						}
 					} else {
-						res.status(200).json({list: [],filterList: []});
+						res.status(200).json({list: [], filterList: []});
 					}
 					break;
 			}
@@ -798,7 +803,7 @@ router.post('/filter', function (req, res) {
 });
 
 router.get('/calendar', async function (req, res) {
-	function getAllArchiveEvents(){
+	function getAllArchiveEvents() {
 		return new Promise(function (resolve) {
 			Archive.find({}, function (errFind, eventsDoc) {
 				if (!errFind) {
@@ -806,7 +811,7 @@ router.get('/calendar', async function (req, res) {
 					eventsDoc.forEach(function (event) {
 						let participant = false;
 
-						if(req.user.permission >= 10) {
+						if (req.user.permission >= 10) {
 							event.staffChosen.forEach(function (staff_member) {
 								if (staff_member.staffMemberID && staff_member.staffMemberID.toString() === req.user._id.toString()) participant = true;
 							});
@@ -816,7 +821,7 @@ router.get('/calendar', async function (req, res) {
 							});
 						}
 
-						if(participant || req.user.permission >= 10) {
+						if (participant || req.user.permission >= 10) {
 							events.push({
 								title: event.eventName,
 								start: event.date,
@@ -843,7 +848,7 @@ router.get('/calendar', async function (req, res) {
 					eventsDoc.forEach(function (event) {
 						let participant = false;
 
-						if(req.user.permission >= 10) {
+						if (req.user.permission >= 10) {
 							event.staffChosen.forEach(function (staff_member) {
 								if (staff_member.staffMemberID.toString() === req.user._id.toString()) participant = true;
 							});
@@ -853,7 +858,7 @@ router.get('/calendar', async function (req, res) {
 							});
 						}
 
-						if(participant || req.user.permission >= 10) {
+						if (participant || req.user.permission >= 10) {
 							events.push({
 								title: event.eventName,
 								start: event.date,
@@ -876,7 +881,7 @@ router.get('/calendar', async function (req, res) {
 		let archive_events = await getAllArchiveEvents();
 		let all_active_events = await getAllEvents();
 
-		Promise.all([archive_events,all_active_events]).then(function () {
+		Promise.all([archive_events, all_active_events]).then(function () {
 			let events = archive_events.concat(all_active_events);
 			res.render('calendar', {
 				title: "Calendar",
@@ -885,7 +890,7 @@ router.get('/calendar', async function (req, res) {
 			});
 		});
 	} else {
-		res.redirect('/login');
+		res.redirect('/');
 	}
 });
 
@@ -944,7 +949,7 @@ router.get('/export', function (req, res, next) {
 						});
 						break;
 					case export_options[1]:
-						Archive.find({},async function(errFindArchiveEvents,eventDoc){
+						Archive.find({}, async function (errFindArchiveEvents, eventDoc) {
 							if (!errFindArchiveEvents) {
 								await Promise.all(eventDoc.map(async function (event) {
 									let visitors = await genFunctions.getVisitorInfo(event.visitors);

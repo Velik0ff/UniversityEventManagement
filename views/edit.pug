@@ -2,16 +2,6 @@ extends layout
 
 block content
     .container
-        - var field_count = 0
-        - var visitor_count = 0
-        - var equipment_count = 0
-        - var staff_count = 0
-        - var room_count = 0
-        - var selected_equipment = [];
-        - var selected_rooms = [];
-        - var selected_staff = [];
-        - var selected_visitors = [];
-
         if customFields
             include includes/customFieldScript
         if staffFields
@@ -22,6 +12,16 @@ block content
             include includes/equipmentFieldScript
         if roomsFields
             include includes/roomsFieldScript
+
+        - var field_count = 0
+        - var visitor_count = 0
+        - var equipment_count = 0
+        - var staff_count = 0
+        - var room_count = 0
+        - var selected_equipment = [];
+        - var selected_rooms = [];
+        - var selected_staff = [];
+        - var selected_visitors = [];
 
         if !errorCritical
 
@@ -163,7 +163,7 @@ block content
                             if index !== 'ID'
                                 if index === 'Date' || index === 'End Date'
                                     input.form-control(id=index type="datetime-local" placeholder="Enter " + index value=info name=index)
-                                else if index === 'Permission Level' || index === 'Capacity' || index === 'Quantity'
+                                else if index === 'Permission Level' || index === 'Capacity' || index === 'Quantity' || index === 'Group Size'
                                     input.form-control(id=index type="number" placeholder="Enter " + index value=info name=index)
                                 else if index === 'Role'
                                     if user.permission >= 30
@@ -206,9 +206,15 @@ block content
                 var field_count = !{field_count};
         if staffFields
             script.
+                $(document).ready(function () {
+                    unavailable_staff = unavailable_staff.concat(!{JSON.stringify(selected_staff)});
+                });
                 var staff_count = !{staff_count};
         if visitorFields
             script.
+                $(document).ready(function () {
+                    unavailable_visitors = unavailable_visitors.concat(!{JSON.stringify(selected_visitors)});
+                });
                 var visitor_count = !{visitor_count};
         if equipmentFields
             script.
@@ -218,4 +224,7 @@ block content
                 var equipment_count = !{equipment_count};
         if roomsFields
             script.
+                $(document).ready(function () {
+                    unavailable_rooms = unavailable_rooms.concat(!{JSON.stringify(selected_rooms)});
+                });
                 var room_count = !{room_count};

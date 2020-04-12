@@ -353,7 +353,7 @@ async function sendEmail(email, password, role, reset_code, req, type) {
 				subject: "Reset Password", // Subject line
 				html: "Hello,</br></br>" +
 					"Your password reset link is:</br>" +
-					"<a href='" + link + "'>" + link + "</a></br>" +
+					"<a href='" + link + "'>" + link + "</a></br></br>" +
 					"<b>If you have not requested this email, please ignore it.</b>" +
 					"<p>" +
 					"Best regards,</br>" +

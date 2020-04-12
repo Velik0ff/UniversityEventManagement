@@ -230,7 +230,7 @@ router.post('/' + addLink, function (req, res) {
 });
 
 router.get('/' + editLink, function (req, res) {
-	if ((req.user && req.user.permission >= 20) || (req.user && req.user.permission === 1 && req.user._id === req.query.id)) {
+	if ((req.user && req.user.permission >= 20) || (req.user && req.user.permission === 1 && req.user._id.toString() === req.query.id)) {
 		User.findOne({_id: req.query.id}, function (err, user) {
 			if (!err && user) {
 				renderEdit(res,req,user);
@@ -252,7 +252,7 @@ router.get('/' + editLink, function (req, res) {
 });
 
 router.post('/' + editLink, function (req, res) {
-	if ((req.user && req.user.permission >= 20) || (req.user && req.user.permission === 1 && req.user._id === req.query.id)) {
+	if ((req.user && req.user.permission >= 20) || (req.user && req.user.permission === 1 && req.user._id.toString() === req.body.ID)) {
 		let user = {
 			_id: req.body.ID,
 			leadTeacherName: req.body["Lead Teacher Full Name"],

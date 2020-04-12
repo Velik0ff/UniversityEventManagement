@@ -236,7 +236,6 @@ async function renderAdd(res, req, staff_use, equipment_use, rooms_use, visitor_
 	let eventTypes = await genFunctions.getAllEventTypes();
 
 	Promise.all([equipment, rooms, eventTypes, visitors, staff]).then(() => {
-		console.log(rooms_use);
 		res.render('add', {
 			title: 'Add New Event',
 			error: error_msg,
@@ -418,7 +417,6 @@ router.get('/archive/view-archive-event', function (req, res) {
 				}
 
 				if (req.user.permission >= 10 || attending) {
-					console.log(event);
 					res.render('view', {
 						title: 'Viewing archive event: ' + event.eventName,
 						item: {
@@ -435,11 +433,11 @@ router.get('/archive/view-archive-event', function (req, res) {
 							Visitors: event.visitors
 						},
 						listLink: listLink,
-						deleteLink: req.user.permission >= 30 ? deleteLink : null,
+						deleteLink: req.user.permission >= 30 ? '/events/archive/'+deleteLink+'?id='+event._id : null,
 						user: req.user
 					});
 				} else {
-					res.redirect('events/participate-events-list');
+					res.redirect('participate-events-list');
 				}
 
 				resetErrorMessage();
@@ -467,7 +465,7 @@ router.get('/' + viewLink, function (req, res) {
 
 				if (req.user.permission === 1) {
 					event.visitors.forEach(function (visitor) {
-						if (visitor.visitorID === req.user._id) {
+						if (visitor.visitorID === req.user._id.toString()) {
 							attending = true;
 						}
 					});
@@ -492,8 +490,9 @@ router.get('/' + viewLink, function (req, res) {
 							visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
 						});
 
-						staff.forEach(function (staff_member){
-							if(staff_member._id.toString() === req.user._id) signedUp = true;
+						staff.forEach(function (staff_member){//
+							console.log(staff_member._id.toString() === req.user._id.toString());
+							if(staff_member._id.toString() === req.user._id.toString()) signedUp = true;
 						});
 
 						res.render('view', {
@@ -512,9 +511,9 @@ router.get('/' + viewLink, function (req, res) {
 								Visitors: visitors,
 								"Total Visitors": numberOfVisitors
 							},
-							signUpLink: signedUp ? signUpLink : null,
+							signUpLink: !signedUp && req.user.permission >= 10 ? signUpLink : null,
 							listLink: req.user.permission >= 10 ? listLink : 'participate-events-list',
-							deleteLink: req.user.permission >= 30 ? deleteLink : null,
+							deleteLink: req.user.permission >= 30 ? deleteLink+'?id='+event._id : null,
 							editLink: req.user.permission >= 20 ? editLink + '?id=' + event._id : null,
 							user: req.user
 						});
@@ -522,7 +521,7 @@ router.get('/' + viewLink, function (req, res) {
 						resetErrorMessage();
 					});
 				} else {
-					res.redirect('events/participate-events-list');
+					res.redirect('participate-events-list');
 
 					resetErrorMessage();
 				}
@@ -616,7 +615,9 @@ router.post('/' + editLink, function (req, res) {
 						reqQty: 1
 					});
 				} else if (field_post_key.includes('quantity')) {
-					equipment_posted[equipment_posted.length - 1]['reqQty'] = parseInt(field_post_value);
+					if(field_post_value !== '') {
+						equipment_posted[equipment_posted.length - 1]['reqQty'] = parseInt(field_post_value);
+					} else equipment_posted[equipment_posted.length - 1]['reqQty'] = 0;
 				}
 			}
 		}
@@ -995,7 +996,7 @@ router.post('/' + editLink, function (req, res) {
 												});
 
 												if (!attending) {
-													Staff.updateOne({_id: staffMember.staffMemberID}, {
+													Staff.updateOne({_id: staffMemberDoc._id}, {
 														$push: {
 															attendingEvents: {
 																eventID: req.body.ID,
@@ -1018,11 +1019,15 @@ router.post('/' + editLink, function (req, res) {
 												let attending = false;
 
 												visitorDoc.attendingEvents.forEach(function (attending_event) {
-													if (attending_event.eventID.toString() === req.body.ID.toString()) attending = true;
+													if (attending_event.eventID === req.body.ID) attending = true;
 												});
 
 												if (!attending) {
-													Visitor.updateOne({_id: visitorDoc.visitorID}, {$push: {attendingEvents: {eventID: req.body.ID,eventName:event_object.eventName}}}, function (errUpdateVisitor) {
+													Visitor.updateOne({_id: visitorDoc._id}, {
+														$push: {
+															attendingEvents: {
+																eventID: req.body.ID,
+																eventName:event_object.eventName}}}, function (errUpdateVisitor) {
 														if (errUpdateVisitor) console.log(errUpdateVisitor);
 													});
 												}
@@ -1156,7 +1161,6 @@ router.post('/' + addLink, async function (req, res) {
 		let roomNotUpdated = [];
 		let roomNotUpdatedNames = [];
 
-		console.log(req.body);
 		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
 			if (req.body.hasOwnProperty(field_post_key)) {
 				if (field_post_key.includes('equipment')) {
@@ -1165,7 +1169,9 @@ router.post('/' + addLink, async function (req, res) {
 						reqQty: 1
 					});
 				} else if (field_post_key.includes('quantity')) {
-					equipment_use[equipment_use.length - 1]['reqQty'] = parseInt(field_post_value);
+					if(field_post_value !== '') {
+						equipment_use[equipment_use.length - 1]['reqQty'] = parseInt(field_post_value);
+					} else equipment_use[equipment_use.length - 1]['reqQty'] = 0;
 				}
 			}
 		}
@@ -1176,7 +1182,6 @@ router.post('/' + addLink, async function (req, res) {
 					if (!errFindEquip) {
 						if (equipmentFoundDoc && equipmentFoundDoc.quantity >= equip.reqQty) {
 							let new_quantity = equipmentFoundDoc.quantity-equip.reqQty;
-							console.log(equipmentFoundDoc.quantity+":"+equip.equipID+":"+new_quantity+":"+equip.reqQty);
 							Equipment.updateOne({_id: equip.equipID}, {$set: {quantity: new_quantity}}, function (err) {
 								if (err) {
 									console.log("Failed to update quantity for id:" + equip.equipID);
@@ -1229,37 +1234,39 @@ router.post('/' + addLink, async function (req, res) {
 							let event_using_room = false;
 							let update_validated = false;
 
-							room.events.forEach(function (roomEvent) {
-								/* Get time to midnight after the event end */
-								let startDate = Date.parse(roomEvent.date);
-								let endDate = roomEvent.endDate ? Date.parse(roomEvent.endDate) : null;
-								let eventStartDate = Date.parse(req.body.date);
-								let eventEndDate = req.body.endDate ? Date.parse(req.body.endDate) : null;
-								let now = new Date();
-								let year = now.getUTCFullYear();
-								let month = now.getUTCMonth();
-								let day = now.getUTCDate();
+							if(room.events) {
+								room.events.forEach(function (roomEvent) {
+									/* Get time to midnight after the event end */
+									let startDate = Date.parse(roomEvent.date);
+									let endDate = roomEvent.endDate ? Date.parse(roomEvent.endDate) : null;
+									let eventStartDate = Date.parse(req.body.date);
+									let eventEndDate = req.body.endDate ? Date.parse(req.body.endDate) : null;
+									let now = new Date();
+									let year = now.getUTCFullYear();
+									let month = now.getUTCMonth();
+									let day = now.getUTCDate();
 
-								let startDayHour = Date.UTC(year, month, day, 0, 0, 0, 0);
-								let midnight = startDayHour + 86400000;
+									let startDayHour = Date.UTC(year, month, day, 0, 0, 0, 0);
+									let midnight = startDayHour + 86400000;
 
-								let time_left = midnight - now.getTime();
-								/* End Get time to midnight after the event end */
+									let time_left = midnight - now.getTime();
+									/* End Get time to midnight after the event end */
 
-								if (roomEvent.eventID.toString() === event._id.toString()) event_using_room = true;
+									if (roomEvent.eventID.toString() === event._id.toString()) event_using_room = true;
 
-								if (((endDate && endDate < eventStartDate) ||
-									(startDate && !endDate && ((!eventEndDate && startDate >= eventStartDate + time_left) ||
-										(startDate + time_left <= eventStartDate) ||
-										(eventEndDate && eventEndDate + time_left <= startDate)
-									))) && !event_using_room) {
+									if (((endDate && endDate < eventStartDate) ||
+										(startDate && !endDate && ((!eventEndDate && startDate >= eventStartDate + time_left) ||
+											(startDate + time_left <= eventStartDate) ||
+											(eventEndDate && eventEndDate + time_left <= startDate)
+										))) && !event_using_room) {
 
-									update_validated = true;
-								} else {
-									roomNotUpdated.push(room._id);
-									roomNotUpdatedNames.push(room.roomName);
-								}
-							});
+										update_validated = true;
+									} else {
+										roomNotUpdated.push(room._id);
+										roomNotUpdatedNames.push(room.roomName);
+									}
+								});
+							} else update_validated = true;
 
 							if (update_validated) {
 								promises.push(new Promise(function(resolve) {
@@ -1267,10 +1274,10 @@ router.post('/' + addLink, async function (req, res) {
 										{
 											$push: {
 												events: {
-													eventID: event._id,
-													eventName: event.eventName,
-													date: event.date,
-													endDate: event.endDate
+													eventID: eventDoc._id,
+													eventName: eventDoc.eventName,
+													date: eventDoc.date,
+													endDate: eventDoc.endDate
 												}
 											}
 										}, function (errUpdateRoom) {

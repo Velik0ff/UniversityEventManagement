@@ -14,8 +14,11 @@ block content
                     div.form-group
                         if !field.value
                             input.form-control(type=field.type name=field.identifier placeholder="Enter "+field.name )
-                            if field.name === 'password'
-                                a.btn.btn-link(href='/forgot-password')
+                            if field.name === 'Password'
+                                a.btn.btn-link(href='/forgot-password')='Forgot Password?'
                         else
                             input.form-control(type=field.type name=field.identifier placeholder="Enter " + field.name value=field.value)
-                button.btn.btn-primary(type="submit")=submitButton.title
+                if submitButton
+                    button.btn.btn-primary(type="submit")=submitButton.title
+                else
+                    a.btn.btn-primary(href=linkButton.link)=linkButton.title

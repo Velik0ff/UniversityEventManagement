@@ -264,7 +264,7 @@ router.post('/' + addLink, function (req, res) {
 });
 
 router.get('/' + editLink, function (req, res) {
-	if ((req.user && req.user.permission >= 30) || (req.user && req.user.permission >= 10 && req.user._id === req.query.id)) {
+	if ((req.user && req.user.permission >= 30) || (req.user && req.user.permission >= 10 && req.user._id.toString() === req.query.id)) {
 		User.findOne({_id: req.query.id}, function (err, user) {
 			if (!err && user) {
 				renderEdit(res,req,user);
@@ -286,7 +286,7 @@ router.get('/' + editLink, function (req, res) {
 });
 
 router.post('/' + editLink, function (req, res) {
-	if ((req.user && req.user.permission >= 30) || (req.user && req.user.permission >= 10 && req.user._id === req.query.id)) {
+	if ((req.user && req.user.permission >= 30) || (req.user && req.user.permission >= 10 && req.user._id.toString() === req.body.ID)) {
 		let updates = null;
 		let role = null;
 		let role_permission = -1;

@@ -9,5 +9,5 @@ self.addEventListener('push', event => {
 
 //Event on notification click (have problems almost in Chrome)
 self.addEventListener('notificationclick', () => {
-		console.log('Notificación pulsada!');
+		console.log('Notification Sent!');
 });
