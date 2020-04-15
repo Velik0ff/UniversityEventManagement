@@ -106,7 +106,10 @@ function getStaffInfo(staff_chosen){
 					staff.forEach(function(staff_member){
 						if(staff_member_chosen.staffMemberID.toString() === staff_member._id.toString()){
 							staff_members.push(staff_member);
-							staff_members[staff_members.length-1].role = staff_member_chosen.role;
+							staff_members[staff_members.length - 1]['staffMemberID'] = staff_member_chosen.staffMemberID;
+							if(staff_member_chosen.role) {
+								staff_members[staff_members.length - 1].role = staff_member_chosen.role;
+							}
 						}
 					});
 				});
@@ -237,13 +240,7 @@ function sendNotification(userID,title,body){
         body: body
    		});
 
-			console.log(payload);
-
-			webpush.sendNotification(subNotifDoc.notification, payload).then(function(result){
-				console.log(result);
-			}).catch(function(pederas){
-				console.log(pederas)
-			});
+			webpush.sendNotification(subNotifDoc.notification, payload);
 		} else {
 			console.log(errFind);
 		}

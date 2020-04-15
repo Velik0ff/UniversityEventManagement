@@ -57,7 +57,7 @@ script.
 			.attr('href', '#')
 			.attr('id', 'removeEquipmentIcon' + equipment_count)
 			.attr('style', 'position:absolute;bottom:0;left:0')
-			.attr('onclick', '$(this).parent().parent().remove()')
+			.attr('onclick', '$(this).parent().parent().remove();checkAddedEquip();')
 			.appendTo('#removeEquipmentCol' + equipment_count);
 		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeEquipmentIcon' + equipment_count);
 
@@ -91,6 +91,10 @@ script.
 				}
 
 				unavailable_equipment.push(equip._id);
+
+				$('#equipment select option[value="' + event.value + '"]').attr('disabled', true);
+
+				event.options[event.selectedIndex].removeAttribute('disabled');
 
 				checkAddedEquip();
 			}

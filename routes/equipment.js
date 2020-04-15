@@ -15,9 +15,6 @@ const exportLink = "../export?type=Equipment";
 let error_msg = null;
 let message = null;
 
-let fields = [{name: "Name", type: "text", identifier: "Name"},
-	{name: "Quantity", type: "number", identifier: "Quantity"}];
-
 /* Functions */
 function validationErr(error){
 	let local_error_msg = "";
@@ -46,17 +43,21 @@ function resetErrorMessage(){
 }
 
 function renderAdd(res,req,custom_fields){
-	res.render('add', {
+	let fields = [{name: "Name", type: "text", identifier: "typeName"},
+		{name: "Quantity", type: "number", identifier: "quantity"}];
+
+	res.render('add-edit', {
 		title: 'Add New Equipment',
 		fields: fields,
 		item: {
-			Name: req.body.Name,
-			Quantity: req.body.Quantity,
+			typeName: req.body.typeName,
+			quantity: req.body.quantity,
 		},
 		cancelLink: listLink,
-		addLink: '/equipment/' + addLink,
+		actionLink: '/equipment/' + addLink,
 		customFields: true,
 		customFieldsValues: custom_fields,
+		submitButtonText:"Add",
 		error: error_msg,
 		message: message,
 		user:req.user
@@ -66,28 +67,54 @@ function renderAdd(res,req,custom_fields){
 }
 
 function renderEdit(res,req,equipment){
-	res.render('edit', {
-		title: 'Editing equipment: ' + req.body.Name,
+	let fields = [{name: "ID", type: "text", identifier: "id", readonly: true},
+		{name: "Name", type: "text", identifier: "typeName"},
+		{name: "Quantity", type: "number", identifier: "quantity"}];
+
+	res.render('add-edit', {
+		title: 'Editing equipment: ' + equipment.typeName,
+		fields: fields,
 		error: error_msg,
-		errorCritical: false,
 		message: message,
 		item: {
-			ID: equipment._id,
-			Name: equipment.typeName,
-			Quantity: equipment.quantity,
-			customFieldsValues: equipment.customFields
+			id: equipment._id,
+			typeName: equipment.typeName,
+			quantity: equipment.quantity,
 		},
+		customFieldsValues: equipment.customFields,
 		customFields: true,
-		editLink: '/equipment/' + editLink,
-		cancelLink: viewLink + '?id=' + req.body.ID,
+		submitButtonText:"Save",
+		actionLink: '/equipment/' + editLink,
+		cancelLink: viewLink + '?id=' + equipment._id,
 		user:req.user
 	});
 
 	resetErrorMessage();
 }
+
+function getCustomFields(req){
+	let custom_fields = [];
+
+	for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
+		if (req.body.hasOwnProperty(field_post_key)) {
+			if (field_post_key !== "name" && field_post_key !== "quantity") {
+				if (field_post_key.includes('fieldName')) {
+					custom_fields.push({
+						fieldName: field_post_value,
+						fieldValue: ""
+					});
+				} else if (field_post_key.includes('fieldValue')) {
+					custom_fields[custom_fields.length - 1]['fieldValue'] = field_post_value;
+				}
+			}
+		}
+	}
+
+	return custom_fields;
+}
 /* End Functions */
 
-router.get('/'+listLink, function(req, res, next) {
+router.get('/'+listLink, function(req, res) {
 	if(req.user && req.user.permission >= 20) {
 		let columns = ["ID", "Name", "Quantity", "Options"];
 
@@ -142,7 +169,7 @@ router.get('/'+viewLink, function(req, res) {
 						customFields: equipment.customFields
 					},
 					listLink: listLink,
-					deleteLink: req.user.permission >= 30 ? deleteLink : null,
+					deleteLink: req.user.permission >= 30 ? deleteLink + '?id=' + equipment._id : null,
 					editLink: editLink + '?id=' + equipment._id,
 					user:req.user
 				});
@@ -192,43 +219,35 @@ router.post('/'+editLink, function(req, res) {
 	if(req.user && req.user.permission >= 20) {
 		let custom_fields = [];
 
-		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
-			if (req.body.hasOwnProperty(field_post_key)) {
-				if (field_post_key !== "ID" && field_post_key !== "Name" && field_post_key !== "Quantity") {
-					if (field_post_key.includes('fieldName')) {
-						custom_fields.push({
-							fieldName: field_post_value,
-							fieldValue: ""
-						});
-					} else {
-						custom_fields[custom_fields.length - 1]['fieldValue'] = field_post_value;
-					}
-				}
-			}
-		}
+		// for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
+		// 	if (req.body.hasOwnProperty(field_post_key)) {
+		// 		if (field_post_key !== "id" && field_post_key !== "typeName" && field_post_key !== "quantity") {
+		// 			if (field_post_key.includes('fieldName')) {
+		// 				custom_fields.push({
+		// 					fieldName: field_post_value,
+		// 					fieldValue: ""
+		// 				});
+		// 			} else {
+		// 				custom_fields[custom_fields.length - 1]['fieldValue'] = field_post_value;
+		// 			}
+		// 		}
+		// 	}
+		// }
 
 		let equipment = {
-			_id:req.body.ID,
-			typeName:req.body.Name,
-			quantity:req.body.Quantity,
-			customFields: custom_fields
+			_id:req.body.id,
+			typeName:req.body.typeName,
+			quantity:req.body.quantity,
+			customFields: getCustomFields(req)
 		};
-		let updates = {$set: {typeName: req.body.Name, quantity: req.body.Quantity, customFields: custom_fields}};
+		let updates = {$set: {typeName: req.body.typeName, quantity: req.body.quantity, customFields: equipment.customFields}};
+		console.log(updates);
 
-		Equipment.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
-			if (!err && update) {
-				message = "Successfully updated equipment: " + req.body.Name;
+		Equipment.updateOne({_id: req.body.id}, updates, {runValidators: true}, function (err, update) {
+			if (!err) {
+				message = "Successfully updated equipment: " + req.body.typeName;
 
 				renderEdit(res,req,equipment);
-			} else if (!update) {
-				res.render('edit', {
-					error: "Equipment not found!",
-					errorCritical: true,
-					listLink: listLink,
-					user:req.user
-				});
-
-				resetErrorMessage();
 			} else {
 				error_msg = validationErr(err);
 
@@ -257,32 +276,16 @@ router.post('/'+addLink, function(req, res) {
 		let equipment_object = {};
 		let custom_fields = [];
 
-		equipment_object['typeName'] = req.body.Name;
-		equipment_object['quantity'] = req.body.Quantity;
-
-		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
-			if (req.body.hasOwnProperty(field_post_key)) {
-				if (field_post_key !== "Name" && field_post_key !== "Quantity") {
-					if (field_post_key.includes('fieldName')) {
-						custom_fields.push({
-							fieldName: field_post_value,
-							fieldValue: ""
-						});
-					} else if (field_post_key.includes('fieldValue')) {
-						custom_fields[custom_fields.length - 1]['fieldValue'] = field_post_value;
-					}
-				}
-			}
-		}
-
-		equipment_object['customFields'] = custom_fields;
+		equipment_object['typeName'] = req.body.typeName;
+		equipment_object['quantity'] = req.body.quantity;
+		equipment_object['customFields'] = getCustomFields(req);
 
 		let new_equipment = new Equipment(equipment_object);
 
 		/* Insert new equipment */
-		new_equipment.save(function (error, equipmentDoc) {
+		new_equipment.save(function (error) {
 			if (!error) {
-				message = "Successfully added new equipment: " + req.body.Name;
+				message = "Successfully added new equipment: " + req.body.typeName;
 				console.log(message);
 			} else {
 				error_msg = validationErr(error);
@@ -300,7 +303,7 @@ router.post('/'+addLink, function(req, res) {
 
 router.get('/'+deleteLink, function(req, res) {
 	if(req.user && req.user.permission >= 30) {
-		Equipment.deleteOne({_id: req.query.id}, function (err, deleteResult) {
+		Equipment.deleteOne({_id: req.query.id}, function (err) {
 			if (!err) {
 				res.render('view', {
 					deleteMsg: "Successfully deleted equipment!",

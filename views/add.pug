@@ -27,33 +27,32 @@ block content
             div.alert.alert-danger(role="alert")=error
 
         form(method="POST" action=addLink)
-            div#fields
-                each field in fields
-                    if field.type !== "select"
-                        div.form-group
+            each field in fields
+                if field.type !== "select"
+                    div.form-group
+                        label(for=field.identifier)=field.name
+                        if field.type === "textarea"
+                            textarea.form-control(id=field.identifier placeholder="Enter " + field.name name=field.name style="resize:vertical")=item[field.name]
+                        else
+                            input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.name value=item[field.name])
+                else if field.type === "select"
+                    div.form-group
+                        if field.identifier === "role"
                             label(for=field.identifier)=field.name
-                            if field.type === "textarea"
-                                textarea.form-control(id=field.identifier placeholder="Enter " + field.name name=field.name style="resize:vertical")=item[field.name]
-                            else
-                                input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.name value=item[field.name])
-                    else if field.type === "select"
-                        div.form-group
-                            if field.identifier === "role"
-                                label(for=field.identifier)=field.name
-                                select.form-control(name=field.name)
-                                    each option in roles
-                                        if item.Role == option._id
-                                            option(value=option._id selected)=option.roleName
-                                        else
-                                            option(value=option._id)=option.roleName
-                            if field.identifier === "eventType"
-                                label(for=field.identifier)=field.name
-                                select.form-control(name=field.name)
-                                    each option in eventTypes
-                                        if selectedEventType == option._id
-                                            option(value=option._id selected)=option.eventTypeName
-                                        else
-                                            option(value=option._id)=option.eventTypeName
+                            select.form-control(name=field.name)
+                                each option in roles
+                                    if item.Role == option._id
+                                        option(value=option._id selected)=option.roleName
+                                    else
+                                        option(value=option._id)=option.roleName
+                        if field.identifier === "eventType"
+                            label(for=field.identifier)=field.name
+                            select.form-control(name=field.name)
+                                each option in eventTypes
+                                    if selectedEventType == option._id
+                                        option(value=option._id selected)=option.eventTypeName
+                                    else
+                                        option(value=option._id)=option.eventTypeName
 
             if roomsFields
                 div#rooms

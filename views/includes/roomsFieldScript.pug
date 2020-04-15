@@ -26,7 +26,7 @@ script.
 		let select = $('#selectRoom' + room_count);
 		all_rooms.forEach(function (room) {
 			if (unavailable_rooms.includes(room._id)) {
-				select.append('<option value="' + room._id + '" disabled>' + room.roomName + '</option>');
+				select.append('<option value="'+room._id+'" disabled>' + room.roomName + '</option>');
 			} else {
 				select.append('<option value="' + room._id + '">' + room.roomName + '</option>');
 			}
@@ -42,7 +42,7 @@ script.
 			.attr('href', '#')
 			.attr('id', 'removeRoomIcon' + room_count)
 			.attr('style', 'position:absolute;bottom:0;left:0')
-			.attr('onclick', '$(this).parent().parent().remove()')
+			.attr('onclick', '$(this).parent().parent().remove();checkAddedRooms();')
 			.appendTo('#removeRoomCol' + room_count);
 		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeRoomIcon' + room_count);
 
@@ -68,11 +68,11 @@ script.
 	function selectedRoom(event) {
 		if (!unavailable_rooms.includes(event.value)) {
 			unavailable_rooms.push(event.value);
+
+			$('#rooms select option[value="' + event.value + '"]').attr('disabled', true);
+
+			event.options[event.selectedIndex].removeAttribute('disabled');
 		}
-
-		$('#rooms select option[value="' + event.value + '"]').attr('disabled', true);
-
-		event.options[event.selectedIndex].removeAttribute('disabled');
 
 		checkAddedRooms();
 	}
@@ -80,41 +80,58 @@ script.
 	function checkAddedRooms() {
 		for (let i = 0; i < unavailable_rooms.length; i++) {
 			let option = $('#rooms select option[value="' + unavailable_rooms[i] + '"]:selected');
-			if (option.length < 1 && checkRoomAvailability(unavailable_rooms[i])) {
-				$('#staff select option[value="' + unavailable_rooms[i] + '"]').removeAttr('disabled');
+			let room_available = false;
+
+			all_rooms.forEach(function(room){
+				if(room._id == unavailable_rooms[i] && checkRoomAvailability(room)) room_available = true;
+			});
+
+			console.log(option.length+" "+unavailable_rooms[i]+" "+room_available);
+			if (option.length < 1 && room_available) {
+				console.log(true);
+				$('#rooms select option[value="' + unavailable_rooms[i] + '"]').removeAttr('disabled');
 				unavailable_rooms.splice(i, 1);
 			}
 		}
 	}
 
 	function checkRoomAvailability(room){
-		if(room && room.events) {
-			if(room.events.length === 0) return true;
+		if(room) {
+			if(room.events && room.events.length === 0 || $("#date").val() === "") {
+				return true;
+			} else if(room.events && room.events.length > 0) {
+				let room_available = false;
 
-			room.events.forEach(function (roomEvent) {
-				let startDate = Date.parse(roomEvent.date);
-				let endDate = roomEvent.endDate ? Date.parse(roomEvent.endDate) : null;
-				let eventStartDate = Date.parse($("#date").val());
-				let eventEndDate = $("#endDate").val() ? Date.parse($("#endDate").val()) : null;
-				let now = new Date();
-				let year = now.getUTCFullYear();
-				let month = now.getUTCMonth();
-				let day = now.getUTCDate();
+				room.events.forEach(function (roomEvent) {
+					/* Get time to midnight after the event end */
+					let startDate = Date.parse(roomEvent.date);
+					let endDate = roomEvent.endDate ? Date.parse(roomEvent.endDate) : false;
+					let eventStartDate = Date.parse($("#date").val());
+					let eventEndDate = $("#endDate").val() ? Date.parse($("#endDate").val()) : false;
+					let now = new Date();
+					let year = now.getUTCFullYear();
+					let month = now.getUTCMonth();
+					let day = now.getUTCDate();
 
-				let startDayHour = Date.UTC(year, month, day, 0, 0, 0, 0);
-				let midnight = startDayHour + 86400000;
+					let startDayHour = Date.UTC(year, month, day, 0, 0, 0, 0);
+					let midnight = startDayHour + 86400000;
 
-				let time_left = midnight - now.getTime();
+					let time_left = midnight - now.getTime();
+					/* End Get time to midnight after the event end */
 
-				if (((endDate && endDate < eventStartDate) ||
-						(startDate && !endDate && ((!eventEndDate && startDate >= eventStartDate + time_left) ||
-								(startDate + time_left <= eventStartDate) ||
-								(eventEndDate && eventEndDate + time_left <= startDate)
-						)))) {
-					return true;
-				} else {
-					return false;
-				}
-			});
-		} else return false;
+					if (((endDate && endDate < eventStartDate) ||
+							(startDate && !endDate && ((!eventEndDate && startDate >= eventStartDate + time_left) ||
+									(startDate + time_left <= eventStartDate) ||
+									(eventEndDate && eventEndDate + time_left <= startDate)
+							)))) {
+						room_available = true;
+					}
+				});
+
+				return room_available;
+			} else return true;
+		} else {
+			console.log("pedal2");
+			return false;
+		}
 	}

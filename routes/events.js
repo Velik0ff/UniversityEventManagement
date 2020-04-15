@@ -25,12 +25,6 @@ let signUpLink = "sign-up-event";
 let error_msg = null;
 let message = null;
 let columns = ["ID", "Event Name", "Options"];
-let fields = [{name: "Event Name", type: "text", identifier: "name"},
-	{name: "Description", type: "textarea", identifier: "description"},
-	{name: "Location", type: "text", identifier: "location"},
-	{name: "Date", type: "datetime-local", identifier: "date"},
-	{name: "End Date", type: "datetime-local", identifier: "endDate"},
-	{name: "Event Type", type: "select", identifier: "eventType"}];
 
 webpush.setVapidDetails(
 	"mailto:sglvelik@liv.ac.uk",
@@ -200,36 +194,140 @@ function listElement(res, req, allEventTypes, eventList, title, type) {
 	});
 }
 
+// function renderEdit(res, req, event, posted_equipment, posted_rooms, posted_staff_use, posted_visitors, eventTypes, staff, equipment, rooms, visitors) {
+// 	let fields = [{name: "Event Name", type: "text", identifier: "name"},
+// 		{name: "Description", type: "textarea", identifier: "description"},
+// 		{name: "Location", type: "text", identifier: "location"},
+// 		{name: "Date", type: "datetime-local", identifier: "date"},
+// 		{name: "End Date", type: "datetime-local", identifier: "endDate"},
+// 		{name: "Event Type", type: "select", identifier: "eventType"}];
+// 	res.render('edit', {
+// 		title: 'Editing event: ' + event.eventName,
+// 		error: error_msg,
+// 		message: message,
+// 		item: {
+// 			ID: event._id,
+// 			"Event Name": event.eventName,
+// 			"Description": event.eventDescription,
+// 			Location: event.location,
+// 			Date: moment(event.date).format('YYYY-MM-DDTHH:mm'),
+// 			"End Date": event.endDate ? moment(event.endDate).format('YYYY-MM-DDTHH:mm') : "",
+// 			"Event Type": event.eventType,
+// 			Equipment: posted_equipment,
+// 			Rooms: posted_rooms,
+// 			Staff: posted_staff_use,
+// 			Visitors: posted_visitors
+// 		},
+// 		eventTypes: eventTypes,
+// 		staff: staff,
+// 		equipment: equipment,
+// 		rooms: rooms,
+// 		visitors: visitors,
+// 		customFields: false,
+// 		equipmentFields: true,
+// 		roomsFields: true,
+// 		staffFields: true,
+// 		visitorFields: true,
+// 		editLink: '/events/' + editLink,
+// 		cancelLink: viewLink + '?id=' + event._id,
+// 		user: req.user
+// 	});
+//
+// 	resetErrorMessage();
+// }
+//
+// async function renderAdd(res, req, staff_use, equipment_use, rooms_use, visitor_attending) {
+// 	let fields = [{name: "Event Name", type: "text", identifier: "name"},
+// 		{name: "Description", type: "textarea", identifier: "description"},
+// 		{name: "Location", type: "text", identifier: "location"},
+// 		{name: "Date", type: "datetime-local", identifier: "date"},
+// 		{name: "End Date", type: "datetime-local", identifier: "endDate"},
+// 		{name: "Event Type", type: "select", identifier: "eventType"}];
+// 	let visitors = await genFunctions.getAllVisitor();
+// 	let equipment = await genFunctions.getAllEquipment();
+// 	let rooms = await genFunctions.getAllRooms();
+// 	let staff = await genFunctions.getAllStaff();
+// 	let eventTypes = await genFunctions.getAllEventTypes();
+//
+// 	Promise.all([equipment, rooms, eventTypes, visitors, staff]).then(() => {
+// 		res.render('add', {
+// 			title: 'Add New Event',
+// 			error: error_msg,
+// 			message: message,
+// 			fields: fields,
+// 			cancelLink: listLink,
+// 			customFields: false,
+// 			roomsFields: true,
+// 			equipmentFields: true,
+// 			staffFields: true,
+// 			visitorFields: true,
+// 			visitors: visitors,
+// 			equipment: equipment,
+// 			rooms: rooms,
+// 			eventTypes: eventTypes,
+// 			staff: staff,
+// 			item: {
+// 				ID: req.body.ID,
+// 				"Event Name": req.body['Event Name'],
+// 				"Description": req.body['Description'],
+// 				Location: req.body['Location'],
+// 				Date: req.body.Date ? moment(req.body.Date).format('YYYY-MM-DDTHH:mm') : "",
+// 				"End Date": req.body['End Date'] ? moment(req.body['End Date']).format('YYYY-MM-DDTHH:mm') : "",
+// 				"Event Type": req.body['Event Type'],
+// 			},
+// 			selectedEventType: req.body['Event Type'],
+// 			selectedStaff: staff_use,
+// 			selectedEquip: equipment_use,
+// 			selectedRooms: rooms_use,
+// 			selectedVisitors: visitor_attending,
+// 			user: req.user
+// 		});
+//
+// 		resetErrorMessage();
+// 	});
+// }
+
 function renderEdit(res, req, event, posted_equipment, posted_rooms, posted_staff_use, posted_visitors, eventTypes, staff, equipment, rooms, visitors) {
-	res.render('edit', {
+	let fields = [{name: "ID", type: "text", identifier: "id", readonly:true},
+		{name: "Event Name", type: "text", identifier: "eventName"},
+		{name: "Description", type: "textarea", identifier: "description"},
+		{name: "Location", type: "text", identifier: "location"},
+		{name: "Date", type: "datetime-local", identifier: "date"},
+		{name: "End Date", type: "datetime-local", identifier: "endDate"},
+		{name: "Event Type", type: "select", identifier: "eventType"}];
+
+	console.log(posted_visitors)
+	res.render('add-edit', {
 		title: 'Editing event: ' + event.eventName,
 		error: error_msg,
 		message: message,
-		item: {
-			ID: event._id,
-			"Event Name": event.eventName,
-			"Description": event.eventDescription,
-			Location: event.location,
-			Date: moment(event.date).format('YYYY-MM-DDTHH:mm'),
-			"End Date": event.endDate ? moment(event.endDate).format('YYYY-MM-DDTHH:mm') : "",
-			"Event Type": event.eventType,
-			Equipment: posted_equipment,
-			Rooms: posted_rooms,
-			Staff: posted_staff_use,
-			Visitors: posted_visitors
-		},
-		eventTypes: eventTypes,
-		staff: staff,
-		equipment: equipment,
-		rooms: rooms,
-		visitors: visitors,
+		fields: fields,
+		actionLink:'/events/' + editLink,
+		submitButtonText: "Save",
+		cancelLink: viewLink + '?id=' + event._id,
 		customFields: false,
-		equipmentFields: true,
 		roomsFields: true,
+		equipmentFields: true,
 		staffFields: true,
 		visitorFields: true,
-		editLink: '/events/' + editLink,
-		cancelLink: viewLink + '?id=' + event._id,
+		visitors: visitors,
+		equipment: equipment,
+		rooms: rooms,
+		eventTypes: eventTypes,
+		staff: staff,
+		item: {
+			id: event._id,
+			eventName: event.eventName,
+			description: event.eventDescription,
+			location: event.location,
+			date: moment(event.date).format('YYYY-MM-DDTHH:mm'),
+			endDate: event.endDate ? moment(event.endDate).format('YYYY-MM-DDTHH:mm') : "",
+		},
+		selectedEventType: event.eventType,
+		selectedStaff: posted_staff_use,
+		selectedEquip: posted_equipment,
+		selectedRooms: posted_rooms,
+		selectedVisitors: posted_visitors,
 		user: req.user
 	});
 
@@ -237,6 +335,13 @@ function renderEdit(res, req, event, posted_equipment, posted_rooms, posted_staf
 }
 
 async function renderAdd(res, req, staff_use, equipment_use, rooms_use, visitor_attending) {
+	let fields = [{name: "Event Name", type: "text", identifier: "eventName"},
+		{name: "Description", type: "textarea", identifier: "description"},
+		{name: "Location", type: "text", identifier: "location"},
+		{name: "Date", type: "datetime-local", identifier: "date"},
+		{name: "End Date", type: "datetime-local", identifier: "endDate"},
+		{name: "Event Type", type: "select", identifier: "eventType"}];
+
 	let visitors = await genFunctions.getAllVisitor();
 	let equipment = await genFunctions.getAllEquipment();
 	let rooms = await genFunctions.getAllRooms();
@@ -244,11 +349,13 @@ async function renderAdd(res, req, staff_use, equipment_use, rooms_use, visitor_
 	let eventTypes = await genFunctions.getAllEventTypes();
 
 	Promise.all([equipment, rooms, eventTypes, visitors, staff]).then(() => {
-		res.render('add', {
+		res.render('add-edit', {
 			title: 'Add New Event',
 			error: error_msg,
 			message: message,
 			fields: fields,
+			actionLink: '/events/' + addLink,
+			submitButtonText: "Add",
 			cancelLink: listLink,
 			customFields: false,
 			roomsFields: true,
@@ -261,19 +368,17 @@ async function renderAdd(res, req, staff_use, equipment_use, rooms_use, visitor_
 			eventTypes: eventTypes,
 			staff: staff,
 			item: {
-				ID: req.body.ID,
-				"Event Name": req.body['Event Name'],
-				"Description": req.body['Description'],
-				Location: req.body['Location'],
-				Date: req.body.Date ? moment(req.body.Date).format('YYYY-MM-DDTHH:mm') : "",
-				"End Date": req.body['End Date'] ? moment(req.body['End Date']).format('YYYY-MM-DDTHH:mm') : "",
-				"Event Type": req.body['Event Type'],
+				eventName: message ? req.body.eventName : null,
+				description: message ? req.body.description : null,
+				location: message ? req.body.location : null,
+				date: message ? req.body.date ? moment(req.body.date).format('YYYY-MM-DDTHH:mm') : null : null,
+				endDate: message ? req.body.endDate ? moment(req.body.endDate).format('YYYY-MM-DDTHH:mm') : null : null,
 			},
-			selectedEventType: req.body['Event Type'],
-			selectedStaff: staff_use,
-			selectedEquip: equipment_use,
-			selectedRooms: rooms_use,
-			selectedVisitors: visitor_attending,
+			selectedEventType: message ? req.body.eventType : null,
+			selectedStaff: message ? staff_use : null,
+			selectedEquip: message ? equipment_use : null,
+			selectedRooms: message ? rooms_use : null,
+			selectedVisitors: message ? visitor_attending : null,
 			user: req.user
 		});
 
@@ -634,10 +739,9 @@ router.post('/' + editLink, function (req, res) {
 	}
 
 	if (req.user && req.user.permission >= 20) {
-		Event.findOne({_id: req.body.ID}, async function (errFindEvent, event) {
+		Event.findOne({_id: req.body.id}, async function (errFindEvent, event) {
 			if (!errFindEvent && event) {
 				let equipment_use = await genFunctions.getEquipmentInfo(event.equipment);
-				let rooms_user = await genFunctions.getRoomInfo(event.rooms);
 				let event_type = await genFunctions.getEventType(event.eventTypeID);
 				let staff_use = await genFunctions.getStaffInfo(event.staffChosen);
 				let visitor_attending = await genFunctions.getVisitorInfo(event.visitors);
@@ -674,62 +778,63 @@ router.post('/' + editLink, function (req, res) {
 										resolve();
 									} else if (roomFindDoc) {
 										let event_using_room = false;
-										let update_validated = false;
 
-										roomFindDoc.events.forEach(function (roomEvent) {
-											/* Get time to midnight after the event end */
-											let startDate = Date.parse(roomEvent.date);
-											let endDate = roomEvent.endDate ? Date.parse(roomEvent.endDate) : null;
-											let eventStartDate = Date.parse(req.body.date);
-											let eventEndDate = req.body.endDate ? Date.parse(req.body.endDate) : null;
-											let now = new Date();
-											let year = now.getUTCFullYear();
-											let month = now.getUTCMonth();
-											let day = now.getUTCDate();
+										if(roomFindDoc.events.length > 0) {
+											roomFindDoc.events.forEach(function (roomEvent) {
+												/* Get time to midnight after the event end */
+												let startDate = Date.parse(roomEvent.date);
+												let endDate = roomEvent.endDate ? Date.parse(roomEvent.endDate) : null;
+												let eventStartDate = Date.parse(req.body.date);
+												let eventEndDate = req.body.endDate ? Date.parse(req.body.endDate) : null;
+												let now = new Date();
+												let year = now.getUTCFullYear();
+												let month = now.getUTCMonth();
+												let day = now.getUTCDate();
 
-											let startDayHour = Date.UTC(year, month, day, 0, 0, 0, 0);
-											let midnight = startDayHour + 86400000;
+												let startDayHour = Date.UTC(year, month, day, 0, 0, 0, 0);
+												let midnight = startDayHour + 86400000;
 
-											let time_left = midnight - now.getTime();
-											/* End Get time to midnight after the event end */
+												let time_left = midnight - now.getTime();
+												/* End Get time to midnight after the event end */
 
-											if (roomEvent.eventID.toString() === event._id.toString()) event_using_room = true;
+												if (roomEvent.eventID.toString() === event._id.toString()) event_using_room = true;
 
-											if (((endDate && endDate < eventStartDate) ||
-												(startDate && !endDate && ((!eventEndDate && startDate >= eventStartDate + time_left) ||
-													(startDate + time_left <= eventStartDate) ||
-													(eventEndDate && eventEndDate + time_left <= startDate)
-												))) && !event_using_room) {
+												if (((endDate && endDate < eventStartDate) ||
+													(startDate && !endDate && ((!eventEndDate && startDate >= eventStartDate + time_left) ||
+														(startDate + time_left <= eventStartDate) ||
+														(eventEndDate && eventEndDate + time_left <= startDate)
+													)))) {
 
-												update_validated = true;
-											} else {
-												roomNotUpdated.push(room._id);
-												roomNotUpdatedNames.push(room.roomName);
-											}
-										});
+													Room.updateOne({_id: room._id},
+														{
+															$push: {
+																events: {
+																	eventID: event._id,
+																	eventName: event.eventName,
+																	date: event.date,
+																	endDate: event.endDate
+																}
+															}
+														}, function (errUpdateRoom) {
+															if (errUpdateRoom) {
+																console.log("Error while updating room:" + errUpdateRoom);
 
-										if (update_validated) {
-											Room.updateOne({_id: room._id},
-												{
-													$push: {
-														events: {
-															eventID: event._id,
-															eventName: event.eventName,
-															date: event.date,
-															endDate: event.endDate
-														}
-													}
-												}, function (errUpdateRoom) {
-													if (errUpdateRoom) {
-														console.log(errUpdateRoom);
+																roomNotUpdated.push(room._id);
+																roomNotUpdatedNames.push(room.roomName);
+															}
 
-														roomNotUpdated.push(room._id);
-														roomNotUpdatedNames.push(room.roomName);
-													}
+															resolve();
+														});
+												} else if (event_using_room) {
+													resolve();
+												} else {
+													roomNotUpdated.push(room._id);
+													roomNotUpdatedNames.push(room.roomName);
 
 													resolve();
-												});
-										}
+												}
+											});
+										} else resolve();
 									} else {
 										roomNotUpdated.push(room._id);
 										resolve();
@@ -950,6 +1055,8 @@ router.post('/' + editLink, function (req, res) {
 
 											equipmentNotUpdated.push(posted_equip.equipID);
 											equipmentNotUpdatedNames.push(equipFindDoc.typeName);
+
+											resolve();
 										}
 									} else {
 										console.log(errFindEquip);
@@ -967,16 +1074,16 @@ router.post('/' + editLink, function (req, res) {
 					Promise.all(promisesUpdate).then(function () {
 						let event_object = {
 							_id: event._id,
-							eventName: req.body['Event Name'],
-							eventDescription: req.body['Description'],
-							date: moment(req.body.Date).format('YYYY-MM-DDTHH:mm'),
-							endDate: req.body['End Date'] ? moment(req.body['End Date']).format('YYYY-MM-DDTHH:mm') : "",
+							eventName: req.body.eventName,
+							eventDescription: req.body.description,
+							date: moment(req.body.date).format('YYYY-MM-DDTHH:mm'),
+							endDate: req.body.endDate ? moment(req.body.endDate).format('YYYY-MM-DDTHH:mm') : "",
 							eventType: event_type._id,
-							location: req.body.Location
+							location: req.body.location
 						};
 
 						if (!(equipmentNotUpdated.length > 0) && !(roomNotUpdated.length > 0)) {
-							let event_type_update = {
+							let event_object_update = {
 								$set: {
 									eventName: event_object.eventName,
 									equipment: posted_equipment,
@@ -990,8 +1097,7 @@ router.post('/' + editLink, function (req, res) {
 								}
 							};
 
-
-							Event.updateOne({_id: req.body.ID}, event_type_update, function (errEventUpdate) {
+							Event.updateOne({_id: req.body.id}, event_object_update, function (errEventUpdate,updateDoc) {
 								if (!errEventUpdate) {
 									/* Notifications and emails */
 									posted_staff_use.forEach(function (staffMember) {
@@ -1000,14 +1106,14 @@ router.post('/' + editLink, function (req, res) {
 												let attending = false;
 
 												staffMemberDoc.attendingEvents.forEach(function (attending_event) {
-													if (attending_event.eventID.toString() === req.body.ID.toString()) attending = true;
+													if (attending_event.eventID.toString() === req.body.id.toString()) attending = true;
 												});
 
 												if (!attending) {
 													Staff.updateOne({_id: staffMemberDoc._id}, {
 														$push: {
 															attendingEvents: {
-																eventID: req.body.ID,
+																eventID: req.body.id,
 																role: staffMember.role
 															}
 														}
@@ -1027,14 +1133,14 @@ router.post('/' + editLink, function (req, res) {
 												let attending = false;
 
 												visitorDoc.attendingEvents.forEach(function (attending_event) {
-													if (attending_event.eventID === req.body.ID) attending = true;
+													if (attending_event.eventID === req.body.id) attending = true;
 												});
 
 												if (!attending) {
 													Visitor.updateOne({_id: visitorDoc._id}, {
 														$push: {
 															attendingEvents: {
-																eventID: req.body.ID,
+																eventID: req.body.id,
 																eventName:event_object.eventName}}}, function (errUpdateVisitor) {
 														if (errUpdateVisitor) console.log(errUpdateVisitor);
 													});
@@ -1052,14 +1158,14 @@ router.post('/' + editLink, function (req, res) {
 									error_msg = "Unknown error occurred, please try again.";
 
 									recoverQuantity(previousQuantity);
-									recoverRoomsAvailability(roomNotUpdated,req.body.ID);
+									recoverRoomsAvailability(roomNotUpdated,req.body.id);
 								}
 
 								renderEdit(res, req, event_object, posted_equipment, posted_rooms, posted_staff_use, posted_visitors, eventTypes, staff, equipment, rooms, visitors);
 							});
 						} else {
 							recoverQuantity(previousQuantity);
-							recoverRoomsAvailability(roomNotUpdated,req.body.ID);
+							recoverRoomsAvailability(roomNotUpdated,req.body.id);
 
 							if (equipmentNotUpdatedNames.length > 0) {
 								error_msg = 'Unable to edit event because the equipment with names: ';
@@ -1224,15 +1330,15 @@ router.post('/' + addLink, async function (req, res) {
 		Promise.all(promises).then(function () {
 			if (!(equipmentNotUpdated.length > 0)) {
 				let new_event = new Event({
-					eventName: req.body['Event Name'],
-					eventDescription: req.body['Description'],
+					eventName: req.body.eventName,
+					eventDescription: req.body.description,
 					equipment: equipment_use,
 					rooms: rooms_use,
-					eventTypeID: req.body['Event Type'],
+					eventTypeID: req.body.eventType,
 					staffChosen: staff_use,
-					date: req.body.Date,
-					endDate: req.body['End Date'],
-					location: req.body.Location,
+					date: req.body.date,
+					endDate: req.body.endDate,
+					location: req.body.location,
 					visitors: visitor_attending
 				});
 
@@ -1246,9 +1352,9 @@ router.post('/' + addLink, async function (req, res) {
 								room.events.forEach(function (roomEvent) {
 									/* Get time to midnight after the event end */
 									let startDate = Date.parse(roomEvent.date);
-									let endDate = roomEvent.endDate ? Date.parse(roomEvent.endDate) : null;
+									let endDate = roomEvent.endDate ? Date.parse(roomEvent.endDate) : false;
 									let eventStartDate = Date.parse(req.body.date);
-									let eventEndDate = req.body.endDate ? Date.parse(req.body.endDate) : null;
+									let eventEndDate = req.body.endDate ? Date.parse(req.body.endDate) : false;
 									let now = new Date();
 									let year = now.getUTCFullYear();
 									let month = now.getUTCMonth();
@@ -1260,13 +1366,11 @@ router.post('/' + addLink, async function (req, res) {
 									let time_left = midnight - now.getTime();
 									/* End Get time to midnight after the event end */
 
-									if (roomEvent.eventID.toString() === event._id.toString()) event_using_room = true;
-
 									if (((endDate && endDate < eventStartDate) ||
 										(startDate && !endDate && ((!eventEndDate && startDate >= eventStartDate + time_left) ||
 											(startDate + time_left <= eventStartDate) ||
 											(eventEndDate && eventEndDate + time_left <= startDate)
-										))) && !event_using_room) {
+										)))) {
 
 										update_validated = true;
 									} else {
@@ -1357,7 +1461,7 @@ router.post('/' + addLink, async function (req, res) {
 
 								error_msg = error_msg.concat(' are not available, please revise all the data again and try to add event again.');
 							} else {
-								message = "Successfully create new event: " + req.body['Event Name'];
+								message = "Successfully create new event: " + req.body.eventName;
 							}
 
 							renderAdd(res,req,staff_use,equipment_use,rooms_use,visitor_attending);
