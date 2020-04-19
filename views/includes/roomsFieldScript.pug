@@ -3,6 +3,19 @@ script.
 
 	let unavailable_rooms = [];
 
+	$(document).ready(function(){
+		let room_selects = $("#rooms select");
+		for(let i = 0; i<room_selects.length; i++){
+			let selects = $('#rooms select option[value="' + room_selects[i].value + '"]:selected');
+			if(selects.length >= 1) {
+				let option = $('#rooms select option[value="' + room_selects[i].value + '"]');
+				option.attr('disabled', true);
+
+				selects[0].removeAttribute('disabled');
+			}
+		}
+	});
+
 	function addRoomField() {
 		all_rooms.forEach(function(room){
 			if (!checkRoomAvailability(room)) {
@@ -86,9 +99,7 @@ script.
 				if(room._id == unavailable_rooms[i] && checkRoomAvailability(room)) room_available = true;
 			});
 
-			console.log(option.length+" "+unavailable_rooms[i]+" "+room_available);
 			if (option.length < 1 && room_available) {
-				console.log(true);
 				$('#rooms select option[value="' + unavailable_rooms[i] + '"]').removeAttr('disabled');
 				unavailable_rooms.splice(i, 1);
 			}
@@ -131,7 +142,6 @@ script.
 				return room_available;
 			} else return true;
 		} else {
-			console.log("pedal2");
 			return false;
 		}
 	}

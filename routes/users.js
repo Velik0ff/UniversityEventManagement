@@ -21,10 +21,6 @@ const exportLink = "../export?type=Staff";
 let error_msg = null;
 let message = null;
 let password_to_insert = short().new();
-let fields = [{name: "Name", type: "text", identifier: "name"},
-	{name: "Email", type: "email", identifier: "email"},
-	{name: "Phone", type: "tel", identifier: "phone"},
-	{name: "Role", type: "select", identifier: "role"}];
 
 /* Functions */
 function validationErr(error) {
@@ -73,20 +69,72 @@ function getStaffRoles(){
 	});
 }
 
+// function renderAdd(res,req){
+// 	getStaffRoles().then(function(roles) {
+// 		res.render('add', {
+// 			title: 'Add New Staff Member',
+// 			fields: fields,
+// 			item: {
+// 				Name: req.body.Name,
+// 				Email: req.body.Email,
+// 				Phone: req.body.Phone,
+// 				Role: req.body.Role
+// 			},
+// 			roles: roles,
+// 			cancelLink: listLink,
+// 			addLink: '/users/' + addLink,
+// 			customFields: false,
+// 			error: error_msg,
+// 			message: message,
+// 			user: req.user
+// 		});
+//
+// 		resetErrorMessage();
+// 	});
+// }
+//
+// function renderEdit(res,req,user){
+// 	getStaffRoles().then(function(roles){
+// 		res.render('edit', {
+// 			title: 'Editing staff member: ' + user.fullName,
+// 			error: null,
+// 			item: {
+// 				ID: user._id,
+// 				Name: user.fullName,
+// 				Email: user.email,
+// 				Phone: user.phone,
+// 				Role: user.role
+// 			},
+// 			roles: roles,
+// 			editLink: '/users/' + editLink,
+// 			cancelLink: req.user.permission >= 10 ? viewLink + '?id=' + user._id : '../events/view-list',
+// 			user: req.user
+// 		});
+//
+// 		resetErrorMessage();
+// 	});
+// }
+
 function renderAdd(res,req){
+	let fields = [{name: "Name", type: "text", identifier: "name"},
+		{name: "Email", type: "email", identifier: "email"},
+		{name: "Phone", type: "tel", identifier: "phone"},
+		{name: "Role", type: "select", identifier: "role"}];
+
 	getStaffRoles().then(function(roles) {
-		res.render('add', {
+		res.render('add-edit', {
 			title: 'Add New Staff Member',
 			fields: fields,
 			item: {
-				Name: req.body.Name,
-				Email: req.body.Email,
-				Phone: req.body.Phone,
-				Role: req.body.Role
+				name: req.body.name,
+				email: req.body.email,
+				phone: req.body.phone,
+				role: req.body.role
 			},
 			roles: roles,
 			cancelLink: listLink,
-			addLink: '/users/' + addLink,
+			actionLink: '/users/' + addLink,
+			submitButtonText:"Add",
 			customFields: false,
 			error: error_msg,
 			message: message,
@@ -98,19 +146,28 @@ function renderAdd(res,req){
 }
 
 function renderEdit(res,req,user){
+	let fields = [{name: "ID", type: "text", identifier: "id", readonly: true},
+		{name: "Name", type: "text", identifier: "name"},
+		{name: "Email", type: "email", identifier: "email"},
+		{name: "Phone", type: "tel", identifier: "phone"},
+		{name: "Role", type: "select", identifier: "role"}];
+
 	getStaffRoles().then(function(roles){
-		res.render('edit', {
+		res.render('add-edit', {
 			title: 'Editing staff member: ' + user.fullName,
-			error: null,
+			fields: fields,
+			error: error_msg,
+			message: message,
 			item: {
-				ID: user._id,
-				Name: user.fullName,
-				Email: user.email,
-				Phone: user.phone,
-				Role: user.role
+				id: user._id,
+				name: user.fullName,
+				email: user.email,
+				phone: user.phone,
+				role: user.role
 			},
 			roles: roles,
-			editLink: '/users/' + editLink,
+			submitButtonText:"Save",
+			actionLink: '/users/' + editLink,
 			cancelLink: req.user.permission >= 10 ? viewLink + '?id=' + user._id : '../events/view-list',
 			user: req.user
 		});
@@ -189,6 +246,7 @@ router.get('/' + viewLink, function (req, res) {
 						ID: user._id,
 						Name: user.fullName,
 						Email: user.email,
+						Phone: user.phone,
 						Role: user.role
 					},
 					listLink: listLink,
@@ -226,7 +284,7 @@ router.get('/' + addLink, function (req, res) {
 
 router.post('/' + addLink, function (req, res) {
 	if (req.user && req.user.permission >= 30) {
-		Role.findOne({_id:req.body.Role},function(errFindRole,roleDoc){
+		Role.findOne({_id:req.body.role},function(errFindRole,roleDoc){
 			let role = null;
 
 			if(errFindRole) console.log(errFindRole);
@@ -234,20 +292,20 @@ router.post('/' + addLink, function (req, res) {
 			if(!errFindRole && roleDoc) role = roleDoc.roleName;
 
 			let new_user = new User({ // new user object to be inserted
-				fullName: req.body.Name,
-				email: req.body.Email,
+				fullName: req.body.name,
+				email: req.body.email,
 				password: password_to_insert,
 				role: role,
 				permission: -1,
-				phone: req.body.Phone ? req.body.Phone : null
+				phone: req.body.phone ? req.body.phone : null
 			});
 
 			/* Insert new user */
 
 			new_user.save(function (error) {
 				if (!error) {
-					message = "Successfully added new user with email: " + req.body.Email;
-					genFunctions.sendEmail(req.body.Email, password_to_insert, req.body.Role, null, null, 'staff');
+					message = "Successfully added new user with email: " + req.body.email;
+					genFunctions.sendEmail(req.body.email, password_to_insert, roleDoc.roleName, null, null, 'staff');
 				} else {
 					error_msg = validationErr(error);
 				}
@@ -286,7 +344,7 @@ router.get('/' + editLink, function (req, res) {
 });
 
 router.post('/' + editLink, function (req, res) {
-	if ((req.user && req.user.permission >= 30) || (req.user && req.user.permission >= 10 && req.user._id.toString() === req.body.ID)) {
+	if ((req.user && req.user.permission >= 30) || (req.user && req.user.permission >= 10 && req.user._id.toString() === req.body.id)) {
 		let updates = null;
 		let role = null;
 		let role_permission = -1;
@@ -295,7 +353,7 @@ router.post('/' + editLink, function (req, res) {
 
 		if(req.user.permission >= 30){
 			promises.push(new Promise(function(resolve){
-				Role.findOne({_id:req.body.Role},function(errFindRole,roleDoc){
+				Role.findOne({_id:req.body.role},function(errFindRole,roleDoc){
 					if(errFindRole) console.log(errFindRole);
 
 					if(!errFindRole && roleDoc) {
@@ -308,7 +366,7 @@ router.post('/' + editLink, function (req, res) {
 			}));
 
 			promises.push(new Promise(function(resolve){
-				User.findOne({_id:req.body.ID},function(errFindUser,userDoc){
+				User.findOne({_id:req.body.id},function(errFindUser,userDoc){
 					if(errFindUser) console.log(errFindUser);
 
 					if(!errFindUser && userDoc){
@@ -323,22 +381,22 @@ router.post('/' + editLink, function (req, res) {
 		Promise.all(promises).then(function(){
 			if(req.user.permission >= 30){
 				if(user_permission >= 10){
-					updates = {$set: {fullName: req.body.Name, email: req.body.Email, role:role, permission: role_permission, phone: req.body.Phone}};
-				} else updates = {$set: {fullName: req.body.Name, email: req.body.Email, role:role, phone: req.body.Phone}};
+					updates = {$set: {fullName: req.body.name, email: req.body.email, role:role, permission: role_permission, phone: req.body.phone}};
+				} else updates = {$set: {fullName: req.body.name, email: req.body.email, role:role, phone: req.body.phone}};
 			} else {
-				updates = {$set: {fullName: req.body.Name, email: req.body.Email, phone: req.body.Phone}};
+				updates = {$set: {fullName: req.body.name, email: req.body.email, phone: req.body.phone}};
 			}
 
 			let user = {
-				_id:req.body.ID,
-				email:req.body.Email,
-				fullName:req.body.Name,
-				phone:req.body.Phone,
-				role:req.body.Role
+				_id:req.body.id,
+				email:req.body.email,
+				fullName:req.body.name,
+				phone:req.body.phone,
+				role:role
 			};
-			User.updateOne({_id: req.body.ID}, updates, {runValidators: true}, function (err, update) {
+			User.updateOne({_id: req.body.id}, updates, {runValidators: true}, function (err, update) {
 				if (!err && update) {
-					message = "Successfully updated user: " + req.body.Email;
+					message = "Successfully updated user: " + req.body.email;
 
 					renderEdit(res,req,user);
 				} else if (!update) {

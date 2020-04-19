@@ -129,10 +129,11 @@ router.get('/'+listLink, function(req, res) {
 				});
 			});
 
-			error_msg = equipmentList.length === 0 ? "No results to show" : ""
+			error_msg = equipmentList.length === 0 ? "No results to show" : "";
 
 			res.render('list', {
 				title: 'Equipment List',
+				filter: 'Equipment',
 				list: equipmentList,
 				columns: columns,
 				editLink: editLink,

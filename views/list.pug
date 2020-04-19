@@ -88,7 +88,10 @@ block content
                 let dateTo = $("#rangeDateTo").val();
                 let eventTypeSelected = $("#eventTypeSelectedFilter").val();
 
-                $.post("../filter", {
+                let type = !{JSON.stringify(type)};
+                let filterLink = type === "allList" ? "../filter" : "../../filter";
+
+                $.post(filterLink, {
                     spacesMin:spacesMin,
                     spacesMax:spacesMax,
                     visitorsMin:visitorsMin,
@@ -98,7 +101,7 @@ block content
                     eventTypeSelected:eventTypeSelected,
                     list:list_to_filter,
                     originalList:original_list,
-                    type:!{JSON.stringify(type)}
+                    type:type
                 }, function (data) {
                     populateList(data.list);
                     filter_list = data.filterList;
@@ -342,7 +345,10 @@ block content
                     select.form-control#eventTypeSelectedFilter
                         option(selected)="Select Event Type"
                         each event_type in eventTypes
-                            option(value=event_type._id)=event_type.eventTypeName
+                            if type == "archive"
+                                option(value=event_type.eventTypeName)=event_type.eventTypeName
+                            else
+                                option(value=event_type._id)=event_type.eventTypeName
                 hr
 
             if filter == "Equipment"

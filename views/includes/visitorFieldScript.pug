@@ -3,6 +3,19 @@ script.
 
 	let unavailable_visitors = [];
 
+	$(document).ready(function () {
+		let visitor_selects = $("#visitors select");
+		for (let i = 0; i < visitor_selects.length; i++) {
+			let selects = $('#visitors select option[value="' + visitor_selects[i].value + '"]:selected');
+			if (selects.length >= 1) {
+				let option = $('#visitors select option[value="' + visitor_selects[i].value + '"]');
+				option.attr('disabled', true);
+
+				selects[0].removeAttribute('disabled');
+			}
+		}
+	});
+
 	function addVisitorField() {
 		$('<div>').attr('class', 'row form-group').attr('id', 'rowVisitor' + visitor_count).appendTo('#visitors');
 

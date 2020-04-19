@@ -194,99 +194,6 @@ function listElement(res, req, allEventTypes, eventList, title, type) {
 	});
 }
 
-// function renderEdit(res, req, event, posted_equipment, posted_rooms, posted_staff_use, posted_visitors, eventTypes, staff, equipment, rooms, visitors) {
-// 	let fields = [{name: "Event Name", type: "text", identifier: "name"},
-// 		{name: "Description", type: "textarea", identifier: "description"},
-// 		{name: "Location", type: "text", identifier: "location"},
-// 		{name: "Date", type: "datetime-local", identifier: "date"},
-// 		{name: "End Date", type: "datetime-local", identifier: "endDate"},
-// 		{name: "Event Type", type: "select", identifier: "eventType"}];
-// 	res.render('edit', {
-// 		title: 'Editing event: ' + event.eventName,
-// 		error: error_msg,
-// 		message: message,
-// 		item: {
-// 			ID: event._id,
-// 			"Event Name": event.eventName,
-// 			"Description": event.eventDescription,
-// 			Location: event.location,
-// 			Date: moment(event.date).format('YYYY-MM-DDTHH:mm'),
-// 			"End Date": event.endDate ? moment(event.endDate).format('YYYY-MM-DDTHH:mm') : "",
-// 			"Event Type": event.eventType,
-// 			Equipment: posted_equipment,
-// 			Rooms: posted_rooms,
-// 			Staff: posted_staff_use,
-// 			Visitors: posted_visitors
-// 		},
-// 		eventTypes: eventTypes,
-// 		staff: staff,
-// 		equipment: equipment,
-// 		rooms: rooms,
-// 		visitors: visitors,
-// 		customFields: false,
-// 		equipmentFields: true,
-// 		roomsFields: true,
-// 		staffFields: true,
-// 		visitorFields: true,
-// 		editLink: '/events/' + editLink,
-// 		cancelLink: viewLink + '?id=' + event._id,
-// 		user: req.user
-// 	});
-//
-// 	resetErrorMessage();
-// }
-//
-// async function renderAdd(res, req, staff_use, equipment_use, rooms_use, visitor_attending) {
-// 	let fields = [{name: "Event Name", type: "text", identifier: "name"},
-// 		{name: "Description", type: "textarea", identifier: "description"},
-// 		{name: "Location", type: "text", identifier: "location"},
-// 		{name: "Date", type: "datetime-local", identifier: "date"},
-// 		{name: "End Date", type: "datetime-local", identifier: "endDate"},
-// 		{name: "Event Type", type: "select", identifier: "eventType"}];
-// 	let visitors = await genFunctions.getAllVisitor();
-// 	let equipment = await genFunctions.getAllEquipment();
-// 	let rooms = await genFunctions.getAllRooms();
-// 	let staff = await genFunctions.getAllStaff();
-// 	let eventTypes = await genFunctions.getAllEventTypes();
-//
-// 	Promise.all([equipment, rooms, eventTypes, visitors, staff]).then(() => {
-// 		res.render('add', {
-// 			title: 'Add New Event',
-// 			error: error_msg,
-// 			message: message,
-// 			fields: fields,
-// 			cancelLink: listLink,
-// 			customFields: false,
-// 			roomsFields: true,
-// 			equipmentFields: true,
-// 			staffFields: true,
-// 			visitorFields: true,
-// 			visitors: visitors,
-// 			equipment: equipment,
-// 			rooms: rooms,
-// 			eventTypes: eventTypes,
-// 			staff: staff,
-// 			item: {
-// 				ID: req.body.ID,
-// 				"Event Name": req.body['Event Name'],
-// 				"Description": req.body['Description'],
-// 				Location: req.body['Location'],
-// 				Date: req.body.Date ? moment(req.body.Date).format('YYYY-MM-DDTHH:mm') : "",
-// 				"End Date": req.body['End Date'] ? moment(req.body['End Date']).format('YYYY-MM-DDTHH:mm') : "",
-// 				"Event Type": req.body['Event Type'],
-// 			},
-// 			selectedEventType: req.body['Event Type'],
-// 			selectedStaff: staff_use,
-// 			selectedEquip: equipment_use,
-// 			selectedRooms: rooms_use,
-// 			selectedVisitors: visitor_attending,
-// 			user: req.user
-// 		});
-//
-// 		resetErrorMessage();
-// 	});
-// }
-
 function renderEdit(res, req, event, posted_equipment, posted_rooms, posted_staff_use, posted_visitors, eventTypes, staff, equipment, rooms, visitors) {
 	let fields = [{name: "ID", type: "text", identifier: "id", readonly:true},
 		{name: "Event Name", type: "text", identifier: "eventName"},
@@ -296,7 +203,6 @@ function renderEdit(res, req, event, posted_equipment, posted_rooms, posted_staf
 		{name: "End Date", type: "datetime-local", identifier: "endDate"},
 		{name: "Event Type", type: "select", identifier: "eventType"}];
 
-	console.log(posted_visitors)
 	res.render('add-edit', {
 		title: 'Editing event: ' + event.eventName,
 		error: error_msg,
@@ -533,7 +439,7 @@ router.get('/archive/view-archive-event', function (req, res) {
 					res.render('view', {
 						title: 'Viewing archive event: ' + event.eventName,
 						item: {
-							ID: event._id,
+							ID: event.eventID,
 							Name: event.eventName,
 							Equipment: event.equipment,
 							Rooms: event.rooms,
@@ -546,6 +452,7 @@ router.get('/archive/view-archive-event', function (req, res) {
 							Visitors: event.visitors
 						},
 						listLink: listLink,
+						calendarLink: '../../calendar',
 						deleteLink: req.user.permission >= 30 ? '/events/archive/'+deleteLink+'?id='+event._id : null,
 						user: req.user
 					});
@@ -559,6 +466,7 @@ router.get('/archive/view-archive-event', function (req, res) {
 				res.render('view', {
 					error: "Event not found!",
 					listLink: listLink,
+					calendarLink: '../calendar',
 					user: req.user
 				});
 
@@ -626,6 +534,7 @@ router.get('/' + viewLink, function (req, res) {
 							},
 							signUpLink: !signedUp && req.user.permission >= 10 ? signUpLink : null,
 							listLink: req.user.permission >= 10 ? listLink : 'participate-events-list',
+							calendarLink: '../calendar',
 							deleteLink: req.user.permission >= 30 ? deleteLink+'?id='+event._id : null,
 							editLink: req.user.permission >= 20 ? editLink + '?id=' + event._id : null,
 							user: req.user
@@ -643,6 +552,7 @@ router.get('/' + viewLink, function (req, res) {
 				res.render('view', {
 					error: "Event not found!",
 					listLink: listLink,
+					calendarLink: '../calendar',
 					user: req.user
 				});
 
@@ -719,6 +629,7 @@ router.post('/' + editLink, function (req, res) {
 	function getPostedEquipment(req) {
 		let equipment_posted = [];
 
+		console.log(req.body);
 		for (const [field_post_key, field_post_value] of Object.entries(req.body)) {
 			if (req.body.hasOwnProperty(field_post_key)) {
 				if (field_post_key.includes('equipment')) {
@@ -933,6 +844,7 @@ router.post('/' + editLink, function (req, res) {
 						}
 					});
 
+
 					/* Check for re-posted equipment */
 					equipment_use.forEach(function (prev_equip) {
 						let equipment_posted = false;
@@ -989,6 +901,7 @@ router.post('/' + editLink, function (req, res) {
 												quantity: equipFindDoc.quantity
 											});
 
+
 											Equipment.updateOne({_id: prev_equip._id}, {$set: {quantity: equipFindDoc.quantity + equip_qty}}, function (errorUpdateEquip) {
 												if (errorUpdateEquip) {
 													equipmentNotUpdated.push(prev_equip._id);
@@ -1031,7 +944,6 @@ router.post('/' + editLink, function (req, res) {
 											posted_equip['quantity'] = equipFindDoc.quantity;
 
 											if (equipFindDoc.quantity - posted_equip.reqQty >= 0) {
-												console.log(equipFindDoc.quantity - posted_equip.reqQty);
 												Equipment.updateOne({_id: posted_equip.equipID}, {$inc: {quantity: -posted_equip.reqQty}}, function (errorUpdateEquip) {
 													if (errorUpdateEquip) {
 														console.log(errorUpdateEquip);
@@ -1053,16 +965,10 @@ router.post('/' + editLink, function (req, res) {
 										} else {
 											console.log('Cannot update equipment, because insufficient quantity.');
 
-											equipmentNotUpdated.push(posted_equip.equipID);
-											equipmentNotUpdatedNames.push(equipFindDoc.typeName);
-
 											resolve();
 										}
 									} else {
 										console.log(errFindEquip);
-
-										equipmentNotUpdated.push(posted_equip.equipID);
-										equipmentNotUpdatedNames.push(equipFindDoc.typeName);
 
 										resolve();
 									}
@@ -1279,6 +1185,7 @@ router.post('/' + addLink, async function (req, res) {
 			if (req.body.hasOwnProperty(field_post_key)) {
 				if (field_post_key.includes('equipment')) {
 					equipment_use.push({
+						_id: field_post_value,
 						equipID: field_post_value,
 						reqQty: 1
 					});
@@ -1327,6 +1234,8 @@ router.post('/' + addLink, async function (req, res) {
 
 		if (numberOfSpaces < numberOfVisitors) error_msg = 'Not enough spaces are assigned for the event';
 
+		console.log(req.body);
+
 		Promise.all(promises).then(function () {
 			if (!(equipmentNotUpdated.length > 0)) {
 				let new_event = new Event({
@@ -1345,7 +1254,6 @@ router.post('/' + addLink, async function (req, res) {
 				new_event.save(function (error, eventDoc) {
 					if (!error) {
 						rooms_use.forEach(function(room){
-							let event_using_room = false;
 							let update_validated = false;
 
 							if(room.events) {
@@ -1461,7 +1369,7 @@ router.post('/' + addLink, async function (req, res) {
 
 								error_msg = error_msg.concat(' are not available, please revise all the data again and try to add event again.');
 							} else {
-								message = "Successfully create new event: " + req.body.eventName;
+								message = "Successfully created new event: " + req.body.eventName;
 							}
 
 							renderAdd(res,req,staff_use,equipment_use,rooms_use,visitor_attending);

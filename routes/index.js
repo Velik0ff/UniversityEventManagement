@@ -105,6 +105,11 @@ function validationErr(error) {
 	return error_msg;
 }
 
+function validatePassword(password) { // validate password
+	const password_regex=/^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})/;
+	return password_regex.test(password);
+}
+
 function renderLogin(res, req, username, error, message) {
 	let fields = [{name: "Email", type: "email", identifier: "username"},
 		{name: "Password", type: "password", identifier: "password"}];
@@ -246,35 +251,45 @@ router.post('/change-password', function (req, res) {
 				if (!errFindStaff) {
 					if (staff_member) {
 						if (staff_member.comparePassword(req.body['oldPass'])) {
-							Role.findOne({roleName: staff_member.role}, function (errFindRole, roleDoc) {
-								let rolePermission = 10;
+							if (req.body['newPass'] === req.body['confirmPass']) {
+								if(validatePassword(req.body['newPass'])) {
+									Role.findOne({roleName: staff_member.role}, function (errFindRole, roleDoc) {
+										let rolePermission = 10;
 
-								if (errFindRole) console.log(errFindRole);
+										if (errFindRole) console.log(errFindRole);
 
-								if (roleDoc) rolePermission = roleDoc.rolePermission;
+										if (roleDoc) rolePermission = roleDoc.rolePermission;
 
-								let updates = {
-									$set: {
-										password: staff_member.hashPassword(req.body['newPass']),
-										permission: rolePermission
-									}
-								};
-								let term_permission = req.user.permission;
+										let updates = {
+											$set: {
+												password: staff_member.hashPassword(req.body['newPass']),
+												permission: rolePermission
+											}
+										};
+										let term_permission = req.user.permission;
 
-								Staff.updateOne({_id: req.user._id}, updates, {runValidators: true}, function (err, update) {
-									if (!err && update) {
-										if (term_permission === -1) {
-											res.redirect('/welcome');
-										} else {
-											renderChangePassword(res, req.user, null, "Successfully changed password!", false);
-										}
-									} else {
-										let error = !update ? "User not found!" : validationErr(err);
+										Staff.updateOne({_id: req.user._id}, updates, {runValidators: true}, function (err, update) {
+											if (!err && update) {
+												if (term_permission === -1) {
+													res.redirect('/welcome');
+												} else {
+													renderChangePassword(res, req.user, null, "Successfully changed password!", false);
+												}
+											} else {
+												let error = !update ? "User not found!" : validationErr(err);
 
-										renderChangePassword(res, req.user, error, null, false);
-									}
-								});
-							});
+												renderChangePassword(res, req.user, error, null, false);
+											}
+										});
+									});
+								} else {
+									let error = "Password must contain 1 lowercase letter, 1 uppercase letter and one number and it must be at least 6 characters long.";
+
+									renderChangePassword(res, req.user, error, null, false);
+								}
+							} else {
+								renderChangePassword(res, req.user, "Passwords do not match.", null, false);
+							}
 						} else {
 							renderChangePassword(res, req.user, "The old password is not right, please try again.", null, false);
 						}
@@ -291,22 +306,32 @@ router.post('/change-password', function (req, res) {
 				if (!errFindVisitor) {
 					if (visitor) {
 						if (visitor.comparePassword(req.body['oldPass'])) {
-							let updates = {$set: {password: visitor.hashPassword(req.body['newPass']), permission: 1}};
-							let term_permission = req.user.permission;
+							if (req.body['newPass'] === req.body['confirmPass']) {
+								if (validatePassword(req.body['newPass'])) {
+									let updates = {$set: {password: visitor.hashPassword(req.body['newPass']), permission: 1}};
+									let term_permission = req.user.permission;
 
-							Visitor.updateOne({_id: req.user._id}, updates, {runValidators: true}, function (err, update) {
-								if (!err && update) {
-									if (term_permission > -1) {
-										res.redirect('/welcome');
-									} else {
-										renderChangePassword(res, req.user, null, "Successfully changed password!", false);
-									}
+									Visitor.updateOne({_id: req.user._id}, updates, {runValidators: true}, function (err, update) {
+										if (!err && update) {
+											if (term_permission > -1) {
+												res.redirect('/welcome');
+											} else {
+												renderChangePassword(res, req.user, null, "Successfully changed password!", false);
+											}
+										} else {
+											let error = !update ? "User not found!" : validationErr(err);
+
+											renderChangePassword(res, req.user, error, null, false);
+										}
+									});
 								} else {
-									let error = !update ? "User not found!" : validationErr(err);
+									let error = "Password must contain 1 lowercase letter, 1 uppercase letter and one number and it must be at least 6 characters long.";
 
 									renderChangePassword(res, req.user, error, null, false);
 								}
-							});
+							} else {
+								renderChangePassword(res, req.user, "Passwords do not match.", null, false);
+							}
 						} else {
 							renderChangePassword(res, req.user, "The old password is not right, please try again.", null, false);
 						}
@@ -322,52 +347,62 @@ router.post('/change-password', function (req, res) {
 	} else {
 		Staff.findOne({resetPassCode: req.body['resetCode']}, function (errStaff, staff_member) {
 			if (!errStaff) {
-				if (staff_member) {
-					let updates = {
-						$set: {
-							password: staff_member.hashPassword(req.body['newPass']),
-							reset_code: null
-						}
-					};
+				if (req.body['newPass'] === req.body['confirmPass']) {
+					if (validatePassword(req.body['newPass'])) {
+						if (staff_member) {
+							let updates = {
+								$set: {
+									password: staff_member.hashPassword(req.body['newPass']),
+									reset_code: null
+								}
+							};
 
-					Staff.updateOne({_id: staff_member._id}, updates, {runValidators: true}, function (err, update) {
-						if (!err && update) {
-							renderChangePassword(res, req.user, null, "Successfully changed password!");
+							Staff.updateOne({_id: staff_member._id}, updates, {runValidators: true}, function (err, update) {
+								if (!err && update) {
+									renderChangePassword(res, req.user, null, "Successfully changed password!");
+								} else {
+									let error = !update ? "User not found!" : validationErr(err);
+
+									renderChangePassword(res, req.user, error, null);
+								}
+							});
 						} else {
-							let error = !update ? "User not found!" : validationErr(err);
+							Visitor.findOne({resetPassCode: req.body['resetCode']}, function (errVisitor, visitor) {
+								if (!errVisitor) {
+									if (visitor) {
+										let updates = {
+											$set: {
+												password: visitor.hashPassword(req.body['newPass']),
+												resetPassCode: null
+											}
+										};
 
-							renderChangePassword(res, req.user, error, null);
-						}
-					});
-				} else {
-					Visitor.findOne({resetPassCode: req.body['resetCode']}, function (errVisitor, visitor) {
-						if (!errVisitor) {
-							if (visitor) {
-								let updates = {
-									$set: {
-										password: visitor.hashPassword(req.body['newPass']),
-										resetPassCode: null
-									}
-								};
+										Visitor.updateOne({_id: visitor._id}, updates, {runValidators: true}, function (err, update) {
+											if (!err && update) {
+												renderChangePassword(res, req.user, null, "Successfully changed password!");
+											} else {
+												let error = !update ? "User not found!" : validationErr(err);
 
-								Visitor.updateOne({_id: visitor._id}, updates, {runValidators: true}, function (err, update) {
-									if (!err && update) {
-										renderChangePassword(res, req.user, null, "Successfully changed password!");
+												renderChangePassword(res, req.user, error, null);
+											}
+										});
 									} else {
-										let error = !update ? "User not found!" : validationErr(err);
-
-										renderChangePassword(res, req.user, error, null);
+										console.log(errVisitor);
+										res.redirect('/');
 									}
-								});
-							} else {
-								console.log(errVisitor);
-								res.redirect('/');
-							}
-						} else {
-							console.log(errVisitor);
-							res.redirect('/');
+								} else {
+									console.log(errVisitor);
+									res.redirect('/');
+								}
+							});
 						}
-					});
+					} else {
+						let error = "Password must contain 1 lowercase letter, 1 uppercase letter and one number and it must be at least 6 characters long.";
+
+						renderChangePassword(res, req.user, error, null, false);
+					}
+				} else {
+					renderChangePassword(res, req.user, "Passwords do not match.", null, false);
 				}
 			} else {
 				console.log(errStaff);
@@ -411,7 +446,7 @@ router.post('/forgot-password', function (req, res) {
 											genFunctions.sendEmail(req.body.username, null, null, reset_code, req, "forgot-pass").then().catch();
 											renderForgotPassword(res, req, null, "We have sent a reset link to your email, please follow the instructions in the email.");
 										} else {
-											renderForgotPassword(res, req, "User not found..", null);
+											renderForgotPassword(res, req, "User not found", null);
 										}
 									} else {
 										console.log(errUpdateVisitor);
@@ -618,7 +653,7 @@ router.post('/filter', function (req, res) {
 	function filterEventAdmin(list_element) {
 		return new Promise(function (resolve) {
 			Event.findOne({_id: list_element.id}, null, {sort: {date: -1}}, async function (errFind, event) {
-				if (!errFind) {
+				if (!errFind && event) {
 					filterEvent(event).then(function (result) {
 						resolve(result);
 					})
@@ -631,11 +666,50 @@ router.post('/filter', function (req, res) {
 
 	function filterEventArchive(list_element) {
 		return new Promise(function (resolve) {
-			Archive.findOne({_id: list_element.id}, null, {sort: {date: -1}}, async function (errFind, event) {
-				if (!errFind) {
-					filterEvent(event).then(function (result) {
-						resolve(result);
-					})
+			Archive.findOne({eventID: list_element.id}, null, {sort: {date: -1}}, async function (errFind, event) {
+				if (!errFind && event) {
+					let numberOfVisitors = 0;
+					let numberOfSpaces = 0;
+					let result = true;
+
+					event.rooms.forEach(function (room) {
+						numberOfSpaces = numberOfSpaces + room.capacity;
+					});
+
+					event.visitors.forEach(function (visitor) {
+						visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : "";
+					});
+
+					if (req.body.spacesMin && req.body.spacesMin > numberOfSpaces) {
+						result = false;
+					}
+					if (req.body.spacesMax && req.body.spacesMax < numberOfSpaces) {
+						result = false;
+					}
+					if (req.body.visitorsMin && req.body.visitorsMin > numberOfVisitors) {
+						result = false;
+					}
+					if (req.body.visitorsMax && req.body.visitorsMax < numberOfVisitors) {
+						result = false;
+					}
+
+					if (req.body.dateFrom && event.date) {
+						let dateFrom = Date.parse(req.body.dateFrom);
+						let date = Date.parse(event.date);
+
+						if (dateFrom > date) result = false;
+					}
+					if (req.body.dateTo && event.date) {
+						let dateTo = Date.parse(req.body.dateTo);
+						let date = Date.parse(event.date);
+
+						if (dateTo < date) result = false;
+					}
+					if (req.body.eventTypeSelected && req.body.eventTypeSelected !== 'Select Event Type' && req.body.eventTypeSelected !== event.eventType) {
+						result = false;
+					}
+
+					resolve(result);
 				} else {
 					resolve(false);
 				}
@@ -826,7 +900,7 @@ router.get('/calendar', async function (req, res) {
 								title: event.eventName,
 								start: event.date,
 								end: event.endDate,
-								url: '/events/view-archive-event?id=' + event._id,
+								url: '/events/archive/view-archive-event?id=' + event.eventID,
 								backgroundColor: "#8a8a8a"
 							});
 						}
@@ -894,9 +968,9 @@ router.get('/calendar', async function (req, res) {
 	}
 });
 
-router.get('/export', function (req, res, next) {
+router.get('/export', function (req, res) {
 	if (req.user && req.user.permission >= 10) {
-		let export_options = ['Events', 'Archive Events', 'Equipment', 'Staff', 'Rooms', 'Visitors', 'Еvent Types'];
+		let export_options = ['Events', 'Archive Events', 'Equipment', 'Staff', 'Rooms', 'Visitors', 'Event Types'];
 
 		if (req.query.type) {
 			let json_array = [];
@@ -994,7 +1068,7 @@ router.get('/export', function (req, res, next) {
 								};
 
 								equip.customFields.forEach(function (field) {
-									eq_object[field.fieldName] = fieldValue
+									eq_object[field.fieldName] = field.fieldValue;
 
 									if (!fields.includes(field.fieldName)) {
 										fields.push(field.fieldName);
@@ -1003,10 +1077,10 @@ router.get('/export', function (req, res, next) {
 
 								json_array.push(eq_object);
 							});
-						});
 
-						fileName = 'equipment' + date;
-						resolve();
+							fileName = 'equipment' + date;
+							resolve();
+						});
 						break;
 					case export_options[3]:
 						genFunctions.getAllStaff().then(function (staffDoc) {
@@ -1018,11 +1092,12 @@ router.get('/export', function (req, res, next) {
 									Role: staff_member.role
 								});
 							});
+
+							fields = ['Full Name', 'Email', 'Phone', 'Role'];
+							fileName = 'staff' + date;
+							resolve();
 						});
 
-						fields = ['Full Name', 'Email', 'Phone', 'Role'];
-						fileName = 'staff' + date;
-						resolve();
 						break;
 					case export_options[4]:
 						genFunctions.getAllRooms().then(function (roomsDoc) {
@@ -1045,10 +1120,10 @@ router.get('/export', function (req, res, next) {
 
 								json_array.push(room_object);
 							});
-						});
 
-						fileName = 'rooms' + date;
-						resolve();
+							fileName = 'rooms' + date;
+							resolve();
+						});
 						break;
 					case export_options[5]:
 						genFunctions.getAllVisitor().then(function (visitorDoc) {
@@ -1119,6 +1194,11 @@ router.get('/export', function (req, res, next) {
 	} else {
 		res.status(500).json({message: "Unable to process request, please try again."});
 	}
+});
+
+router.get('/midnight', function(req, res){
+	genFunctions.archiveEvents();
+	genFunctions.notifyForApproachingEvents();
 });
 
 module.exports = router;

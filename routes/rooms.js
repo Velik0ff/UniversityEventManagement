@@ -141,7 +141,7 @@ router.get('/'+viewLink, function(req, res) {
 						customFields: room.customFields
 					},
 					listLink: listLink,
-					deleteLink: req.user.permission >= 30 ? deleteLink : null,
+					deleteLink: req.user.permission >= 30 ? deleteLink + '?id=' + room._id : null,
 					editLink: editLink + '?id=' + room._id,
 					user:req.user
 				});

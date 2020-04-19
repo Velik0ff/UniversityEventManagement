@@ -51,6 +51,9 @@ block content
                                                 br
                                                 span="E-mail: " + staff_member.email
                                                 br
+                                                if staff_member.phone
+                                                    span="Phone: " + staff_member.phone
+                                                    br
                                                 span="Role: " + staff_member.role
                                                 br
                             else if index === 'customFields'
@@ -120,3 +123,5 @@ block content
         p
             center
                 a.btn.btn-primary(href=listLink) Return to list
+                if calendarLink
+                    a.btn.btn-primary(href=calendarLink) Calendar

@@ -49,7 +49,7 @@ block content
                                 label(for=field.identifier)=field.name
                                 select.form-control(name=field.identifier)
                                     each option in roles
-                                        if item.role == option._id
+                                        if item.role === option.roleName
                                             option(value=option._id selected)=option.roleName
                                         else
                                             option(value=option._id)=option.roleName
@@ -101,13 +101,17 @@ block content
                                         label(for="equipmentName" + equipment_count)='Equipment ' + equipment_count + ' Name'
                                         select.form-control(id="selectEquipment" + equipment_count name='equipmentID' + equipment_count onChange='selectedEquipment(this)')
                                             each option in equipment
-                                                if equip.equipID == option._id && option.quantity > 0
-                                                    option(value=equip.equipID selected)=option.typeName
+                                                if (equip._id.toString() == option._id.toString() && ((title.includes("Add") && option.quantity) || title.includes("Edit")))
+                                                    option(value=equip._id selected)=option.typeName
                                                 else
                                                     if option.quantity <= 0
                                                         option(value=option._id disabled)=option.typeName
                                                     else
-                                                        option(value=option._id)=option.typeName
+                                                        if selected_equipment.includes(option._id.toString())
+                                                            option(value=option._id disabled)=option.typeName
+                                                        else
+                                                            option(value=option._id)=option.typeName
+
                                     div.col(id="equipmentQuantityCol" + equipment_count)
                                         label(for="quantity" + equipment_count)="Quantity " + equipment_count
                                         input.form-control(type="number" name="quantity" + equipment_count min="1" max=equip.quantity value=equip.reqQty)
@@ -115,7 +119,7 @@ block content
                                     div.col(id="removeEquipmentCol" + equipment_count style="flex-grow:0;position:relative;")
                                         a.options-btn(href="#" id="removeEquipmentIcon" + equipment_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove();checkAddedEquip();")
                                             i.material-icons.md-18="delete"
-                                - selected_equipment.push(equip._id)
+                                - selected_equipment.push(equip.equipID)
                                 - equipment_count++
 
                 if staffFields

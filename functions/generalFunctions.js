@@ -159,7 +159,8 @@ function getAllStaff(){
 			phone:1,
 			role:1,
 			groupSize:1,
-			attendingEvents:1
+			attendingEvents:1,
+			permission:1
 		}, function (err, staff) {
 			if(!err){
 				resolve(staff)
@@ -232,6 +233,51 @@ function getAllEventTypes(){
 	});
 }
 
+function notifyForApproachingEvents(){
+	Event.find({}, null, {sort: {date: -1}}, function (err, events) {
+		if(!err){
+			let one_week = 60 * 60 * 1000 * 24 * 7;
+			let one_week_from_now = Date.parse((new Date)) + one_week;
+
+			if(events){
+				let staff_notify = [];
+				let promises = [];
+
+				events.forEach(function(event){
+					let event_date = Date.parse(event.date);
+					let staff_helpers = [];
+
+					event.staffChosen.forEach(function(staff_member){
+						if(staff_member.role === "Student Helper") staff_helpers.push(staff_member);
+					});
+
+					if(event_date < one_week_from_now && staff_helpers.length === 0){
+						promises.push(new Promise(function(resolve){
+							getAllStaff().then(function(staff_members){
+								staff_members.forEach(function(staff_member){
+									if(staff_member.permission >= 10 && staff_member.email !== "katie@liverpool.ac.uk" && !staff_notify.includes(staff_member.email)){
+										staff_notify.push(staff_member.email);
+									}
+								});
+
+								resolve();
+							});
+						}));
+					}
+				});
+
+				Promise.all(promises).then(function(){
+					staff_notify.forEach(function(staff_member){
+						sendEmail(staff_member, null, null, null, null, "approaching").then().catch();
+					});
+				});
+			}
+		} else {
+			console.log(err);
+		}
+	});
+}
+
 function sendNotification(userID,title,body){
 	SubNotification.findOne({userID:userID},function(errFind,subNotifDoc){
 		if(!errFind && subNotifDoc){
@@ -301,6 +347,18 @@ async function sendEmail(email, password, role, reset_code, req, type) {
 				html: "Hello,</br></br>" +
 					"You have been removed from an event that you were going to participate." +
 					"<p>Please visit the University of Liverpool Event System to view the list of events you are a participant.</p>" +
+					"Best regards,</br>" +
+					"UOL Computer Science outreach staff."
+			});
+			break;
+		case "approaching":
+			info = await transporter.sendMail({
+				from: '"University of Liverpool Event System" <postmaster@mail.uol-events.co.uk>', // sender address
+				to: email, // list of receivers
+				subject: "An event does not have any student helpers", // Subject line
+				html: "Hello,</br></br>" +
+					"One or more event is approaching <u>without a student helper.</u>" +
+					"<p>Please visit the University of Liverpool Event System to view the list of events that are approaching.</p>" +
 					"Best regards,</br>" +
 					"UOL Computer Science outreach staff."
 			});
@@ -380,7 +438,7 @@ function deleteEvent(id,type,archive){
 	return new Promise(function(resolve,reject){
 		switch(type){
 			case "archive":
-				Archive.deleteOne({_id: id}, function (err) {
+				Archive.deleteOne({eventID: id}, function (err) {
 					if (!err) {
 						resolve("Successfully deleted event!");
 					} else {
@@ -481,7 +539,7 @@ function deleteEvent(id,type,archive){
 											groupSize:visitor.groupSize}}},{multi:true},function(errUpdateVisitors) {
 									if (errUpdateVisitors) console.log(errUpdateVisitors);
 
-									Visitor.update({_id: visitor._id}, {$pull: {attendingEvents: {eventID: id}}}, {multi: true}, function (errUpdatePullVisitors) {
+									Visitor.updateOne({_id: visitor._id}, {$pull: {attendingEvents: {eventID: id}}}, {multi: true}, function (errUpdatePullVisitors) {
 										if (errUpdatePullVisitors) console.log(errUpdatePullVisitors);
 									});
 								});
@@ -546,12 +604,13 @@ function archiveEvent(event,equipment,rooms,event_type,staff,numberOfSpaces,visi
 }
 
 async function archiveEvents() {
-	Event.find({}, null, {sort: {date: -1}}, function (err, eventDoc) {
+	Event.find({}, null, {sort: {date: 1}}, function (err, eventDoc) {
 		if (!err) {
 			if (eventDoc) {
-				let today = Date.now();
+				let today = Date.parse(new Date());
 
 				if(eventDoc.length > 0) {
+					console.log(eventDoc[0].endDate);
 					if ((eventDoc[0].endDate && Date.parse(eventDoc[0].endDate) < today) ||
 						(!eventDoc[0].endDate && eventDoc[0].date && Date.parse(eventDoc[0].date) < today)) {
 
@@ -581,6 +640,7 @@ module.exports = {
 	getAllRooms:getAllRooms,
 	getAllVisitor:getAllVisitor,
 	getAllEventTypes:getAllEventTypes,
+	notifyForApproachingEvents:notifyForApproachingEvents,
 	sendNotification:sendNotification,
 	sendEmail:sendEmail,
 	deleteEvent:deleteEvent,

@@ -76,6 +76,44 @@ function renderAdd(res,req,custom_fields){
 
 	resetErrorMessage();
 }
+
+// function renderEdit(res,req,eventType){
+// 	res.render('edit', {
+// 		title: 'Editing event type: ' + eventType.eventTypeName,
+// 		error: error_msg,
+// 		message: message,
+// 		item: {
+// 			ID: eventType._id,
+// 			Name: eventType.eventTypeName,
+// 			customFieldsValues: eventType.customFields
+// 		},
+// 		customFields: true,
+// 		editLink: '/event-types/' + editLink,
+// 		cancelLink: viewLink + '?id=' + eventType._id,
+// 		user:req.user
+// 	});
+//
+// 	resetErrorMessage();
+// }
+//
+// function renderAdd(res,req,custom_fields){
+// 	res.render('add-edit', {
+// 		title: 'Add New Event Type',
+// 		fields: fields,
+// 		item: {
+// 			Name: req.body.Name,
+// 		},
+// 		cancelLink: listLink,
+// 		addLink: '/event-types/' + addLink,
+// 		customFields: true,
+// 		customFieldsValues: custom_fields,
+// 		error: error_msg,
+// 		message: message,
+// 		user:req.user
+// 	});
+//
+// 	resetErrorMessage();
+// }
 /* End Functions */
 
 router.get('/'+listLink, function(req, res) {
@@ -131,7 +169,7 @@ router.get('/'+viewLink, function(req, res) {
 						customFields: eventType.customFields
 					},
 					listLink: listLink,
-					deleteLink: deleteLink,
+					deleteLink: deleteLink + '?id=' + eventType._id,
 					editLink: editLink + '?id=' + eventType._id,
 					user:req.user
 				});

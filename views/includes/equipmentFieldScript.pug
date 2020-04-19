@@ -7,6 +7,19 @@ script.
 
 	let unavailable_equipment = [];
 
+	$(document).ready(function () {
+		let equipment_selects = $("#equipment select");
+		for (let i = 0; i < equipment_selects.length; i++) {
+			let selects = $('#equipment select option[value="' + equipment_selects[i].value + '"]:selected');
+			if (selects.length >= 1) {
+				let option = $('#equipment select option[value="' + equipment_selects[i].value + '"]');
+				option.attr('disabled', true);
+
+				selects[0].removeAttribute('disabled');
+			}
+		}
+	});
+
 	function addEquipmentField() {
 		$('<div>').attr('class', 'row form-group').attr('id', 'rowEquipment' + equipment_count).appendTo('#equipment');
 

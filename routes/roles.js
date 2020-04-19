@@ -134,7 +134,7 @@ router.get('/'+viewLink, function(req, res) {
 						'Permission Level': role.rolePermission
 					},
 					listLink: listLink,
-					deleteLink: deleteLink,
+					deleteLink: deleteLink + '?id=' + role._id,
 					editLink: editLink + '?id=' + role._id,
 					user:req.user
 				});

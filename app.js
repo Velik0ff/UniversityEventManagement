@@ -111,8 +111,10 @@ app.listen(port, function(){
 	/* Archive events every 24 hours starting at 00:00 the next day */
 	setTimeout(function(){ // time to 00:00 the next day
 		genFunctions.archiveEvents();
+		genFunctions.notifyForApproachingEvents();
 		setInterval(function(){ // interval of 24 hours
 			genFunctions.archiveEvents();
+			genFunctions.notifyForApproachingEvents();
 		},86400000);
 	}, time_left);
 	/* End Archive events every 24 hours starting at 00:00 the next day */
