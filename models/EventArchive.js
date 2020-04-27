@@ -1,5 +1,15 @@
+/**
+ * Author: Lyuboslav Velikov
+ * ID: 201186573
+ * University of Liverpool
+ * This file is used to define the structure of the archive event
+ * before inserting the entity into the database
+ * @type {createApplication} is the main route handler (router)
+ */
+
 const mongoose = require("mongoose");
 
+/* Create the schema to be followed */
 let EventArchiveSchema = new mongoose.Schema({
 	eventID:{ type: String, required: true },
 	eventName:{ type: String, required: true },
@@ -39,5 +49,6 @@ let EventArchiveSchema = new mongoose.Schema({
 		groupSize:{ type: Number, required: true }
 	}]
 });
+/* End Create the schema to be followed */
 
-module.exports = mongoose.model("EventArchive",EventArchiveSchema);
+module.exports = mongoose.model("EventArchive",EventArchiveSchema); // export the schema

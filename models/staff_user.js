@@ -1,7 +1,17 @@
+/**
+ * Author: Lyuboslav Velikov
+ * ID: 201186573
+ * University of Liverpool
+ * This file is used to define the structure of the staff member
+ * before inserting the entity into the database
+ * @type {createApplication} is the main route handler (router)
+ */
+
 const mongoose = require("mongoose");
 const uniqueValidator = require('mongoose-unique-validator'); // check if a row has a unique value
 const bcrypt = require('bcryptjs'); // required for encryption of the password
 
+/* Functions to validate the information */
 function validateEmail(email) { // validate email
 	const email_regex=/^([a-z0-9]+)[-_.]?([a-z0-9]+)@([a-z0-9]{2,}).(.([a-z0-9]{2,}))+$/i;
 	console.log(email);
@@ -17,7 +27,9 @@ function validateName(name) { // validate full name (can include title)
 	const name_regex=/^([a-zA-Z_-\s.]){2,}$/i;
 	return name_regex.test(name);
 }
+/* End Functions to validate the information */
 
+/* Create the schema to be followed */
 let StaffSchema = new mongoose.Schema({
 	fullName:{ type: String, required: [true, "Full name must be provided"], validate: [{ validator: value => validateName(value), msg:"Full name entered is not valid"}] },
 	email:{ type: String, required: [true, "Email must be provided"], validate: [{ validator: value => validateEmail(value), msg:"Email entered is not valid"}], unique: [true, "Email already exists."] },
@@ -29,8 +41,14 @@ let StaffSchema = new mongoose.Schema({
 		eventID: {type: String, required: true},
 		role: {type: String, required: true}
 	}],
+	attendedEvents:[{
+		eventID: { type: String, required:true },
+		eventName: { type: String, required: true },
+		role: { type: String, required: true }
+	}],
 	resetPassCode: { type:String }
 });
+/* End Create the schema to be followed */
 
 /* Methods to Compare and Hash Password */
 StaffSchema.methods = {
@@ -54,4 +72,4 @@ StaffSchema.pre('save', function (next) {
 });
 /* End Update the password to the hashed password before saving */
 
-module.exports = mongoose.model("Staff",StaffSchema);
+module.exports = mongoose.model("Staff",StaffSchema); // export the schema

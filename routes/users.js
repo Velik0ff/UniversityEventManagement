@@ -1,14 +1,23 @@
-const express = require('express');
-const router = express.Router();
-const short = require('short-uuid');
-const genFunctions = require('../functions/generalFunctions');
+/**
+ * Author: Lyuboslav Velikov
+ * ID: 201186573
+ * University of Liverpool
+ * This file is used to handle all the routes that are
+ * used to manipulate or insert data for the staff members
+ * @type {createApplication} is the main route handler (router)
+ */
 
-/* Model */
+const express = require('express');
+const router = express.Router(); // used for the route requests and results
+const short = require('short-uuid'); // generate unique short ids
+const genFunctions = require('../functions/generalFunctions'); // general functions used to manipulate and fetch data
+
+/* Models */
 const User = require('../models/staff_user');
 const Role = require('../models/Role');
-/* End Model */
+/* End Models */
 
-/* Links */
+/* Links of the routes for manipulating the staff members */
 const viewLink = "view-user";
 const editLink = "edit-user";
 const addLink = "add-user";
@@ -16,13 +25,19 @@ const deleteLink = "delete-user";
 const listLink = "list-users";
 const resetPassLink = "reset-password";
 const exportLink = "../export?type=Staff";
-/* End Links */
+/* End Links of the routes for manipulating the staff members */
 
+/* Feedback Messages */
 let error_msg = null;
 let message = null;
-let password_to_insert = short().new();
+/* End Feedback Messages */
 
 /* Functions */
+/**
+ * Function for structuring the data returned by MongoDB validation
+ * @param error Passing the error so it can be checked what is it actually
+ * @returns {string} The error that has to be printed
+ */
 function validationErr(error) {
 	let local_error_msg = "";
 
@@ -52,107 +67,46 @@ function validationErr(error) {
 	return local_error_msg;
 }
 
-function resetErrorMessage(){
+/**
+ * Reset the feedback messages
+ */
+function resetErrorMessage() {
 	error_msg = null;
 	message = null;
 }
 
-function getStaffRoles(){
-	return new Promise(function(resolve,reject){
-		Role.find({},function(errRoleFind,roleDoc){
-			if(errRoleFind){
+/**
+ * Function to get all the staff member roles from the database
+ * @returns {Promise<Array>}
+ */
+function getStaffRoles() {
+	return new Promise(function (resolve) {
+		Role.find({}, function (errRoleFind, roleDoc) { // fetch all roles from the database
+			if (errRoleFind) { // if there is an error while fetching from database
 				console.log(errRoleFind);
 			}
 
-			resolve(roleDoc);
+			resolve(roleDoc); // resolve the promise to get the staff member roles
 		});
 	});
 }
 
-// function renderAdd(res,req){
-// 	getStaffRoles().then(function(roles) {
-// 		res.render('add', {
-// 			title: 'Add New Staff Member',
-// 			fields: fields,
-// 			item: {
-// 				Name: req.body.Name,
-// 				Email: req.body.Email,
-// 				Phone: req.body.Phone,
-// 				Role: req.body.Role
-// 			},
-// 			roles: roles,
-// 			cancelLink: listLink,
-// 			addLink: '/users/' + addLink,
-// 			customFields: false,
-// 			error: error_msg,
-// 			message: message,
-// 			user: req.user
-// 		});
-//
-// 		resetErrorMessage();
-// 	});
-// }
-//
-// function renderEdit(res,req,user){
-// 	getStaffRoles().then(function(roles){
-// 		res.render('edit', {
-// 			title: 'Editing staff member: ' + user.fullName,
-// 			error: null,
-// 			item: {
-// 				ID: user._id,
-// 				Name: user.fullName,
-// 				Email: user.email,
-// 				Phone: user.phone,
-// 				Role: user.role
-// 			},
-// 			roles: roles,
-// 			editLink: '/users/' + editLink,
-// 			cancelLink: req.user.permission >= 10 ? viewLink + '?id=' + user._id : '../events/view-list',
-// 			user: req.user
-// 		});
-//
-// 		resetErrorMessage();
-// 	});
-// }
-
-function renderAdd(res,req){
-	let fields = [{name: "Name", type: "text", identifier: "name"},
-		{name: "Email", type: "email", identifier: "email"},
-		{name: "Phone", type: "tel", identifier: "phone"},
-		{name: "Role", type: "select", identifier: "role"}];
-
-	getStaffRoles().then(function(roles) {
-		res.render('add-edit', {
-			title: 'Add New Staff Member',
-			fields: fields,
-			item: {
-				name: req.body.name,
-				email: req.body.email,
-				phone: req.body.phone,
-				role: req.body.role
-			},
-			roles: roles,
-			cancelLink: listLink,
-			actionLink: '/users/' + addLink,
-			submitButtonText:"Add",
-			customFields: false,
-			error: error_msg,
-			message: message,
-			user: req.user
-		});
-
-		resetErrorMessage();
-	});
-}
-
-function renderEdit(res,req,user){
+/**
+ * Render the add-edit template with the details for editing
+ * @param res The result that has to be shown to the user (the template in our case)
+ * @param req The request that has been made by the user
+ * @param user The staff member information gathered from the database
+ */
+function renderEdit(res, req, user) {
+	// fields that have to be entered
 	let fields = [{name: "ID", type: "text", identifier: "id", readonly: true},
-		{name: "Name", type: "text", identifier: "name"},
+		{name: "Name", type: "text", identifier: "fullName"},
 		{name: "Email", type: "email", identifier: "email"},
 		{name: "Phone", type: "tel", identifier: "phone"},
 		{name: "Role", type: "select", identifier: "role"}];
 
-	getStaffRoles().then(function(roles){
+	getStaffRoles().then(function (roles) { // fetch the staff member roles from the database
+		/* Render Template */
 		res.render('add-edit', {
 			title: 'Editing staff member: ' + user.fullName,
 			fields: fields,
@@ -166,79 +120,119 @@ function renderEdit(res,req,user){
 				role: user.role
 			},
 			roles: roles,
-			submitButtonText:"Save",
+			submitButtonText: "Save",
 			actionLink: '/users/' + editLink,
 			cancelLink: req.user.permission >= 10 ? viewLink + '?id=' + user._id : '../events/view-list',
 			user: req.user
 		});
+		/* End Render Template */
 
-		resetErrorMessage();
+		resetErrorMessage(); // reset messages
 	});
 }
+
+/**
+ * Render the add-edit template with the details for adding
+ * @param res The result that has to be shown to the user (the template in our case)
+ * @param req The request that has been made by the user
+ * @param user The staff member information posted
+ */
+function renderAdd(res, req, user) {
+	// fields that have to be entered
+	let fields = [{name: "Name", type: "text", identifier: "fullName"},
+		{name: "Email", type: "email", identifier: "email"},
+		{name: "Phone", type: "tel", identifier: "phone"},
+		{name: "Role", type: "select", identifier: "role"}];
+
+	getStaffRoles().then(function (roles) { // fetch the staff member roles from the database
+		/* Render Template */
+		res.render('add-edit', {
+			title: 'Add New Staff Member',
+			fields: fields,
+			error: error_msg,
+			message: message,
+			item: {
+				name: user.name,
+				email: user.email,
+				phone: user.phone,
+				role: user.role
+			},
+			roles: roles,
+			cancelLink: listLink,
+			actionLink: '/users/' + addLink,
+			submitButtonText: "Add",
+			customFields: false,
+			user: req.user
+		});
+		/* End Render Template */
+
+		resetErrorMessage(); // reset messages
+	});
+}
+
 /* End Functions */
 
+/**
+ * The List route used to list the staff members in the list template
+ */
 router.get('/' + listLink, function (req, res) {
-	if (req.user && req.user.permission >= 10) {
-		let columns = ["ID", "Full Name", "Email", "Options"];
+	if (req.user && req.user.permission >= 10) { // check if the user is a staff member
+		let columns = ["ID", "Full Name", "Email", "Options"]; // columns used as a header
 
-		User.find({}, function (err, users) {
-			let userList = [];
-			let staffRoles = [];
+		User.find({}, function (err, users) { // find all staff members in the database
+			let userList = []; // store the list of staff members in here
 
+			/* Structure only the needed information */
 			users.forEach(function (user) {
 				userList.push({
 					id: user._id,
 					name: user.fullName,
-					email: user.email
+					email: user.email,
+					role: user.role
 				});
-
-				if (user.role.includes(',')) {
-					let staff_member_roles_arr = user.role.split(',');
-
-					staff_member_roles_arr.forEach(function(staff_role){
-						if(!staffRoles.includes(staff_role)) {
-							staffRoles.push(staff_role);
-						}
-					});
-				} else {
-					if (!staffRoles.includes(user.role)) {
-						staffRoles.push(user.role);
-					}
-				}
 			});
+			/* End Structure only the needed information */
 
-			error_msg = userList.length === 0 ? "No results to show" : "";
+			error_msg = userList.length === 0 ? "No results to show" : ""; // error message to show if there are no staff members found
 
-			res.render('list', {
-				title: 'Staff List',
-				filter: 'Staff',
-				type: 'staff',
-				staffRoles: staffRoles,
-				list: userList,
-				columns: columns,
-				editLink: req.user.permission >= 30 ? editLink : null,
-				viewLink: viewLink,
-				addLink: req.user.permission >= 30 ? addLink : null,
-				deleteLink: req.user.permission >= 30 ? deleteLink : null,
-				exportLink: req.user.permission >= 30 ? exportLink : null,
-				error: error_msg,
-				user: req.user
+			Role.find({}, function (errRoles, staffRoles) { // fetch all roles from database
+				if (errRoles) console.log(errRoles); // error while fetching roles from database
+				/* Render Template */
+				res.render('list', {
+					title: 'Staff List',
+					filter: 'Staff',
+					type: 'staff',
+					staffRoles: staffRoles,
+					list: userList,
+					columns: columns,
+					editLink: req.user.permission >= 30 ? editLink : null,
+					viewLink: viewLink,
+					addLink: req.user.permission >= 30 ? addLink : null,
+					deleteLink: req.user.permission >= 30 ? deleteLink : null,
+					exportLink: req.user.permission >= 30 ? exportLink : null,
+					error: error_msg,
+					user: req.user
+				});
+				/* End Render Template */
+
+				resetErrorMessage(); // reset messages
 			});
-
-			resetErrorMessage();
 		});
-	} else {
+	} else { // Insufficient permission level
 		res.redirect('/');
 
-		resetErrorMessage();
+		resetErrorMessage(); // reset messages
 	}
 });
 
+/**
+ * The View route used to view the information of a specific staff member in the view template
+ */
 router.get('/' + viewLink, function (req, res) {
-	if (req.user && req.user.permission >= 1) {
-		/* Logic to get info from database */
-		User.findOne({_id: req.query.id}, function (err, user) {
+	if (req.user && req.user.permission >= 1) { // check if the user is a visitor or staff member who is registered
+		User.findOne({_id: req.query.id}, function (err, user) { // fetch the staff member information from the database
 			if (!err && user) {
+				/* Render Template */
 				res.render('view', {
 					title: 'Viewing staff member: ' + user.fullName,
 					error: null,
@@ -255,252 +249,320 @@ router.get('/' + viewLink, function (req, res) {
 					resetPassLink: req.user.permission >= 30 ? resetPassLink + '?id=' + user._id : null,
 					user: req.user
 				});
-			} else {
+				/* End Render Template */
+			} else { // error while fetching data from the database or staff member not found
+				/* Render Template */
 				res.render('view', {
 					error: "User not found!",
 					listLink: listLink,
 					user: req.user
 				});
+				/* End Render Template */
 			}
 
-			resetErrorMessage();
+			resetErrorMessage(); // reset messages
 		});
-		/* End Logic to get info from database */
-	} else {
+	} else { // Insufficient permission level
 		res.redirect('/');
 
-		resetErrorMessage();
+		resetErrorMessage(); // reset messages
 	}
 });
+
+/**
+ * The Add route with a get method used to display the fields that have to be populated
+ * in order to insert staff member to the database
+ */
 router.get('/' + addLink, function (req, res) {
-	if (req.user && req.user.permission >= 30) {
-		renderAdd(res,req);
-	} else {
+	if (req.user && req.user.permission >= 30) { // check if the user is an Outreach coordinator
+		renderAdd(res, req, null); // render add-edit
+	} else { // Insufficient permission level
 		res.redirect('/');
 
-		resetErrorMessage();
+		resetErrorMessage(); // reset messages
 	}
 });
 
+/**
+ * The Add route with a post method used to insert the populated fields into the database
+ * and populate the fields again into the template just in case any error happens
+ * and render the add-edit template again
+ */
 router.post('/' + addLink, function (req, res) {
-	if (req.user && req.user.permission >= 30) {
-		Role.findOne({_id:req.body.role},function(errFindRole,roleDoc){
-			let role = null;
+	if (req.user && req.user.permission >= 30) { // check if the user is an Outreach coordinator
+		let password_to_insert = short().new(); // the password of the user generated by the system
 
-			if(errFindRole) console.log(errFindRole);
+		Role.findOne({_id: req.body.role}, function (errFindRole, roleDoc) { // fetch role information from the database
+			let role = null; // store the role name here
 
-			if(!errFindRole && roleDoc) role = roleDoc.roleName;
+			if (errFindRole) console.log(errFindRole); // error while fetching information from database
 
-			let new_user = new User({ // new user object to be inserted
+			if (!errFindRole && roleDoc) role = roleDoc.roleName; // if role has been found
+
+			/* Assign the staff member fields from the posted fields */
+			// Initial permissions of the staff members are -1 until they change their initial password
+			let user_object = { // the temporary staff member object
 				fullName: req.body.name,
 				email: req.body.email,
 				password: password_to_insert,
 				role: role,
 				permission: -1,
 				phone: req.body.phone ? req.body.phone : null
-			});
+			};
+			/* End Assign the staff member fields from the posted fields */
+
+			let new_user = new User(user_object); // new staff member object to be inserted
 
 			/* Insert new user */
-
 			new_user.save(function (error) {
 				if (!error) {
-					message = "Successfully added new user with email: " + req.body.email;
-					genFunctions.sendEmail(req.body.email, password_to_insert, roleDoc.roleName, null, null, 'staff');
-				} else {
-					error_msg = validationErr(error);
+					message = "Successfully added new user with email: " + req.body.email; // success message
+
+					genFunctions.sendEmail(req.body.email, password_to_insert, role, null, null, 'staff').then().catch(); // send email notification with the user password
+				} else { // error while inserting data
+					error_msg = validationErr(error); // validation error
 				}
 
-				renderAdd(res,req);
+				renderAdd(res, req, user_object); // render add-edit
 			});
 			/* End Insert new user */
 		});
-	} else {
+	} else { // Insufficient permission level
 		res.redirect('/');
 
-		resetErrorMessage();
+		resetErrorMessage(); // reset messages
 	}
 });
 
+/**
+ * The Edit route with a get method used to display the information
+ * into the fields that have to be entered in order to edit a staff member
+ * in the add-edit template
+ */
 router.get('/' + editLink, function (req, res) {
+	// check if the user is an Outreach coordinator or this is his or hers own profile
 	if ((req.user && req.user.permission >= 30) || (req.user && req.user.permission >= 10 && req.user._id.toString() === req.query.id)) {
-		User.findOne({_id: req.query.id}, function (err, user) {
+		User.findOne({_id: req.query.id}, function (err, user) { // fetch user information from the database
 			if (!err && user) {
-				renderEdit(res,req,user);
-			} else {
+				renderEdit(res, req, user); // render add-edit
+			} else { // error while fetching information or staff member not found
+				/* Render Template */
 				res.render('edit', {
 					error: "User not found!",
 					listLink: listLink,
 					user: req.user
 				});
+				/* End Render Template */
 
-				resetErrorMessage();
+				resetErrorMessage(); // reset messages
 			}
 		});
-	} else {
+	} else { // Insufficient permission level
 		res.redirect('/');
 
-		resetErrorMessage();
+		resetErrorMessage(); // reset messages
 	}
 });
 
+/**
+ * The Edit route with a post method used to update the information
+ * from the database and populate the fields if another edit will be required
+ * in the add-edit template
+ */
 router.post('/' + editLink, function (req, res) {
+	// check if the user is an Outreach coordinator or this is his or hers own profile
 	if ((req.user && req.user.permission >= 30) || (req.user && req.user.permission >= 10 && req.user._id.toString() === req.body.id)) {
-		let updates = null;
-		let role = null;
-		let role_permission = -1;
-		let promises = [];
-		let user_permission = -1;
+		let updates = null; // store the updates that have to be done here
+		let role = null; // store the role name here
+		let role_permission = -1; // what is the role permission
+		let promises = []; // promises that have to be resolved before the update
+		let user_permission = -1; // the current staff member permission to be stored here
 
-		if(req.user.permission >= 30){
-			promises.push(new Promise(function(resolve){
-				Role.findOne({_id:req.body.role},function(errFindRole,roleDoc){
-					if(errFindRole) console.log(errFindRole);
+		if (req.user.permission >= 30) { // check if the user who is editing is an Outreach coordinator
+			// get the role information from the database
+			promises.push(new Promise(function (resolve) { // add the promise to the promises array
+				Role.findOne({_id: req.body.role}, function (errFindRole, roleDoc) { // fetch the role information from the database
+					if (errFindRole) console.log(errFindRole); // error while fetching data for role from database
 
-					if(!errFindRole && roleDoc) {
-						role = roleDoc.roleName;
-						role_permission = roleDoc.rolePermission;
+					if (!errFindRole && roleDoc) { // if there are no errors and role is found in the database
+						role = roleDoc.roleName; // the role name
+						role_permission = roleDoc.rolePermission; // the role permission
 					}
 
-					resolve();
+					resolve(); // resolve the promise
 				});
 			}));
 
-			promises.push(new Promise(function(resolve){
-				User.findOne({_id:req.body.id},function(errFindUser,userDoc){
-					if(errFindUser) console.log(errFindUser);
+			// get the current staff member permission from the database
+			promises.push(new Promise(function (resolve) { // add the promise to the promises array
+				User.findOne({_id: req.body.id}, function (errFindUser, userDoc) { // fetch the staff member information from the database
+					if (errFindUser) console.log(errFindUser); // error while fetching data for staff member from database
 
-					if(!errFindUser && userDoc){
-						user_permission = userDoc.permission;
+					if (!errFindUser && userDoc) { // if there are no errors and staff member is found in the database
+						user_permission = userDoc.permission; // the current staff member permission
 					}
 
-					resolve();
+					resolve(); // resolve the promise
 				});
 			}));
 		}
 
-		Promise.all(promises).then(function(){
-			if(req.user.permission >= 30){
-				if(user_permission >= 10){
-					updates = {$set: {fullName: req.body.name, email: req.body.email, role:role, permission: role_permission, phone: req.body.phone}};
-				} else updates = {$set: {fullName: req.body.name, email: req.body.email, role:role, phone: req.body.phone}};
-			} else {
+		Promise.all(promises).then(function () { // when all the promises are resolved
+			if (req.user.permission >= 30) { // check if current user is an Outreach coordinator
+				if (user_permission >= 10) { // check if staff member which has to be edited has changed his initial password
+					// set the updates that have to be done to the staff member
+					updates = {
+						$set: {
+							fullName: req.body.name,
+							email: req.body.email,
+							role: role,
+							permission: role_permission,
+							phone: req.body.phone
+						}
+					};
+				} else { // this does not update the staff member permission because he or she has not changed her initial password
+					// set the updates that have to be done to the staff member
+					updates = {$set: {fullName: req.body.name, email: req.body.email, role: role, phone: req.body.phone}};
+				}
+			} else { // the user edits his own profile
+				// set the updates that have to be done to the staff member
 				updates = {$set: {fullName: req.body.name, email: req.body.email, phone: req.body.phone}};
 			}
 
+			/* Assign the staff member fields from the posted fields */
 			let user = {
-				_id:req.body.id,
-				email:req.body.email,
-				fullName:req.body.name,
-				phone:req.body.phone,
-				role:role
+				id: req.body.id,
+				email: req.body.email,
+				fullName: req.body.name,
+				phone: req.body.phone,
+				role: role
 			};
-			User.updateOne({_id: req.body.id}, updates, {runValidators: true}, function (err, update) {
-				if (!err && update) {
-					message = "Successfully updated user: " + req.body.email;
+			/* End Assign the staff member fields from the posted fields */
 
-					renderEdit(res,req,user);
-				} else if (!update) {
-					res.render('edit', {
-						error: "User not found!",
-						errorCritical: true,
-						listLink: listLink,
-						user: req.user
-					});
+			User.updateOne({_id: req.body.id}, updates, {runValidators: true}, function (err) { // update the staff member
+				if (!err) {
+					message = "Successfully updated user: " + req.body.email; // message for success
 
-					resetErrorMessage();
-				} else {
-					error_msg = validationErr(err);
+					renderEdit(res, req, user); // render add-edit
+				} else { // error while updating staff member
+					error_msg = validationErr(err); // error message from validation
 
-					renderEdit(res,req,user);
+					renderEdit(res, req, user); // render add-edit
 				}
 			});
 		});
-	} else {
+	} else { // Insufficient permission level
 		res.redirect('/');
 
-		resetErrorMessage();
+		resetErrorMessage(); // reset messages
 	}
 });
 
+/**
+ * The Delete route is used to delete a staff member from the database
+ * renders the view template
+ */
 router.get('/' + deleteLink, function (req, res) {
-	if (req.user && req.user.permission >= 30) {
-		User.deleteOne({_id: req.query.id}, function (err) {
+	if (req.user && req.user.permission >= 30) { // check if the user is an Outreach coordinator
+		User.deleteOne({_id: req.query.id}, function (err) { // delete staff member from the database
 			if (!err) {
+				/* Render Template */
 				res.render('view', {
 					deleteMsg: "Successfully deleted user!",
 					listLink: listLink,
 					user: req.user
 				});
-			} else {
+				/* End Render Template */
+			} else { // error while deleting staff member from database
 				console.log(err); // console log the error
+				/* Render Template */
 				res.render('view', {
 					error: "User not found!",
 					listLink: listLink,
 					user: req.user
 				});
+				/* End Render Template */
 			}
 
-			resetErrorMessage();
+			resetErrorMessage(); // reset messages
 		});
-	} else {
+	} else { // Insufficient permission level
 		res.redirect('/');
 
-		resetErrorMessage();
+		resetErrorMessage(); // reset messages
 	}
 });
 
+/**
+ * The Reset Password route is used to generate and send a new password to the chosen staff member
+ * renders the view template
+ */
 router.get('/' + resetPassLink, function (req, res) {
-	if (req.user && req.user.permission === 0) {
+	if (req.user && req.user.permission >= 30) { // check if the user is an Outreach coordinator
 
-		function renderView(message,error){
+		/**
+		 * This function is used to render the view template with
+		 * the appropriate message depending on the result
+		 */
+		function renderView() {
+			/* Render Template */
 			res.render('view', {
 				resetMsg: message,
-				error: error,
+				error: error_msg,
 				listLink: listLink,
 				user: req.user
 			});
+			/* End Render Template */
 
-			resetErrorMessage();
+			resetErrorMessage(); // reset messages
 		}
 
-		if (req.query.id) {
-			let error = null;
-			let message = null;
-
-			User.findOne({_id: req.query.id}, function (errFind, user) {
+		if (req.query.id) { // check if there is a staff member selected
+			User.findOne({_id: req.query.id}, function (errFind, user) { // fetch the staff member information from the database
 				if (!errFind) {
-					let password = short().new();
+					let password = short().new(); // generate new random password
 
-					User.updateOne({_id: req.query.id}, {
+					// the permission of the user will be set to -1, because we are giving him or her a new random generated password
+					User.updateOne({_id: req.query.id}, { // update the staff member information
 						$set: {
 							permission: -1,
-							password: user.hashPassword(password)
+							password: user.hashPassword(password) // hash the password using SHA256
 						}
 					}, function (err) {
-						if (err) {
+						if (err) { // error while updating staff member
 							console.log(err);
-							error = "Unknown error has occurred please try again!";
-						} else {
+
+							error_msg = "Unknown error has occurred please try again!";
+						} else { // no errors send new password to user via email
 							genFunctions.sendEmail(user.email, password, null, null, null, 'reset-pass').then().catch();
+
 							message = "Successfully reset password of the user.";
 						}
 
-						renderView(message,error)
+						renderView(); // render view template
+
+						resetErrorMessage(); // reset messages
 					});
-				} else {
+				} else { // error while fetching staff member information from the database
 					console.log(errFind);
-					renderView(message,"Unknown error has occurred please try again!");
+
+					error_msg = "Unknown error has occurred please try again!";
+
+					renderView(); // render view template
 				}
 			});
-		} else {
+		} else { // No staff member has been chosen
 			console.log('No id is posted for reset password of the user.');
-			renderView(message,"Unknown error has occurred please try again!");
+
+			error_msg = "User not found!";
+
+			renderView(); // render view template
 		}
-	} else {
+	} else { // Insufficient permission level
 		res.redirect('/welcome');
 
-		resetErrorMessage();
+		resetErrorMessage(); // reset messages
 	}
 });
 
-module.exports = router;
+module.exports = router; // export the route

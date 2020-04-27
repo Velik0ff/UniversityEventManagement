@@ -1,6 +1,16 @@
+/**
+ * Author: Lyuboslav Velikov
+ * ID: 201186573
+ * University of Liverpool
+ * This file is used to define the structure of the visitor
+ * before inserting the entity into the database
+ * @type {createApplication} is the main route handler (router)
+ */
+
 const mongoose = require("mongoose");
 const bcrypt = require('bcryptjs'); // required for encryption of the password
 
+/* Functions to validate the information */
 function validateEmail(email) { // validate email
 	const email_regex=/^([a-z0-9]+)[-_.]?([a-z0-9]+)@([a-z0-9]{2,}).(.([a-z0-9]{2,}))+$/i;
 	console.log(email);
@@ -16,7 +26,9 @@ function validateName(name) { // validate full name (can include title)
 	const name_regex=/^([a-zA-Z_-\s.]){2,}$/i;
 	return name_regex.test(name);
 }
+/* End Functions to validate the information */
 
+/* Create the schema to be followed */
 let VisitorSchema = new mongoose.Schema({
 	leadTeacherName:{ type: String, required: [true, "Lead teacher name must be provided"], validate: [{ validator: value => validateName(value), msg:"Full name entered is not valid"}] },
 	institutionName: { type: String, required: [true, "Institution name must be provided"] },
@@ -31,10 +43,12 @@ let VisitorSchema = new mongoose.Schema({
 	}],
 	attendedEvents:[{
 		eventID: { type: String, required:true },
-		eventName: { type: String, required: true }
+		eventName: { type: String, required: true },
+		groupSize: { type: Number, required: true }
 	}],
 	resetPassCode:{ type: String }
 });
+/* End Create the schema to be followed */
 
 /* Methods to Compare and Hash Password and validate email */
 VisitorSchema.methods = {
@@ -58,4 +72,4 @@ VisitorSchema.pre('save', function (next) {
 });
 /* End Update the password to the hashed password before saving */
 
-module.exports = mongoose.model("Visitor",VisitorSchema);
+module.exports = mongoose.model("Visitor",VisitorSchema); // export the schema
