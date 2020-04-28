@@ -2,6 +2,7 @@ extends layout
 
 block content
     .container
+        // scripts for the dynamic fields
         if customFields
             include includes/customFieldScript
         if staffFields
@@ -13,101 +14,111 @@ block content
         if roomsFields
             include includes/roomsFieldScript
 
-        - var field_count = 0
-        - var visitor_count = 0
-        - var equipment_count = 0
-        - var staff_count = 0
-        - var room_count = 0
-        - var selected_equipment = [];
-        - var selected_rooms = [];
-        - var selected_staff = [];
-        - var selected_visitors = [];
+        - var field_count = 0; // custom fields count
+        - var visitor_count = 0; // visitor fields count
+        - var equipment_count = 0; // equipment fields count
+        - var staff_count = 0; // staff member fields count
+        - var room_count = 0; // room fields count
+        - var selected_equipment = []; // used to find which equipment was selected before
+        - var selected_rooms = []; // used to find which rooms were selected before
+        - var selected_staff = []; // used to find which staff members were selected before
+        - var selected_visitors = []; // used to find which visitors were selected before
 
-        if !errorCritical
+        if !errorCritical // check if the error is critical (user, event not found)
+            // TITLE STARTS HERE
             h3.title=title
+            hr
+            // TITLE ENDS HERE
 
-            if message
+            if message // check if there is a message set
                 div.alert.alert-success(role="alert")=message
-            if error
+            if error // check if there is an error message set
                 div.alert.alert-danger(role="alert")=error
 
+            // INPUT FORM STARTS HERE
             form(method="POST" action=actionLink)
-                each field in fields
-                    if field.type !== "select"
+                // NON DYNAMIC FIELDS START HERE
+                each field in fields // iterate through all the fields that have been sent
+                    if field.type !== "select" // check if the input is not a select type
                         div.form-group
                             label(for=field.identifier)=field.name
-                            if field.type === "textarea"
+                            if field.type === "textarea" // check if the field is a text area type
                                 textarea.form-control(id=field.identifier placeholder="Enter " + field.name name=field.identifier style="resize:vertical")=item[field.identifier]
                             else
-                                if field.readonly
+                                if field.readonly // if the field is read only
                                     input.form-control(id=field.identifier type=field.type name=field.identifier value=item[field.identifier] readonly)
                                 else
                                     input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.identifier value=item[field.identifier])
-                    else if field.type === "select"
+                    else if field.type === "select" // if it is a select type
                         div.form-group
-                            if field.identifier === "role"
+                            if field.identifier === "role" // check if the field is the role selection of the staff member
                                 label(for=field.identifier)=field.name
                                 select.form-control(name=field.identifier)
-                                    each option in roles
-                                        if item.role === option.roleName
+                                    each option in roles // iterate through all the roles from the database
+                                        if item.role === option.roleName // if the role is selected for this user
                                             option(value=option._id selected)=option.roleName
                                         else
                                             option(value=option._id)=option.roleName
-                            if field.identifier === "eventType"
+                            if field.identifier === "eventType" // check if the field is the event type selection of the event
                                 label(for=field.identifier)=field.name
                                 select.form-control(name=field.identifier)
-                                    each option in eventTypes
-                                        if selectedEventType == option._id
+                                    each option in eventTypes // iterate through all the event types from the database
+                                        if selectedEventType == option._id // if the event type is selected
                                             option(value=option._id selected)=option.eventTypeName
                                         else
                                             option(value=option._id)=option.eventTypeName
+                // NON DYNAMIC FIELDS END HERE
 
-                if roomsFields
+                // DYNAMIC FIELDS START HERE
+                if roomsFields // check if the room fields are required
+                    // ROOM FIELDS START HERE
                     div#rooms
                         p
                             b="Rooms:"
                             a.btn.btn-primary(href="javascript:void(0)" onclick="addRoomField()") Add Room
 
-                        if selectedRooms && selectedRooms.length > 0
-                            each room in selectedRooms
+                        if selectedRooms && selectedRooms.length > 0 // check if there are any rooms selected for this event
+                            each room in selectedRooms // iterate through the selected rooms
                                 div.row.form-group(id="rowRoom" + room_count)
                                     div.col(id="roomNameCol" + room_count)
                                         label(for="roomName" + room_count)='Room ' + room_count + ' Name'
                                         select.form-control(id="selectRoom" + room_count name='roomID' + room_count onChange='selectedRoom(this)')
-                                            each option in rooms
-                                                if room._id.toString() === option._id.toString()
+                                            each option in rooms // iterate through all the rooms from the database
+                                                if room._id.toString() === option._id.toString() // if the room is selected for this event
                                                     option(value=room._id selected)=option.roomName
                                                 else
-                                                    if selected_rooms.includes(option._id.toString())
+                                                    if selected_rooms.includes(option._id.toString()) // if already selected by another select
                                                         option(value=option._id disabled)=option.roomName
                                                     else
                                                         option(value=option._id)=option.roomName
                                     div.col(id="removeRoomCol" + room_count style="flex-grow:0;position:relative;")
                                         a.options-btn(href="#" id="removeRoomIcon" + room_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove();checkAddedRooms();")
                                             i.material-icons.md-18="delete"
-                                - selected_rooms.push(room._id)
-                                - room_count++
+                                - selected_rooms.push(room._id) // add id to selected rooms array
+                                - room_count++ // increment the count of the room fields
+                    // ROOM FIELDS END HERE
 
-                if equipmentFields
+                if equipmentFields // check if the equipment fields are required
+                    // EQUIPMENT FIELDS START HERE
                     div#equipment
                         p
                             b="Equipment:"
                             a.btn.btn-primary(href="javascript:void(0)" onclick="addEquipmentField()") Add Equipment
 
-                        if selectedEquip && selectedEquip.length > 0
-                            each equip in selectedEquip
+                        if selectedEquip && selectedEquip.length > 0 // check if there is any equipment selected for this event
+                            each equip in selectedEquip // iterate through the selected equipment
                                 div.row.form-group(id="rowEquipment" + equipment_count)
                                     div.col(id="equipmentNameCol" + equipment_count)
                                         label(for="equipmentName" + equipment_count)='Equipment ' + equipment_count + ' Name'
                                         select.form-control(id="selectEquipment" + equipment_count name='equipmentID' + equipment_count onChange='selectedEquipment(this)')
-                                            each option in equipment
-                                                if (equip._id.toString() == option._id.toString() && ((title.includes("Add") && option.quantity) || title.includes("Edit")))
+                                            each option in equipment // iterate through all the equipment from the database
+                                                if (equip._id.toString() == option._id.toString() && ((title.includes("Add") && option.quantity) || title.includes("Edit"))) // if the equipment is selected for this event
                                                     option(value=equip._id selected)=option.typeName
                                                 else
-                                                    if option.quantity <= 0
+                                                    if option.quantity <= 0 // if there is no available quantity
                                                         option(value=option._id disabled)=option.typeName
                                                     else
-                                                        if selected_equipment.includes(option._id.toString())
+                                                        if selected_equipment.includes(option._id.toString()) // if already selected by another select
                                                             option(value=option._id disabled)=option.typeName
                                                         else
                                                             option(value=option._id)=option.typeName
@@ -119,31 +130,34 @@ block content
                                     div.col(id="removeEquipmentCol" + equipment_count style="flex-grow:0;position:relative;")
                                         a.options-btn(href="#" id="removeEquipmentIcon" + equipment_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove();checkAddedEquip();")
                                             i.material-icons.md-18="delete"
-                                - selected_equipment.push(equip.equipID)
-                                - equipment_count++
+                                - selected_equipment.push(equip.equipID) // add id to selected equipment array
+                                - equipment_count++ // increment the count of the equipment fields
+                    // EQUIPMENT FIELDS END HERE
 
-                if staffFields
+                if staffFields // check if the staff member fields are required
+                    // STAFF MEMBER FIELDS START HERE
                     div#staff
                         p
                             b="Staff:"
                             a.btn.btn-primary(href="javascript:void(0)" onclick="addStaffField()") Add Staff
 
-                        if selectedStaff && selectedStaff.length > 0
-                            each staff_member in selectedStaff
+                        if selectedStaff && selectedStaff.length > 0 // check if there are any staff members selected for this event
+                            each staff_member in selectedStaff // iterate through the selected staff members
                                 div.row.form-group(id="rowStaff" + staff_count)
                                     div.col(id="staffNameCol" + staff_count)
                                         label(for="staffID" + staff_count)='Staff Member ' + staff_count + ' Email'
                                         select.form-control(id="selectStaff" + staff_count name='staffID' + staff_count onChange='selectedStaffMember(this)')
-                                            each option in staff
-                                                if staff_member.staffMemberID == option._id
-                                                    option(value=staff_member.staffMemberID selected)=option.fullName
-                                                else if staff_member._id == option._id
-                                                    option(value=staff_member._id selected)=option.fullName
+                                            each option in staff // iterate through all staff members from the database
+                                                if staff_member.staffMemberID == option._id || staff_member._id == option._id // if the staff member is selected for this event
+                                                    option(value=option._id selected)=option.fullName
                                                 else
-                                                    option(value=option._id)=option.fullName
+                                                    if selected_staff.includes(option._id.toString()) // if already selected by another select
+                                                        option(value=option._id disabled)=option.fullName
+                                                    else
+                                                        option(value=option._id)=option.fullName
                                     div.col(id="staffRoleCol" + staff_count)
                                         label(for="staffRole" + staff_count)='Staff Member ' + staff_count + ' Role'
-                                        if staff_member.role
+                                        if staff_member.role // if the staff member has an input role for this event
                                             input.form-control(type="text" name="staffRole" + staff_count value=staff_member.role)
                                         else
                                             input.form-control(type="text" name="staffRole" + staff_count)
@@ -151,40 +165,47 @@ block content
                                     div.col(id="removeStaffCol" + staff_count style="flex-grow:0;position:relative;")
                                         a.options-btn(href="#" id="removeStaffIcon" + staff_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove();checkAddedStaff();")
                                             i.material-icons.md-18="delete"
-                                - selected_staff.push(staff_member._id)
-                                - staff_count++
-                if visitorFields
+                                - selected_staff.push(staff_member._id) // add id to selected staff members array
+                                - staff_count++ // increment the count of the staff member fields
+                    // STAFF MEMBER FIELDS END HERE
+
+                if visitorFields // check if the visitor fields are required
+                    // VISITOR FIELDS START HERE
                     div#visitors
                         p
                             b="Visitors:"
                             a.btn.btn-primary(href="javascript:void(0)" onclick="addVisitorField()") Add Visitor
 
-                        if selectedVisitors && selectedVisitors.length > 0
-                            each visitor in selectedVisitors
+                        if selectedVisitors && selectedVisitors.length > 0 // check if there are any visitors selected for this event
+                            each visitor in selectedVisitors // iterate through the selected visitors
                                 div.row.form-group(id="visitorCol" + visitor_count)
                                     div.col(id="visitorCol" + visitor_count)
                                         label(for="visitorID" + visitor_count)='Visitor ' + visitor_count + ' Name'
                                         select.form-control(id="selectVisitor" + visitor_count name='visitorID' + visitor_count onChange='selectedVisitor(this)')
-                                            each option in visitors
-                                                if visitor.visitorID == option._id
-                                                    option(value=visitor.visitorID selected)=option.leadTeacherName
-                                                else if visitor._id.toString() == option._id
-                                                    option(value=visitor._id selected)=option.leadTeacherName
+                                            each option in visitors // iterate through all visitors from the database
+                                                if visitor.visitorID == option._id || visitor._id.toString() == option._id // if the visitor is selected for this event
+                                                    option(value=option._id selected)=option.leadTeacherName
                                                 else
-                                                    option(value=option._id)=option.leadTeacherName
+                                                    if selected_visitors.includes(option._id.toString()) // if already selected by another select
+                                                        option(value=option._id disabled)=option.leadTeacherName
+                                                    else
+                                                        option(value=option._id)=option.leadTeacherName
 
                                     div.col(id="removeVisitorCol" + visitor_count style="flex-grow:0;position:relative;")
                                         a.options-btn(href="#" id="removeVisitorIcon" + visitor_count style="position:absolute;bottom:0;left:0" onclick="$(this).parent().parent().remove();checkAddedVisitors();")
                                             i.material-icons.md-18="delete"
-                                - selected_visitors.push(visitor._id)
-                                - visitor_count++
-                if customFields
+                                - selected_visitors.push(visitor._id) // add id to selected visitors array
+                                - visitor_count++ // increment the count of the visitor fields
+                    // VISITOR FIELDS END HERE
+
+                if customFields // check if the custom fields are required
+                    // CUSTOM FIELDS START HERE
                     p
                         b='Custom Fields:'
                         a.btn.btn-primary(href="javascript:void(0)" onclick="addCustomField()") Add Custom Field
                     div#customFields
-                    if customFieldsValues
-                        each fieldValue in customFieldsValues
+                    if customFieldsValues // if there are any custom fields input for this entity
+                        each fieldValue in customFieldsValues // iterate through the custom fields entered for the entity
                             div.row.form-group
                                 div.col
                                     label(for=fieldValue['fieldName'])='Custom Field ' + field_count + ' Name'
@@ -195,39 +216,42 @@ block content
                                 div.col(style='flex-grow:0;position:relative;')
                                     a.options-btn(href="#" style="position:absolute;bottom:0;left:0;" onclick='$(this).parent().parent().remove()')
                                         i.material-icons.md-18 delete
-                        - field_count++
+                        - field_count++ // increment the count of the custom fields
+                    // CUSTOM FIELDS END HERE
+                // DYNAMIC FIELDS END HERE
 
                 center
                     button.btn.btn-primary(type="submit")=submitButtonText
                     a.btn.btn-danger(href=cancelLink) Cancel
+            // INPUT FORM ENDS HERE
         else
             div.alert.alert-danger(role="alert")=error
             a.btn.btn-primary(href=cancelLink) Return to list
 
-        if customFields
+        if customFields // check if the custom fields are required
             script.
-                var field_count = !{field_count};
-        if staffFields
+                var field_count = !{field_count}; // count of the custom fields already added
+        if staffFields// check if the staff member fields are required
             script.
                 $(document).ready(function () {
                     unavailable_staff = unavailable_staff.concat(!{JSON.stringify(selected_staff)});
                 });
-                var staff_count = !{staff_count};
-        if visitorFields
+                var staff_count = !{staff_count};// count of the staff member fields already added
+        if visitorFields// check if the visitor fields are required
             script.
                 $(document).ready(function () {
                     unavailable_visitors = unavailable_visitors.concat(!{JSON.stringify(selected_visitors)});
                 });
-                var visitor_count = !{visitor_count};
-        if equipmentFields
+                var visitor_count = !{visitor_count};// count of the visitor fields already added
+        if equipmentFields// check if the equipment fields are required
             script.
                 $(document).ready(function () {
                     unavailable_equipment = unavailable_equipment.concat(!{JSON.stringify(selected_equipment)});
                 });
-                var equipment_count = !{equipment_count};
-        if roomsFields
+                var equipment_count = !{equipment_count};// count of the equipment fields already added
+        if roomsFields// check if the room fields are required
             script.
                 $(document).ready(function () {
                     unavailable_rooms = unavailable_rooms.concat(!{JSON.stringify(selected_rooms)});
                 });
-                var room_count = !{room_count};
+                var room_count = !{room_count};// count of the room fields already added

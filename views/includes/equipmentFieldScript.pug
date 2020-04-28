@@ -3,49 +3,59 @@ script
 		equipment_used = !{JSON.stringify(equipment_used)}
 
 script.
-	let all_equipment = !{JSON.stringify(equipment)};
+	let all_equipment = !{JSON.stringify(equipment)}; // all the equipment entered in the system
 
-	let unavailable_equipment = [];
+	let unavailable_equipment = []; // unavailable equipment to be stored here
 
-	$(document).ready(function () {
-		let equipment_selects = $("#equipment select");
-		for (let i = 0; i < equipment_selects.length; i++) {
-			let selects = $('#equipment select option[value="' + equipment_selects[i].value + '"]:selected');
-			if (selects.length >= 1) {
-				let option = $('#equipment select option[value="' + equipment_selects[i].value + '"]');
-				option.attr('disabled', true);
+	/* Check if the selected equipment is available */
+	$(document).ready(function () { // when the page has loaded
+		let equipment_selects = $("#equipment select"); // all the selected equipment (values only)
 
-				selects[0].removeAttribute('disabled');
+		for (let i = 0; i < equipment_selects.length; i++) { // iterate through all the selected equipment
+			let selects = $('#equipment select option[value="' + equipment_selects[i].value + '"]:selected'); // check if this option is selected at least once
+
+			if (selects.length >= 1) {// if there is a select field which has this option as selected
+				let option = $('#equipment select option[value="' + equipment_selects[i].value + '"]'); // all the options with this value
+				option.attr('disabled', true); // disable the options
+
+				selects[0].removeAttribute('disabled'); // allow only the first selection
 			}
 		}
 	});
+	/* End Check if the selected equipment is available */
 
-	function addEquipmentField() {
+	function addEquipmentField() { // add equipment field to the page
+		// create equipment select field container and append to div container of equipment fields
 		$('<div>').attr('class', 'row form-group').attr('id', 'rowEquipment' + equipment_count).appendTo('#equipment');
 
+		/* Equipment field select column */
 		$('<div>')
 			.attr('class', 'col')
 			.attr('id', 'equipmentNameCol' + equipment_count)
-			.appendTo('#rowEquipment' + equipment_count);
-		$('<label>').attr('for', 'equipmentID' + equipment_count).appendTo('#equipmentNameCol' + equipment_count).text('Equipment ' + equipment_count + ' Name');
+			.appendTo('#rowEquipment' + equipment_count); // container of the select field
+		$('<label>').attr('for', 'equipmentID' + equipment_count).appendTo('#equipmentNameCol' + equipment_count).text('Equipment ' + equipment_count + ' Name'); // the label for the select field
 		$('<select>')
 			.attr('class', 'form-control')
 			.attr('id', 'selectEquipment' + equipment_count)
 			.attr('name', 'equipmentID' + equipment_count)
 			.attr('onChange', 'selectedEquipment(this)')
-			.appendTo('#equipmentNameCol' + equipment_count);
-		let select = $('#selectEquipment' + equipment_count);
-		all_equipment.forEach(function (equip) {
-			if(unavailable_equipment.includes(equip._id) || equip.quantity <= 0){
-				select.append('<option value="'+equip._id+'" disabled>'+equip.typeName+'</option>');
-			} else {
-				select.append('<option value="'+equip._id+'">'+equip.typeName+'</option>');
+			.appendTo('#equipmentNameCol' + equipment_count); // the select field
+		let select = $('#selectEquipment' + equipment_count);  // the select field (query selector, to be used to add options later)
+		/* Add options to the select */
+		all_equipment.forEach(function (equip) { // iterate through all the equipments from the database
+			if(unavailable_equipment.includes(equip._id) || equip.quantity <= 0){ // check if the equipment is not already used or there is no available quantity
+				select.append('<option value="'+equip._id+'" disabled>'+equip.typeName+'</option>'); // add disabled option
+			} else { // equipment is available
+				select.append('<option value="'+equip._id+'">'+equip.typeName+'</option>'); // add option
 			}
 		});
+		/* End Add options to the select */
+		/* End Equipment field select column */
 
-		$('<div>').attr('class', 'col').attr('id', 'equipmentQuantityCol' + equipment_count).appendTo('#rowEquipment' + equipment_count);
-		$('<label>').attr('for', 'quantity' + equipment_count).appendTo('#equipmentQuantityCol' + equipment_count).text('Quantity ' + equipment_count);
-		all_equipment.forEach(function(equip){
+		/* Equipment quantity column */
+		$('<div>').attr('class', 'col').attr('id', 'equipmentQuantityCol' + equipment_count).appendTo('#rowEquipment' + equipment_count); // container of the input field
+		$('<label>').attr('for', 'quantity' + equipment_count).appendTo('#equipmentQuantityCol' + equipment_count).text('Quantity ' + equipment_count); // the label of the input field
+		all_equipment.forEach(function(equip){ // add the input field with Minimum and Maximum values
 			if(equip._id == select.val()){
 				$('<input>')
 					.attr('type', 'number')
@@ -56,70 +66,87 @@ script.
 					.appendTo('#equipmentQuantityCol' + equipment_count);
 			}
 		});
-		if (equipment_count === 0) {
-			$('div[name=quantity' + equipment_count + ']').attr('max', all_equipment[0].quantity);
+		if (equipment_count === 0) { // check if there is any equipment added
+			$('div[name=quantity' + equipment_count + ']').attr('max', all_equipment[0].quantity); // maximum quantity is of the first element by default
 		}
+		/* End Equipment quantity column */
 
+		/* Equipment delete button */
 		$('<div>')
 			.attr('class', 'col')
 			.attr('id', 'removeEquipmentCol' + equipment_count)
 			.attr('style', 'flex-grow:0;position:relative;')
-			.appendTo('#rowEquipment' + equipment_count);
+			.appendTo('#rowEquipment' + equipment_count); // container of the button
 		$('<a>')
 			.attr('class', 'options-btn')
 			.attr('href', '#')
 			.attr('id', 'removeEquipmentIcon' + equipment_count)
 			.attr('style', 'position:absolute;bottom:0;left:0')
 			.attr('onclick', '$(this).parent().parent().remove();checkAddedEquip();')
-			.appendTo('#removeEquipmentCol' + equipment_count);
-		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeEquipmentIcon' + equipment_count);
+			.appendTo('#removeEquipmentCol' + equipment_count); // action button
+		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeEquipmentIcon' + equipment_count); // delete icon
+		/* End Equipment delete button */
 
-		equipment_count++;
+		equipment_count++; // increment number of equipment fields
 
-		let selected_option = select.val();
+		let selected_option = select.val(); // selected option for this select field
 
-		unavailable_equipment.push(selected_option);
+		unavailable_equipment.push(selected_option); // add the id of the equipment to the unavailable equipment array
 
-		let option = $('#equipment select option[value="' + selected_option + '"]')
-		option.attr('disabled', true);
+		let option = $('#equipment select option[value="' + selected_option + '"]'); // find all options with the value that is selected for this select field
+		option.attr('disabled', true); // disable all options with the selected value
 
-		for (let i = 0; i < select.find('option').length; i++) {
-			if (select.find('option')[i].value === selected_option) {
-				select.find('option')[i].removeAttribute('disabled');
+		/* Disable other options with the selected value */
+		for (let i = 0; i < select.find('option').length; i++) { // iterate through the options of this select
+			if (select.find('option')[i].value === selected_option) { // if values (ids of the equipment) match then this is the selected option
+				select.find('option')[i].removeAttribute('disabled'); // remove the disabled attribute of this option
 				break;
 			}
 		}
+		/* End Disable other options with the selected value */
 
-		checkAddedEquip();
+		checkAddedEquip(); // validate the unavailable equipment
 	}
 
-	function selectedEquipment(event) {
-		all_equipment.forEach(function (equip) {
-			if (equip._id === event.value && equip.quantity > 0){
-				let input = $(event).parent().parent().find('input')[0];
+	function selectedEquipment(event) { // checks if the selection is valid and disables the option for every other select possible
+		all_equipment.forEach(function (equip) { // iterate through all of the equipment
+			if (equip._id === event.value && equip.quantity > 0){ // if equipment found and there is any available quantity
+				let input = $(event).parent().parent().find('input')[0]; // find the quantity input field
 
-				input.setAttribute('max', equip.quantity);
-				if(input.value > equip.quantity){
-					input.value = equip.quantity;
+				input.setAttribute('max', equip.quantity); // set the maximum quantity
+				if(input.value > equip.quantity){ // if the input from the user is more than the available quantity
+					input.value = equip.quantity; // set the maximum quantity to be the input of the user
 				}
 
-				unavailable_equipment.push(equip._id);
+				unavailable_equipment.push(equip._id); // add the equipment id to the unavailable equipment array
 
-				$('#equipment select option[value="' + event.value + '"]').attr('disabled', true);
+				$('#equipment select option[value="' + event.value + '"]').attr('disabled', true); // disable all options with the selected value
 
-				event.options[event.selectedIndex].removeAttribute('disabled');
+				event.options[event.selectedIndex].removeAttribute('disabled'); // remove the disabled attribute for the selected option
 
-				checkAddedEquip();
+				checkAddedEquip(); // validate the unavailable equipment
 			}
 		});
 	}
 
-	function checkAddedEquip(){
-		for (let i = 0; i < unavailable_equipment.length; i++) {
-			let option = $('#equipment select option[value="' + unavailable_equipment[i] + '"]:selected');
-			if (option.length < 1) {
-				$('#equipment select option[value="' + unavailable_equipment[i] + '"]').removeAttr('disabled');
-				unavailable_equipment.splice(i, 1);
+	function checkAddedEquip(){ // validate the unavailable equipment
+		for (let i = 0; i < unavailable_equipment.length; i++) { // iterate through the unavailable equipment
+			let option = $('#equipment select option[value="' + unavailable_equipment[i] + '"]:selected'); // check if there is any selected equipment with this id
+			let available_quantity = 0; // used to store the available quantity of an equipment selection
+
+			/* Check for available quantity */
+			all_equipment.forEach(function (equip) { // iterate through all the equipments from the database
+				if(equip._id == unavailable_equipment[i]){ // if ids match the equipment is found
+					available_quantity = equip.quantity; // assign the available quantity to the variable
+				}
+			});
+			/* End Check for available quantity */
+
+			/* Check if equipment id is selected and available to be enabled again */
+			if (option.length < 1 && available_quantity > 0) { // if there is no selected equipment with this id
+				$('#equipment select option[value="' + unavailable_equipment[i] + '"]').removeAttr('disabled'); // remove the disabled attribute
+				unavailable_equipment.splice(i, 1); // remove the equipment id from the unavailable equipment array
 			}
+			/* End Check if equipment id is selected and available to be enabled again */
 		}
 	}

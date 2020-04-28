@@ -1,89 +1,94 @@
 extends layout
 
 block content
-  .container
-    h3.title=title
-    hr
-    p.
-      The Department of Computer Science in the University of Liverpool organizes a range of
-      outreach events in order to raise enthusiasm into school-age pupils about
-      going into Computer Science, also to spread the knowledge about the sphere
-      amongst everyone, including the teachers.
+	.container
+		// TITLE STARTS HERE
+		h3.title=title
+		hr
+		// TITLE ENDS HERE
+		// INTRODUCTION STARTS HERE
+		p.
+			The Department of Computer Science in the University of Liverpool organizes a range of
+			outreach events in order to raise enthusiasm into school-age pupils about
+			going into Computer Science, also to spread the knowledge about the sphere
+			amongst everyone, including the teachers.
 
-    p.
-      You can use the burger menu in the top right corner to navigate through the system.
+		p.
+			You can use the burger menu in the top right corner to navigate through the system.
 
 
-    p
-      b='For Visitors'
-      br
-      span='If you are a visitor you will only be able to see the events that you are marked as a visitor.'
+		p
+			b='For Visitors'
+			br
+			span='If you are a visitor you will only be able to see the events that you are marked as a visitor.'
 
-    p
-      b='For Administrators'
-      br
-      span='If you are a system administrator, you would be able to edit the different elements that are stored in the system and add new ones if needed.'
+		p
+			b='For Administrators'
+			br
+			span='If you are a system administrator, you would be able to edit the different elements that are stored in the system and add new ones if needed.'
+		// INTRODUCTION ENDS HERE
 
-  script.
-        //Start subscription
-        const publicVapidKey = "!{publicKey}";
+	script.
+		// The code below is for web push notification.
+		// The code is changed slightly but the overall structure is the same
+		// from the author
+		// Link: https://stackoverflow.com/questions/58379459/push-notifications-on-javascript-with-nodejs-express
+		// Author: CVO
+		// Accessed date: 28/04/2020
+		const publicVapidKey = "!{publicKey}"; // the public key which authorizes the client to receive the notifications
 
-        // $(document).ready(function(){
-            if (window.Notification) {
-                if (Notification.permission !== 'granted') {
-                    Notification.requestPermission(function(){
-                        if (Notification.permission === 'granted') {
-                            getSubscriptionObject().then(subscribe)
-                        }
-                    }).catch(function(err) {
-                        console.log(err);
-                    });
-                } else {
-                    getSubscriptionObject().then(subscribe)
-                }
-            }
-        // });
+		if (window.Notification) { // check if the browser supports notifications
+			if (Notification.permission !== 'granted') { // check if the permissions for notifications are granted
+				Notification.requestPermission(function () { // request permissions from the user for notifications
+					if (Notification.permission === 'granted') { // if the permissions are granted
+						getSubscriptionObject().then(subscribe) // get the subscription object
+					}
+				}).catch(function (err) { // error while requesting permissions from the user
+					console.log(err);
+				});
+			} else { // permission is granted already
+				getSubscriptionObject().then(subscribe) // get the subscription object
+			}
+		}
 
-        //Generate subscription object
-        function getSubscriptionObject() {
-            return navigator.serviceWorker.register('/javascripts/worker.js')
-            .then(function(worker){
-                return worker.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
-                }).catch(function(err) {
-                    console.log(err);
-                });
-            }).catch(function(err) {
-                console.log(err);
-            });
-        }
 
-        //Send subscription to server
-        function subscribe(subscription) {
-            return fetch(window.location.origin + '/subscribe', {
-                method: 'POST',
-                body: JSON.stringify({
-                    subscription: subscription,
-                }),
-                headers: {
-                    'content-type': 'application/json'
-                }
-            }).catch(function(err) {
-                console.log(err);
-            });
-        }
+		function getSubscriptionObject() { // Generate subscription object
+			return navigator.serviceWorker.register('/javascripts/worker.js')
+				.then(function (worker) {
+					return worker.pushManager.subscribe({
+						userVisibleOnly: true,
+						applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+					}).catch(function (err) {
+						console.log(err);
+					});
+				}).catch(function (err) {
+					console.log(err);
+				});
+		}
 
-        //Decoder base64 to uint8
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding)
-                .replace(/-/g, '+')
-                .replace(/_/g, '/');
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) {
-                outputArray[i] = rawData.charCodeAt(i);
-            }
-            return outputArray;
-        }
+		function subscribe(subscription) { // Send subscription to server
+			return fetch(window.location.origin + '/subscribe', { // send the subscription object to the subscribe route
+				method: 'POST',
+				body: JSON.stringify({
+					subscription: subscription,
+				}),
+				headers: {
+					'content-type': 'application/json'
+				}
+			}).catch(function (err) {
+				console.log(err);
+			});
+		}
+
+		function urlBase64ToUint8Array(base64String) { // Decoder base64 to uint8
+			const padding = '='.repeat((4 - base64String.length % 4) % 4);
+			const base64 = (base64String + padding)
+				.replace(/-/g, '+')
+				.replace(/_/g, '/');
+			const rawData = window.atob(base64);
+			const outputArray = new Uint8Array(rawData.length);
+			for (let i = 0; i < rawData.length; ++i) {
+				outputArray[i] = rawData.charCodeAt(i);
+			}
+			return outputArray;
+		}

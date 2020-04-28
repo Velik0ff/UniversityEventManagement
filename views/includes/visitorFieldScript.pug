@@ -1,96 +1,112 @@
 script.
-	let all_visitors = !{JSON.stringify(visitors)};
+	let all_visitors = !{JSON.stringify(visitors)}; // all the visitors in the system
 
-	let unavailable_visitors = [];
+	let unavailable_visitors = []; // unavailable visitors to be stored here
 
-	$(document).ready(function () {
-		let visitor_selects = $("#visitors select");
-		for (let i = 0; i < visitor_selects.length; i++) {
-			let selects = $('#visitors select option[value="' + visitor_selects[i].value + '"]:selected');
-			if (selects.length >= 1) {
-				let option = $('#visitors select option[value="' + visitor_selects[i].value + '"]');
-				option.attr('disabled', true);
+	/* Check if the selected visitors are available */
+	$(document).ready(function () { // when the page has loaded
+		let visitor_selects = $("#visitors select"); // all the selected visitors (values only)
 
-				selects[0].removeAttribute('disabled');
+		for (let i = 0; i < visitor_selects.length; i++) { // iterate through all the selected visitors
+			let selects = $('#visitors select option[value="' + visitor_selects[i].value + '"]:selected'); // check if this option is selected at least once
+
+			if (selects.length >= 1) { // if there is a select field which has this option as selected
+				let option = $('#visitors select option[value="' + visitor_selects[i].value + '"]'); // all the options with this value
+				option.attr('disabled', true); // disable the options
+
+				selects[0].removeAttribute('disabled'); // allow only the first selection
 			}
 		}
 	});
+	/* End Check if the selected visitors are available */
 
-	function addVisitorField() {
+	function addVisitorField() { // add visitors field to the page
+		/* Visitor field select column */
+		// create visitor select field container and append to div container of the visitor fields
 		$('<div>').attr('class', 'row form-group').attr('id', 'rowVisitor' + visitor_count).appendTo('#visitors');
 
 		$('<div>')
 				.attr('class', 'col')
 				.attr('id', 'visitorCol' + visitor_count)
-				.appendTo('#rowVisitor' + visitor_count);
-		$('<label>').attr('for', 'visitorID' + visitor_count).appendTo('#visitorCol' + visitor_count).text('Visitor ' + visitor_count + ' Name');
+				.appendTo('#rowVisitor' + visitor_count); // container of the select field
+		$('<label>').attr('for', 'visitorID' + visitor_count).appendTo('#visitorCol' + visitor_count).text('Visitor ' + visitor_count + ' Name'); // the label for the select field
 		$('<select>')
 				.attr('class', 'form-control')
 				.attr('id', 'selectVisitor' + visitor_count)
 				.attr('name', 'visitorID' + visitor_count)
 				.attr('onChange', 'selectedVisitor(this)')
-				.appendTo('#visitorCol' + visitor_count);
+				.appendTo('#visitorCol' + visitor_count); // the select field
 
-		let select = $('#selectVisitor' + visitor_count);
-		all_visitors.forEach(function (visitor) {
-			if (unavailable_visitors.includes(visitor._id)) {
-				select.append('<option value="' + visitor._id + '" disabled>' + visitor.leadTeacherName + '</option>');
-			} else {
-				select.append('<option value="' + visitor._id + '">' + visitor.leadTeacherName + '</option>');
+		let select = $('#selectVisitor' + visitor_count); // the select field (query selector, to be used to add options later)
+		/* Add options to the select */
+		all_visitors.forEach(function (visitor) { // iterate through all the visitors from the database
+			if (unavailable_visitors.includes(visitor._id)) { // check if the room is not already used by another select
+				select.append('<option value="' + visitor._id + '" disabled>' + visitor.leadTeacherName + '</option>'); // add disabled option
+			} else { // visitor is not used and is available
+				select.append('<option value="' + visitor._id + '">' + visitor.leadTeacherName + '</option>'); // add option
 			}
 		});
+		/* End Add options to the select */
+		/* End Visitor field select column */
 
+		/* Visitor delete button */
 		$('<div>')
 				.attr('class', 'col')
 				.attr('id', 'removeVisitorCol' + visitor_count)
 				.attr('style', 'flex-grow:0;position:relative;')
-				.appendTo('#rowVisitor' + visitor_count);
+				.appendTo('#rowVisitor' + visitor_count); // container of the button
 		$('<a>')
 				.attr('class', 'options-btn')
 				.attr('href', '#')
 				.attr('id', 'removeVisitorIcon' + visitor_count)
 				.attr('style', 'position:absolute;bottom:0;left:0')
 				.attr('onclick', '$(this).parent().parent().remove();checkAddedVisitors();')
-				.appendTo('#removeVisitorCol' + visitor_count);
-		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeVisitorIcon' + visitor_count);
+				.appendTo('#removeVisitorCol' + visitor_count); // action button
+		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeVisitorIcon' + visitor_count); // delete icon
+		/* End Visitor delete button */
 
-		visitor_count++;
+		visitor_count++; // increment number of visitor fields
 
-		let selected_option = select.val();
+		let selected_option = select.val(); // selected option for this select field
 
-		unavailable_visitors.push(selected_option);
+		unavailable_visitors.push(selected_option); // add the id of the visitor to the unavailable visitors array
 
-		let option = $('#visitors select option[value="' + selected_option + '"]')
-		option.attr('disabled', true);
+		let option = $('#visitors select option[value="' + selected_option + '"]'); // find all options with the value that is selected
+		option.attr('disabled', true); // disable all options with the selected value
 
-		for (let i = 0; i < select.find('option').length; i++) {
-			if (select.find('option')[i].value === selected_option) {
-				select.find('option')[i].removeAttribute('disabled');
+		/* Enable the option of the current select which has been available on creation of the element */
+		for (let i = 0; i < select.find('option').length; i++) { // iterate through the options of this select
+			if (select.find('option')[i].value === selected_option) { // if values (ids of the visitors) match then this is the selected option
+				select.find('option')[i].removeAttribute('disabled'); // remove the disabled attribute for the selected option
 				break;
 			}
 		}
+		/* End Enable the option of the current select which has been available on creation of the element */
 
-		checkAddedVisitors();
+		checkAddedVisitors(); // validate the unavailable visitors
 	}
 
-	function selectedVisitor(event) {
-		if (!unavailable_visitors.includes(event.value)) {
-			unavailable_visitors.push(event.value);
+	function selectedVisitor(event) { // checks if the selection is valid and disables the option for every other select possible
+		if (!unavailable_visitors.includes(event.value)) { // iterate through all of the visitors
+			unavailable_visitors.push(event.value); // add the visitor id to the unavailable visitors array
 
-			$('#visitors select option[value="' + event.value + '"]').attr('disabled', true);
+			$('#visitors select option[value="' + event.value + '"]').attr('disabled', true); // disable all options with the selected values
 
-			event.options[event.selectedIndex].removeAttribute('disabled');
+			event.options[event.selectedIndex].removeAttribute('disabled'); // remove the disabled attribute for the selected option
 		}
 
-		checkAddedVisitors();
+		checkAddedVisitors(); // validate the unavailable visitors
 	}
 
-	function checkAddedVisitors() {
-		for(let i=0;i<unavailable_visitors.length;i++){
-			let option = $('#visitors select option[value="'+unavailable_visitors[i]+'"]:selected');
-			if(option.length < 1){
-				$('#visitors select option[value="' + unavailable_visitors[i] + '"]').removeAttr('disabled');
-				unavailable_visitors.splice(i,1);
+	function checkAddedVisitors() { // validate the unavailable visitors
+		for(let i=0;i<unavailable_visitors.length;i++){ // iterate through the unavailable visitors
+			let option = $('#visitors select option[value="'+unavailable_visitors[i]+'"]:selected'); // check if there is any selected visitor with this id
+
+			/* Check if visitor id is selected so it can be enabled again */
+			if(option.length < 1){ // if there is no selected visitor with this id
+				$('#visitors select option[value="' + unavailable_visitors[i] + '"]').removeAttr('disabled'); // remove the disabled attribute
+				unavailable_visitors.splice(i,1); // remove the visitor id from the unavailable visitors array
 			}
+			/* End Check if visitor id is selected so it can be enabled again */
 		}
 	}

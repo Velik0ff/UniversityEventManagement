@@ -3,17 +3,22 @@ extends layout
 block content
 	.container
 
+		// TITLE STARTS HERE
 		h3.title=title
 		hr
+		// TITLE ENDS HERE
 
+		// CALENDAR CONTAINER STARTS HERE
 		div#calendar
+		// CALENDAR CONTAINER ENDS HERE
 
 	script(src='/@fullcalendar/core/main.js')
 	script(src='/@fullcalendar/daygrid/main.js')
 	script.
-		document.addEventListener('DOMContentLoaded', function () {
-			var calendarEl = document.getElementById('calendar');
+		document.addEventListener('DOMContentLoaded', function () { // when the page has loaded
+			var calendarEl = document.getElementById('calendar'); // the calendar container
 
+			// the calendar with all the information that has to be input
 			var calendar = new FullCalendar.Calendar(calendarEl, {
 				header: {
 					left: 'prev,next today',
@@ -31,5 +36,5 @@ block content
 				events: !{JSON.stringify(events)}
 			});
 
-			calendar.render();
+			calendar.render(); // render the calendar
 		});

@@ -1,103 +1,121 @@
 script.
-	let all_staff = !{JSON.stringify(staff)};
+	let all_staff = !{JSON.stringify(staff)}; // all the staff members entered in the system
 
-	let unavailable_staff = [];
+	let unavailable_staff = []; // unavailable staff members to be stored here
 
-		$(document).ready(function () {
-			let visitor_selects = $("#visitors select");
-			for (let i = 0; i < visitor_selects.length; i++) {
-				let selects = $('#visitors select option[value="' + visitor_selects[i].value + '"]:selected');
-				if (selects.length >= 1) {
-					let option = $('#visitors select option[value="' + visitor_selects[i].value + '"]');
-					option.attr('disabled', true);
+	/* Check if the selected staff members are available */
+		$(document).ready(function () { // when the page has loaded
+			let visitor_selects = $("#visitors select"); // all the selected staff members (values only)
 
-					selects[0].removeAttribute('disabled');
+			for (let i = 0; i < visitor_selects.length; i++) { // iterate through all the selected staff members
+				let selects = $('#visitors select option[value="' + visitor_selects[i].value + '"]:selected'); // check if this option is selected at least once
+
+				if (selects.length >= 1) { // if there is a select field which has this option selected
+					let option = $('#visitors select option[value="' + visitor_selects[i].value + '"]'); // all the options with this value
+					option.attr('disabled', true); // disable the options
+
+					selects[0].removeAttribute('disabled'); // allow only the first selection
 				}
 			}
 		});
+	/* End Check if the selected staff members are available */
 
-	function addStaffField() {
+	function addStaffField() { // add staff members field to the page
+		/* Staff member field select column */
+		// create staff member field container and append to div container of staff member fields
 		$('<div>').attr('class', 'row form-group').attr('id', 'rowStaff' + staff_count).appendTo('#staff');
 
 		$('<div>')
 				.attr('class', 'col')
 				.attr('id', 'staffNameCol' + staff_count)
-				.appendTo('#rowStaff' + staff_count);
-		$('<label>').attr('for', 'staffID' + staff_count).text('Staff Member ' + staff_count + ' Name').appendTo('#staffNameCol' + staff_count);
+				.appendTo('#rowStaff' + staff_count); // container of t he select field
+		$('<label>').attr('for', 'staffID' + staff_count).text('Staff Member ' + staff_count + ' Name').appendTo('#staffNameCol' + staff_count); // the label for the select field
 		$('<select>')
 				.attr('class', 'form-control')
 				.attr('id', 'selectStaff' + staff_count)
 				.attr('name', 'staffID' + staff_count)
 				.attr('onChange', 'selectedStaffMember(this)')
-				.appendTo('#staffNameCol' + staff_count);
-		let select = $('#selectStaff' + staff_count);
-		all_staff.forEach(function (staff_member) {
-			if (unavailable_staff.includes(staff_member._id)) {
-				select.append('<option value="' + staff_member._id + '" disabled>' + staff_member.fullName + '</option>');
-			} else {
-				select.append('<option value="' + staff_member._id + '">' + staff_member.fullName + '</option>');
+				.appendTo('#staffNameCol' + staff_count); // the select field
+		let select = $('#selectStaff' + staff_count); // the select field (query selector, to be used to add options later)
+		/* Add options to the select */
+		all_staff.forEach(function (staff_member) { // iterate through all the staff members from the database
+			if (unavailable_staff.includes(staff_member._id)) { // check if the staff member is not already used by another select
+				select.append('<option value="' + staff_member._id + '" disabled>' + staff_member.fullName + '</option>'); // add disabled option
+			} else { // staff member is not  used and is available
+				select.append('<option value="' + staff_member._id + '">' + staff_member.fullName + '</option>'); // add option
 			}
 		});
+		/* End Add options to the select */
+		/* End Staff member field select column */
 
-		$('<div>').attr('class', 'col').attr('id', 'staffRoleCol' + staff_count).appendTo('#rowStaff' + staff_count);
-		$('<label>').attr('for', 'staffRole' + staff_count).appendTo('#staffRoleCol' + staff_count).text('Staff Member ' + staff_count + ' Role');
+		/* Staff member role column */
+		$('<div>').attr('class', 'col').attr('id', 'staffRoleCol' + staff_count).appendTo('#rowStaff' + staff_count); // container of the input field
+		$('<label>').attr('for', 'staffRole' + staff_count).appendTo('#staffRoleCol' + staff_count).text('Staff Member ' + staff_count + ' Role'); // label for the input field
 		$('<input>')
 				.attr('type', 'text')
 				.attr('class', 'form-control')
 				.attr('name', 'staffRole' + staff_count)
-				.appendTo('#staffRoleCol' + staff_count);
+				.appendTo('#staffRoleCol' + staff_count); // the input field
+		/* End Staff member role column */
 
+		/* Staff member delete button */
 		$('<div>')
 				.attr('class', 'col')
 				.attr('id', 'removeStaffCol' + staff_count)
 				.attr('style', 'flex-grow:0;position:relative;')
-				.appendTo('#rowStaff' + staff_count);
+				.appendTo('#rowStaff' + staff_count); // container of the button
 		$('<a>')
 				.attr('class', 'options-btn')
 				.attr('href', '#')
 				.attr('id', 'removeStaffIcon' + staff_count)
 				.attr('style', 'position:absolute;bottom:0;left:0')
 				.attr('onclick', '$(this).parent().parent().remove();checkAddedStaff();')
-				.appendTo('#removeStaffCol' + staff_count);
-		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeStaffIcon' + staff_count);
+				.appendTo('#removeStaffCol' + staff_count); // action button
+		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeStaffIcon' + staff_count); // delete icon
+		/* End Staff member delete button */
 
-		staff_count++;
+		staff_count++; // increment number of staff member fields
 
-		let selected_option = select.val();
+		let selected_option = select.val(); // selected option for this select field
 
-		unavailable_staff.push(select.val());
+		unavailable_staff.push(select.val()); // add the id of the staff member to the unavailable staff members array
 
-		let option = $('#staff select option[value="' + selected_option + '"]')
-		option.attr('disabled', true);
+		let option = $('#staff select option[value="' + selected_option + '"]'); // find all options with the value that is selected
+		option.attr('disabled', true); // disable all options with the selected value
 
-		for(let i=0; i < select.find('option').length; i++){
-			if(select.find('option')[i].value === selected_option){
-				select.find('option')[i].removeAttribute('disabled');
+		/* Enable the option of the current select which has been available on creation of the element */
+		for(let i=0; i < select.find('option').length; i++){ // iterate through the options of this select
+			if(select.find('option')[i].value === selected_option){ // if values (ids of the staff members) match then this is the selected option
+				select.find('option')[i].removeAttribute('disabled');// remove the disabled attribute for the selected option
 				break;
 			}
 		}
+		/* End Enable the option of the current select which has been available on creation of the element */
 
-		checkAddedStaff();
+		checkAddedStaff(); // validate the unavailable staff members
 	}
 
-	function selectedStaffMember(event) {
-		if (!unavailable_staff.includes(event.value)) {
-			unavailable_staff.push(event.value);
+	function selectedStaffMember(event) { // checks if the selection is valid and disables the option for every other select possible
+		if (!unavailable_staff.includes(event.value)) { // iterate through all of the staff members
+			unavailable_staff.push(event.value); // add the staff member id to the unavailable staff members array
 
-			$('#staff select option[value="' + event.value + '"]').attr('disabled', true);
+			$('#staff select option[value="' + event.value + '"]').attr('disabled', true); // disable all options with the selected value
 
-			event.options[event.selectedIndex].removeAttribute('disabled');
+			event.options[event.selectedIndex].removeAttribute('disabled'); // remove the disabled attribute for the selected option
 		}
 
-		checkAddedStaff();
+		checkAddedStaff(); // validate the unavailable staff members
 	}
 
-	function checkAddedStaff() {
-		for (let i = 0; i < unavailable_staff.length; i++) {
-			let option = $('#staff select option[value="' + unavailable_staff[i] + '"]:selected');
-			if (option.length < 1) {
-				$('#staff select option[value="' + unavailable_staff[i] + '"]').removeAttr('disabled');
-				unavailable_staff.splice(i, 1);
+	function checkAddedStaff() { // validate the unavailable staff members
+		for (let i = 0; i < unavailable_staff.length; i++) { // iterate through the unavailable rooms
+			let option = $('#staff select option[value="' + unavailable_staff[i] + '"]:selected'); // check if there is any selected staff members with this id
+
+			/* Check if the staff member id is selected or it can be enabled again */
+			if (option.length < 1) { // if there is not selected staff member with this id
+				$('#staff select option[value="' + unavailable_staff[i] + '"]').removeAttr('disabled'); // remove the disabled attribute
+				unavailable_staff.splice(i, 1); // remove the staff member id from the unavailable staff members array
 			}
+			/* End Check if the staff member id is selected or it can be enabled again */
 		}
 	}

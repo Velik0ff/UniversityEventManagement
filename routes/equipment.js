@@ -114,13 +114,13 @@ function renderAdd(res,req,equipment){
 		title: 'Add New Equipment',
 		fields: fields,
 		item: {
-			typeName: equipment ? equipment.typeName : "",
-			quantity: equipment ? equipment.quantity : ""
+			typeName: equipment && error_msg ? equipment.typeName : "",
+			quantity: equipment && error_msg ? equipment.quantity : ""
 		},
 		cancelLink: listLink,
 		actionLink: '/equipment/' + addLink,
 		customFields: true,
-		customFieldsValues: equipment ? equipment.customFields : "",
+		customFieldsValues: equipment && error_msg ? equipment.customFields : "",
 		submitButtonText:"Add",
 		error: error_msg,
 		message: message,

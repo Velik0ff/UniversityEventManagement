@@ -91,11 +91,11 @@ function renderAdd(res,req,user){
 		error: error_msg,
 		message: message,
 		item: {
-			leadTeacherName: user.leadTeacherName,
-			institutionName: user.institutionName,
-			contactEmail: user.contactEmail,
-			contactPhone: user.contactPhone,
-			groupSize: user.groupSize
+			leadTeacherName: user && error_msg ? user.leadTeacherName : "",
+			institutionName: user && error_msg ? user.institutionName : "",
+			contactEmail: user && error_msg ? user.contactEmail : "",
+			contactPhone: user && error_msg ? user.contactPhone : "",
+			groupSize: user && error_msg ? user.groupSize : "",
 		},
 		cancelLink: listLink,
 		submitButtonText: "Add",
@@ -123,7 +123,7 @@ function renderEdit(res,req,user){
 		{name: "Contact Phone", type: "phone", identifier: "phone"},
 		{name: "Group Size", type: "number", identifier: "groupSize"}];
 
-	res.render('edit', {
+	res.render('add-edit', {
 		title: 'Editing visitor: ' + user.leadTeacherName,
 		fields: fields,
 		error: error_msg,

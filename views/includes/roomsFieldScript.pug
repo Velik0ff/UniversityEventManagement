@@ -1,135 +1,159 @@
 script.
-	let all_rooms = !{JSON.stringify(rooms)};
+	let all_rooms = !{JSON.stringify(rooms)}; // all the rooms entered in the system
 
-	let unavailable_rooms = [];
+	let unavailable_rooms = []; // unavailable rooms to be stored here
 
-	$(document).ready(function(){
-		let room_selects = $("#rooms select");
-		for(let i = 0; i<room_selects.length; i++){
-			let selects = $('#rooms select option[value="' + room_selects[i].value + '"]:selected');
-			if(selects.length >= 1) {
-				let option = $('#rooms select option[value="' + room_selects[i].value + '"]');
-				option.attr('disabled', true);
+	/* Check if the selected rooms are available */
+	$(document).ready(function(){ // when the page has loaded
+		let room_selects = $("#rooms select"); // all the selected rooms (values only)
 
-				selects[0].removeAttribute('disabled');
+		for(let i = 0; i<room_selects.length; i++){ // iterate through all the selected rooms
+			let selects = $('#rooms select option[value="' + room_selects[i].value + '"]:selected'); // check if this option is selected at least once
+
+			if(selects.length >= 1) { // if there is a select field which has this option as selected
+				let option = $('#rooms select option[value="' + room_selects[i].value + '"]'); // all the options with this value
+				option.attr('disabled', true); // disable the options
+
+				selects[0].removeAttribute('disabled'); // allow only the first selection
 			}
 		}
 	});
+	/* End Check if the selected rooms are available */
 
-	function addRoomField() {
-		all_rooms.forEach(function(room){
-			if (!checkRoomAvailability(room)) {
-				unavailable_rooms.push(room._id);
+	function addRoomField() { // add rooms field to the page
+		/* Check all the room select fields for room availability */
+		all_rooms.forEach(function(room){ // iterate through all the rooms
+			if (!checkRoomAvailability(room)) { // check if room is unavailable
+				unavailable_rooms.push(room._id); // add the room id to the unavailable rooms array
 			}
 		});
+		/* End Check all the room select fields for room availability */
 
+		/* Room field select column */
+		// create room select field container and append to div container of room fields
 		$('<div>').attr('class', 'row form-group').attr('id', 'rowRoom' + room_count).appendTo('#rooms');
 
 		$('<div>')
 			.attr('class', 'col')
 			.attr('id', 'roomNameCol' + room_count)
-			.appendTo('#rowRoom' + room_count);
-		$('<label>').attr('for', 'roomID' + room_count).appendTo('#roomNameCol' + room_count).text('Room ' + room_count + ' Name');
+			.appendTo('#rowRoom' + room_count); // container of the select field
+		$('<label>').attr('for', 'roomID' + room_count).appendTo('#roomNameCol' + room_count).text('Room ' + room_count + ' Name'); // the label for the select field
 		$('<select>')
 			.attr('class', 'form-control')
 			.attr('id', 'selectRoom' + room_count)
 			.attr('name', 'roomID' + room_count)
 			.attr('onChange', 'selectedRoom(this)')
-			.appendTo('#roomNameCol' + room_count);
-		let select = $('#selectRoom' + room_count);
-		all_rooms.forEach(function (room) {
-			if (unavailable_rooms.includes(room._id)) {
-				select.append('<option value="'+room._id+'" disabled>' + room.roomName + '</option>');
-			} else {
-				select.append('<option value="' + room._id + '">' + room.roomName + '</option>');
+			.appendTo('#roomNameCol' + room_count); // the select field
+		let select = $('#selectRoom' + room_count); // the select field (query selector, to be used to add options later)
+		/* Add options to the select */
+		all_rooms.forEach(function (room) { // iterate through all the rooms from the database
+			if (unavailable_rooms.includes(room._id)) { // check if the room is not already used by another select
+				select.append('<option value="'+room._id+'" disabled>' + room.roomName + '</option>'); // add disabled option
+			} else { // room is not used and is available
+				select.append('<option value="' + room._id + '">' + room.roomName + '</option>'); // add option
 			}
 		});
+		/* End Add options to the select */
+		/* End Room field select column */
 
+		/* Room delete button */
 		$('<div>')
 			.attr('class', 'col')
 			.attr('id', 'removeRoomCol' + room_count)
 			.attr('style', 'flex-grow:0;position:relative;')
-			.appendTo('#rowRoom' + room_count);
+			.appendTo('#rowRoom' + room_count); // container of the button
 		$('<a>')
 			.attr('class', 'options-btn')
 			.attr('href', '#')
 			.attr('id', 'removeRoomIcon' + room_count)
 			.attr('style', 'position:absolute;bottom:0;left:0')
 			.attr('onclick', '$(this).parent().parent().remove();checkAddedRooms();')
-			.appendTo('#removeRoomCol' + room_count);
-		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeRoomIcon' + room_count);
+			.appendTo('#removeRoomCol' + room_count); // action button
+		$('<i>').attr('class', 'material-icons md-18').text('delete').appendTo('#removeRoomIcon' + room_count); // delete icon
+		/* End Room delete button */
 
-		room_count++;
+		room_count++; // increment number of room fields
 
-		let selected_option = select.val();
+		let selected_option = select.val(); // selected option for this select field
 
-		unavailable_rooms.push(selected_option);
+		unavailable_rooms.push(selected_option); // add the id of the room to the unavailable rooms array
 
-		let option = $('#rooms select option[value="' + selected_option + '"]')
-		option.attr('disabled', true);
+		let option = $('#rooms select option[value="' + selected_option + '"]'); // find all options with the value that is selected
+		option.attr('disabled', true); // disable all options with the selected value
 
-		for (let i = 0; i < select.find('option').length; i++) {
-			if (select.find('option')[i].value === selected_option) {
-				select.find('option')[i].removeAttribute('disabled');
+		/* Enable the option of the current select which has been available on creation of the element */
+		for (let i = 0; i < select.find('option').length; i++) { // iterate through the options of this select
+			if (select.find('option')[i].value === selected_option) { // if values (ids of the rooms) match then this is the selected option
+				select.find('option')[i].removeAttribute('disabled');// remove the disabled attribute for the selected option
 				break;
 			}
 		}
+		/* End Enable the option of the current select which has been available on creation of the element */
 
-		checkAddedRooms();
+		checkAddedRooms(); // validate the unavailable rooms
 	}
 
-	function selectedRoom(event) {
-		if (!unavailable_rooms.includes(event.value)) {
-			unavailable_rooms.push(event.value);
+	function selectedRoom(event) { // checks if the selection is valid and disables the option for every other select possible
+		if (!unavailable_rooms.includes(event.value)) { // iterate through all of the rooms
+			unavailable_rooms.push(event.value); // add the room id to the unavailable rooms array
 
-			$('#rooms select option[value="' + event.value + '"]').attr('disabled', true);
+			$('#rooms select option[value="' + event.value + '"]').attr('disabled', true); // disable all options with the selected value
 
-			event.options[event.selectedIndex].removeAttribute('disabled');
+			event.options[event.selectedIndex].removeAttribute('disabled'); // remove the disabled attribute for the selected option
 		}
 
-		checkAddedRooms();
+		checkAddedRooms(); // validate the unavailable rooms
 	}
 
-	function checkAddedRooms() {
-		for (let i = 0; i < unavailable_rooms.length; i++) {
-			let option = $('#rooms select option[value="' + unavailable_rooms[i] + '"]:selected');
-			let room_available = false;
+	function checkAddedRooms() { // validate the unavailable rooms
+		for (let i = 0; i < unavailable_rooms.length; i++) { // iterate through the unavailable rooms
+			let option = $('#rooms select option[value="' + unavailable_rooms[i] + '"]:selected'); // check if there is any selected rooms with this id
+			let room_available = false; // used to check if the room is available
 
-			all_rooms.forEach(function(room){
-				if(room._id == unavailable_rooms[i] && checkRoomAvailability(room)) room_available = true;
+			/* Check if room is available */
+			all_rooms.forEach(function(room){ // iterate through all of the rooms from the database
+				if(room._id == unavailable_rooms[i] && checkRoomAvailability(room)) room_available = true; // check if the room is not used or is available on this date
 			});
+			/* End Check if room is available */
 
-			if (option.length < 1 && room_available) {
-				$('#rooms select option[value="' + unavailable_rooms[i] + '"]').removeAttr('disabled');
-				unavailable_rooms.splice(i, 1);
+			/* Check if room id is selected and available to be enabled again */
+			if (option.length < 1 && room_available) { // if there is no selected room with this id
+				$('#rooms select option[value="' + unavailable_rooms[i] + '"]').removeAttr('disabled'); // remove the disabled attribute
+				unavailable_rooms.splice(i, 1); // remove the room id from the unavailable rooms array
 			}
+			/* End Check if room id is selected and available to be enabled again */
 		}
 	}
 
-	function checkRoomAvailability(room){
-		if(room) {
+	function checkRoomAvailability(room){ // checks if a room is available on a certain date
+		if(room) { // if there is a not null room object passed to the function
+			// check if there are any events assigned to the room or the date has not been chosen (only for rooms that have never been assigned to an event)
 			if(room.events && room.events.length === 0 || $("#date").val() === "") {
-				return true;
-			} else if(room.events && room.events.length > 0) {
-				let room_available = false;
+				return true; // room is available
+			} else if(room.events && room.events.length > 0) { // check if there are events assigned to the room
+				let room_available = false; // used to check if room is available
 
-				room.events.forEach(function (roomEvent) {
+				/* Validate room availability depending on the dates it is used */
+				room.events.forEach(function (roomEvent) { // iterate through all the room events
 					/* Get time to midnight after the event end */
-					let startDate = Date.parse(roomEvent.date);
-					let endDate = roomEvent.endDate ? Date.parse(roomEvent.endDate) : false;
-					let eventStartDate = Date.parse($("#date").val());
-					let eventEndDate = $("#endDate").val() ? Date.parse($("#endDate").val()) : false;
-					let now = new Date();
-					let year = now.getUTCFullYear();
-					let month = now.getUTCMonth();
-					let day = now.getUTCDate();
+					let startDate = Date.parse(roomEvent.date); // start date of the event using the room
+					let endDate = roomEvent.endDate ? Date.parse(roomEvent.endDate) : false; // end date of the event using the room
+					let eventStartDate = Date.parse($("#date").val()); // current event start date
+					let eventEndDate = $("#endDate").val() ? Date.parse($("#endDate").val()) : false; // current event end date
+					let now = new Date(); // current date
+					let year = now.getUTCFullYear(); // current year
+					let month = now.getUTCMonth(); // current month
+					let day = now.getUTCDate(); // current day
 
-					let startDayHour = Date.UTC(year, month, day, 0, 0, 0, 0);
-					let midnight = startDayHour + 86400000;
+					let startDayHour = Date.UTC(year, month, day, 0, 0, 0, 0); // midnight on current day
+					let midnight = startDayHour + 86400000; // midnight after the current day
 
-					let time_left = midnight - now.getTime();
+					let time_left = midnight - now.getTime(); // time left to midnight
 					/* End Get time to midnight after the event end */
 
+					// check if the room is available depending if the day is free
+					// and the event assigned to the room does not interfere with the current event
+					// a room to be available, the whole day has to be free
 					if (((endDate && endDate < eventStartDate) ||
 							(startDate && !endDate && ((!eventEndDate && startDate >= eventStartDate + time_left) ||
 									(startDate + time_left <= eventStartDate) ||
@@ -138,10 +162,11 @@ script.
 						room_available = true;
 					}
 				});
+				/* End Validate room availability depending on the dates it is used */
 
-				return room_available;
-			} else return true;
-		} else {
-			return false;
+				return room_available; // return the result if the room is available or not
+			} else return true; // room should be enabled because there are no events assigned to it
+		} else { // room object is null
+			return false; // room should be disabled
 		}
 	}

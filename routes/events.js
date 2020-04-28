@@ -386,6 +386,7 @@ async function renderAdd(res, req, staff_use, equipment_use, rooms_use, visitor_
 	let staff = await genFunctions.getAllStaff(); // get all staff members information from the database
 	let eventTypes = await genFunctions.getAllEventTypes(); // get all the event types from the database
 
+	// when all the promises are resolved
 	Promise.all([equipment, rooms, eventTypes, visitors, staff]).then(() => {
 		/* Render Template */
 		res.render('add-edit', {
@@ -407,17 +408,17 @@ async function renderAdd(res, req, staff_use, equipment_use, rooms_use, visitor_
 			eventTypes: eventTypes,
 			staff: staff,
 			item: {
-				eventName: message ? req.body.eventName : null,
-				description: message ? req.body.description : null,
-				location: message ? req.body.location : null,
-				date: message ? req.body.date ? moment(req.body.date).format('YYYY-MM-DDTHH:mm') : null : null,
-				endDate: message ? req.body.endDate ? moment(req.body.endDate).format('YYYY-MM-DDTHH:mm') : null : null,
+				eventName: error_msg ? req.body.eventName : null,
+				description: error_msg ? req.body.description : null,
+				location: error_msg ? req.body.location : null,
+				date: error_msg ? req.body.date ? moment(req.body.date).format('YYYY-MM-DDTHH:mm') : null : null,
+				endDate: error_msg ? req.body.endDate ? moment(req.body.endDate).format('YYYY-MM-DDTHH:mm') : null : null,
 			},
-			selectedEventType: message ? req.body.eventType : null,
-			selectedStaff: message ? staff_use : null,
-			selectedEquip: message ? equipment_use : null,
-			selectedRooms: message ? rooms_use : null,
-			selectedVisitors: message ? visitor_attending : null,
+			selectedEventType: error_msg ? req.body.eventType : null,
+			selectedStaff: error_msg ? staff_use : null,
+			selectedEquip: error_msg ? equipment_use : null,
+			selectedRooms: error_msg ? rooms_use : null,
+			selectedVisitors: error_msg ? visitor_attending : null,
 			user: req.user
 		});
 		/* End Render Template */

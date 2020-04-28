@@ -3,48 +3,55 @@ extends layout
 block content
 	.container
 
+		// TITLE STARTS HERE
 		h3.title=title
 		hr
+		// TITLE ENDS HERE
 
 		div#msg.alert(role="alert" style='display:none;')
 
+		// EXPORT OPTIONS START HERE
 		div.row(style="flex-wrap:nowrap;")
 			div.col-sm(style="padding-right:0")
 				select.form-control#exportSelect(onchange='$("#exportBtn").attr("href","/export?type="+this.value)')
-					each option in exportOptions
+					each option in exportOptions // iterate through the export options that are available
 						option(value=option)=option
 			div.col-sm(style="flex-grow:0;padding-left:0;width:unset")
 				a.btn.btn-primary#exportBtn(href='/export?type=')='Export'
+		// EXPORT OPTIONS END HERE
 
 
 	script.
-		$(document).ready(function(){
+		$(document).ready(function(){ // when page has loaded
+			// assign the link of the export button to be the first option available by default
 			$('#exportBtn').attr('href','/export?type='+$('#exportSelect').val());
 		});
 
-		$('#exportBtn').click(function(){
-			let link = $('#exportBtn').attr('href');
-			let message_btn = $('#msg');
-			message_btn.removeClass('alert-success');
-			message_btn.removeClass('alert-danger');
-			message_btn.attr('style','display:none');
+		$('#exportBtn').click(function(){ // when clicked on the export button
+			let link = $('#exportBtn').attr('href'); // get the link of the button
+			let msg = $('#msg'); // the message to be displayed
+			/* Return message to default settings */
+			msg.removeClass('alert-success'); // remove success styling class
+			msg.removeClass('alert-danger'); // remove failed styling class
+			msg.attr('style','display:none'); // hide the message container
+			/* End Return message to default settings */
 
-			$.get(link,function(data,status){
-				if(status === 'success'){
-					message_btn.text('Your download should start any moment now.. Please be patient or try again.');
-					message_btn.addClass('alert-success');
-					message_btn.attr('style','display:block');
-					window.open(link);
-				} else {
-					message_btn.text('Download failed. Please refresh the window and try again.');
-					message_btn.addClass('alert-danger');
-					message_btn.attr('style','display:block');
+			$.get(link,function(data,status){ // fetch the file from the export route (acts as a check if the url will work)
+				if(status === 'success'){ // successfully sent the request
+					msg.text('Your download should start any moment now.. Please be patient or try again.'); // the text for the message
+					msg.addClass('alert-success'); // success styling class
+					msg.attr('style','display:block'); // display the container of the message
+					window.open(link); // open the link
+				} else { // error from the route (server-side)
+					msg.text('Download failed. Please refresh the window and try again.'); // the text for the message
+					msg.addClass('alert-danger'); // failed styling class
+					msg.attr('style','display:block'); // display the container of the message
 				}
-			}).catch(function(){
-				message_btn.text('Download failed or nothing available to export. Please refresh the window and try again.');
-				message_btn.addClass('alert-danger');
-				message_btn.attr('style','display:block');
+			}).catch(function(){ // file could not be fetched because of an error from the client
+				msg.text('Download failed or nothing available to export. Please refresh the window and try again.'); // the text for the message
+				msg.addClass('alert-danger'); // failed styling class
+				msg.attr('style','display:block'); // display the container of the message
 			});
 
-			return false;
+			return false; // stop the normal behaviour
 		});

@@ -76,7 +76,7 @@ function renderEdit(res,req,room){
 		{name: "Capacity", type: "number", identifier: "capacity"}];
 
 	/* Render Template */
-	res.render('edit', {
+	res.render('add-edit', {
 		title: 'Editing room: ' + room.roomName,
 		fields: fields,
 		error: error_msg,
@@ -110,17 +110,17 @@ function renderAdd(res,req,room){
 		{name: "Capacity", type: "number", identifier: "capacity"}];
 
 	/* Render Template */
-	res.render('add', {
+	res.render('add-edit', {
 		title: 'Add New Room',
 		fields: fields,
 		error: error_msg,
 		message: message,
 		item: {
-			roomName: req.body.Name,
-			Capacity: req.body.Capacity,
+			roomName: room && error_msg ? room.roomName : "",
+			capacity: room && error_msg ? room.capacity : "",
 		},
 		customFields: true,
-		customFieldsValues: room.customFields,
+		customFieldsValues: room && error_msg ? room.customFields : "",
 		submitButtonText:"Add",
 		actionLink: '/rooms/' + addLink,
 		cancelLink: listLink,

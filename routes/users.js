@@ -152,10 +152,10 @@ function renderAdd(res, req, user) {
 			error: error_msg,
 			message: message,
 			item: {
-				name: user.name,
-				email: user.email,
-				phone: user.phone,
-				role: user.role
+				name: user && error_msg ? user.name : "",
+				email: user && error_msg ? user.email : "",
+				phone: user && error_msg ? user.phone : "",
+				role: user  && error_msg ? user.role : ""
 			},
 			roles: roles,
 			cancelLink: listLink,

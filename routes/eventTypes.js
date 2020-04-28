@@ -104,19 +104,19 @@ function renderAdd(res,req,eventType){
 		{name: "Name", type: "text", identifier: "eventTypeName"}];
 
 	/* Render Template */
-	res.render('add', {
+	res.render('add-edit', {
 		title: 'Add New Event Type',
 		fields: fields,
-		item: {
-			Name: eventType ? eventType.eventTypeName : "",
-		},
-		cancelLink: listLink,
-		addLink: '/event-types/' + addLink,
-		customFields: true,
-		customFieldsValues: eventType ? eventType.customFields : "",
-		submitButtonText:"Add",
 		error: error_msg,
 		message: message,
+		item: {
+			Name: eventType && error_msg ? eventType.eventTypeName : "",
+		},
+		cancelLink: listLink,
+		actionLink: '/event-types/' + addLink,
+		customFields: true,
+		customFieldsValues: eventType && error_msg ? eventType.customFields : "",
+		submitButtonText:"Add",
 		user:req.user
 	});
 	/* End Render Template */

@@ -112,8 +112,8 @@ function renderAdd(res,req,role){
 		title: 'Add New Role',
 		fields: fields,
 		item: {
-			roleName: role ? role.roleName : "",
-			rolePermission: role ? role.rolePermission : ""
+			roleName: role && error_msg ? role.roleName : "",
+			rolePermission: role && error_msg ? role.rolePermission : ""
 		},
 		cancelLink: listLink,
 		actionLink: '/roles/' + addLink,
