@@ -1524,7 +1524,7 @@ router.post('/' + addLink, async function (req, res) {
 												role: staff_member.role
 											}
 										}
-									}, function (errUpdate, staffDoc) {
+									}, function (errUpdate) {
 										if (errUpdate) { // error while updating staff member
 											console.log(errUpdate);
 										} else {
@@ -1542,7 +1542,7 @@ router.post('/' + addLink, async function (req, res) {
 						visitor_attending.forEach(function (visitor_att) {
 							Visitor.findOne({_id: visitor_att.visitorID}, function (err, visitorDoc) {
 								if (!err && visitorDoc) {
-									Visitor.updateOne({_id: visitor_att.visitorID}, {$push: {attendingEvents: {eventID: eventDoc._id,eventName:eventDoc.eventName}}}, function (errUpdate, visitorDoc) {
+									Visitor.updateOne({_id: visitor_att.visitorID}, {$push: {attendingEvents: {eventID: eventDoc._id,eventName:eventDoc.eventName}}}, function (errUpdate) {
 										if (errUpdate) {
 											console.log(errUpdate);
 										} else {
