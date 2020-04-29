@@ -2,7 +2,10 @@ extends layout
 
 block content
     .container
+        //- check for any errors that have to be displayed
         if !error
+
+            //- check if there are no messages to display (this template is used as a feedback for different requests)
             if !deleteMsg && !resetMsg && !signUpMsg
                 h3.title=title
                 table.table
@@ -111,10 +114,15 @@ block content
                     if deleteLink
                         a.btn.btn-danger(href=deleteLink onclick="return confirm('Are you sure you want to delete this entity?')") Delete
 
+            //- check if the message to display is the message for successful deletion of an entity
             else if deleteMsg
                 div.alert.alert-success(role="alert")=deleteMsg
+
+            //- check if the message to display is the message for successful password reset of an entity
             else if resetMsg
                 div.alert.alert-success(role="alert")=resetMsg
+
+            //- check if the message to display is the message for successful signing up to an event
             else if signUpMsg
                 div.alert.alert-success(role="alert")=signUpMsg
         else
@@ -123,5 +131,7 @@ block content
         p
             center
                 a.btn.btn-primary(href=listLink) Return to list
+
+                //- check if the user should see the calendar link
                 if calendarLink
                     a.btn.btn-primary(href=calendarLink) Calendar

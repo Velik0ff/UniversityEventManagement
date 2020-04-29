@@ -9,16 +9,27 @@ block content
             div.alert.alert-success(role="alert")=message
 
         center
+            // INPUT FORM STARTS HERE
             form(method="POST" action=formAction)
+
+                //- iterate through the fields that have to be shown
                 each field in fields
                     div.form-group
+
+                        //- check if the field has a value
                         if !field.value
                             input.form-control(type=field.type name=field.identifier placeholder="Enter "+field.name )
+
+                            //- check if the forgot password button should be shown
                             if field.name === 'Password'
                                 a.btn.btn-link(href='/forgot-password')='Forgot Password?'
                         else
                             input.form-control(type=field.type name=field.identifier placeholder="Enter " + field.name value=field.value)
+
+                //- check if the submit button should be shown and display it with the title given from the back-end code
                 if submitButton
                     button.btn.btn-primary(type="submit")=submitButton.title
                 else
+                    //- link button is used when the change password route is executed (i.e. "Log in" button with link to the Log In page)
                     a.btn.btn-primary(href=linkButton.link)=linkButton.title
+            // INPUT FORM ENDS HERE

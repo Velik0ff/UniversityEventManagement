@@ -2,7 +2,7 @@ extends layout
 
 block content
     .container
-        // scripts for the dynamic fields
+        //- scripts for the dynamic fields
         if customFields
             include includes/customFieldScript
         if staffFields
@@ -24,70 +24,94 @@ block content
         - var selected_staff = []; // used to find which staff members were selected before
         - var selected_visitors = []; // used to find which visitors were selected before
 
-        if !errorCritical // check if the error is critical (user, event not found)
+        //- check if the error is critical (user, event not found)
+        if !errorCritical
             // TITLE STARTS HERE
             h3.title=title
             hr
             // TITLE ENDS HERE
 
-            if message // check if there is a message set
+            //- check if there is a message set
+            if message
                 div.alert.alert-success(role="alert")=message
-            if error // check if there is an error message set
+            //- check if there is an error message set
+            if error
                 div.alert.alert-danger(role="alert")=error
 
             // INPUT FORM STARTS HERE
             form(method="POST" action=actionLink)
                 // NON DYNAMIC FIELDS START HERE
-                each field in fields // iterate through all the fields that have been sent
-                    if field.type !== "select" // check if the input is not a select type
+                //- iterate through all the fields that have been sent
+                each field in fields
+                    //- check if the input is not a select type
+                    if field.type !== "select"
                         div.form-group
                             label(for=field.identifier)=field.name
-                            if field.type === "textarea" // check if the field is a text area type
+
+                            //- check if the field is a text area type
+                            if field.type === "textarea"
                                 textarea.form-control(id=field.identifier placeholder="Enter " + field.name name=field.identifier style="resize:vertical")=item[field.identifier]
                             else
-                                if field.readonly // if the field is read only
+                                //- if the field is read only
+                                if field.readonly
                                     input.form-control(id=field.identifier type=field.type name=field.identifier value=item[field.identifier] readonly)
                                 else
                                     input.form-control(id=field.identifier type=field.type placeholder="Enter " + field.name name=field.identifier value=item[field.identifier])
-                    else if field.type === "select" // if it is a select type
+                    //- if it is a select type
+                    else if field.type === "select"
                         div.form-group
-                            if field.identifier === "role" // check if the field is the role selection of the staff member
+                            //- check if the field is the role selection of the staff member
+                            if field.identifier === "role"
                                 label(for=field.identifier)=field.name
                                 select.form-control(name=field.identifier)
-                                    each option in roles // iterate through all the roles from the database
-                                        if item.role === option.roleName // if the role is selected for this user
+                                    //- iterate through all the roles from the database
+                                    each option in roles
+                                        //- if the role is selected for this user
+                                        if item.role === option.roleName
                                             option(value=option._id selected)=option.roleName
                                         else
                                             option(value=option._id)=option.roleName
-                            if field.identifier === "eventType" // check if the field is the event type selection of the event
+                            //- check if the field is the event type selection of the event
+                            if field.identifier === "eventType"
                                 label(for=field.identifier)=field.name
                                 select.form-control(name=field.identifier)
-                                    each option in eventTypes // iterate through all the event types from the database
-                                        if selectedEventType == option._id // if the event type is selected
+                                    //- iterate through all the event types from the database
+                                    each option in eventTypes
+                                        //- if the event type is selected
+                                        if selectedEventType == option._id
                                             option(value=option._id selected)=option.eventTypeName
                                         else
                                             option(value=option._id)=option.eventTypeName
                 // NON DYNAMIC FIELDS END HERE
 
                 // DYNAMIC FIELDS START HERE
-                if roomsFields // check if the room fields are required
+                //- check if the room fields are required
+                if roomsFields
                     // ROOM FIELDS START HERE
                     div#rooms
                         p
                             b="Rooms:"
                             a.btn.btn-primary(href="javascript:void(0)" onclick="addRoomField()") Add Room
 
-                        if selectedRooms && selectedRooms.length > 0 // check if there are any rooms selected for this event
-                            each room in selectedRooms // iterate through the selected rooms
+                        //- check if there are any rooms selected for this event
+                        if selectedRooms && selectedRooms.length > 0
+
+                            //- iterate through the selected rooms
+                            each room in selectedRooms
                                 div.row.form-group(id="rowRoom" + room_count)
                                     div.col(id="roomNameCol" + room_count)
                                         label(for="roomName" + room_count)='Room ' + room_count + ' Name'
                                         select.form-control(id="selectRoom" + room_count name='roomID' + room_count onChange='selectedRoom(this)')
-                                            each option in rooms // iterate through all the rooms from the database
-                                                if room._id.toString() === option._id.toString() // if the room is selected for this event
+
+                                            //- iterate through all the rooms from the database
+                                            each option in rooms
+
+                                                //- if the room is selected for this event
+                                                if room._id.toString() === option._id.toString()
                                                     option(value=room._id selected)=option.roomName
                                                 else
-                                                    if selected_rooms.includes(option._id.toString()) // if already selected by another select
+                                                    //- if already selected by another select
+                                                    if selected_rooms.includes(option._id.toString())
                                                         option(value=option._id disabled)=option.roomName
                                                     else
                                                         option(value=option._id)=option.roomName
@@ -98,27 +122,39 @@ block content
                                 - room_count++ // increment the count of the room fields
                     // ROOM FIELDS END HERE
 
-                if equipmentFields // check if the equipment fields are required
+                //- check if the equipment fields are required
+                if equipmentFields
                     // EQUIPMENT FIELDS START HERE
                     div#equipment
                         p
                             b="Equipment:"
                             a.btn.btn-primary(href="javascript:void(0)" onclick="addEquipmentField()") Add Equipment
 
-                        if selectedEquip && selectedEquip.length > 0 // check if there is any equipment selected for this event
-                            each equip in selectedEquip // iterate through the selected equipment
+                        //- check if there is any equipment selected for this event
+                        if selectedEquip && selectedEquip.length > 0
+
+                            //- iterate through the selected equipment
+                            each equip in selectedEquip
                                 div.row.form-group(id="rowEquipment" + equipment_count)
                                     div.col(id="equipmentNameCol" + equipment_count)
                                         label(for="equipmentName" + equipment_count)='Equipment ' + equipment_count + ' Name'
                                         select.form-control(id="selectEquipment" + equipment_count name='equipmentID' + equipment_count onChange='selectedEquipment(this)')
-                                            each option in equipment // iterate through all the equipment from the database
-                                                if (equip._id.toString() == option._id.toString() && ((title.includes("Add") && option.quantity) || title.includes("Edit"))) // if the equipment is selected for this event
+
+                                            //- iterate through all the equipment from the database
+                                            each option in equipment
+
+                                                //- if the equipment is selected for this event
+                                                if (equip._id.toString() == option._id.toString() && ((title.includes("Add") && option.quantity) || title.includes("Edit")))
                                                     option(value=equip._id selected)=option.typeName
                                                 else
-                                                    if option.quantity <= 0 // if there is no available quantity
+
+                                                    //- if there is no available quantity
+                                                    if option.quantity <= 0
                                                         option(value=option._id disabled)=option.typeName
                                                     else
-                                                        if selected_equipment.includes(option._id.toString()) // if already selected by another select
+
+                                                        //- if already selected by another select
+                                                        if selected_equipment.includes(option._id.toString())
                                                             option(value=option._id disabled)=option.typeName
                                                         else
                                                             option(value=option._id)=option.typeName
@@ -134,30 +170,42 @@ block content
                                 - equipment_count++ // increment the count of the equipment fields
                     // EQUIPMENT FIELDS END HERE
 
-                if staffFields // check if the staff member fields are required
+                //- check if the staff member fields are required
+                if staffFields
                     // STAFF MEMBER FIELDS START HERE
                     div#staff
                         p
                             b="Staff:"
                             a.btn.btn-primary(href="javascript:void(0)" onclick="addStaffField()") Add Staff
 
-                        if selectedStaff && selectedStaff.length > 0 // check if there are any staff members selected for this event
-                            each staff_member in selectedStaff // iterate through the selected staff members
+                        //- check if there are any staff members selected for this event
+                        if selectedStaff && selectedStaff.length > 0
+
+                            //- iterate through the selected staff members
+                            each staff_member in selectedStaff
                                 div.row.form-group(id="rowStaff" + staff_count)
                                     div.col(id="staffNameCol" + staff_count)
                                         label(for="staffID" + staff_count)='Staff Member ' + staff_count + ' Email'
                                         select.form-control(id="selectStaff" + staff_count name='staffID' + staff_count onChange='selectedStaffMember(this)')
-                                            each option in staff // iterate through all staff members from the database
-                                                if staff_member.staffMemberID == option._id || staff_member._id == option._id // if the staff member is selected for this event
+
+                                            //- iterate through all staff members from the database
+                                            each option in staff
+
+                                                //- if the staff member is selected for this event
+                                                if staff_member.staffMemberID == option._id || staff_member._id == option._id
                                                     option(value=option._id selected)=option.fullName
                                                 else
-                                                    if selected_staff.includes(option._id.toString()) // if already selected by another select
+
+                                                    //- if already selected by another select
+                                                    if selected_staff.includes(option._id.toString())
                                                         option(value=option._id disabled)=option.fullName
                                                     else
                                                         option(value=option._id)=option.fullName
                                     div.col(id="staffRoleCol" + staff_count)
                                         label(for="staffRole" + staff_count)='Staff Member ' + staff_count + ' Role'
-                                        if staff_member.role // if the staff member has an input role for this event
+
+                                        //- if the staff member has an input role for this event
+                                        if staff_member.role
                                             input.form-control(type="text" name="staffRole" + staff_count value=staff_member.role)
                                         else
                                             input.form-control(type="text" name="staffRole" + staff_count)
@@ -169,24 +217,34 @@ block content
                                 - staff_count++ // increment the count of the staff member fields
                     // STAFF MEMBER FIELDS END HERE
 
-                if visitorFields // check if the visitor fields are required
+                //- check if the visitor fields are required
+                if visitorFields
                     // VISITOR FIELDS START HERE
                     div#visitors
                         p
                             b="Visitors:"
                             a.btn.btn-primary(href="javascript:void(0)" onclick="addVisitorField()") Add Visitor
 
-                        if selectedVisitors && selectedVisitors.length > 0 // check if there are any visitors selected for this event
-                            each visitor in selectedVisitors // iterate through the selected visitors
+                        //- check if there are any visitors selected for this event
+                        if selectedVisitors && selectedVisitors.length > 0
+
+                            //- iterate through the selected visitors
+                            each visitor in selectedVisitors
                                 div.row.form-group(id="visitorCol" + visitor_count)
                                     div.col(id="visitorCol" + visitor_count)
                                         label(for="visitorID" + visitor_count)='Visitor ' + visitor_count + ' Name'
                                         select.form-control(id="selectVisitor" + visitor_count name='visitorID' + visitor_count onChange='selectedVisitor(this)')
-                                            each option in visitors // iterate through all visitors from the database
-                                                if visitor.visitorID == option._id || visitor._id.toString() == option._id // if the visitor is selected for this event
+
+                                            //- iterate through all visitors from the database
+                                            each option in visitors
+
+                                                //- if the visitor is selected for this event
+                                                if visitor.visitorID == option._id || visitor._id.toString() == option._id
                                                     option(value=option._id selected)=option.leadTeacherName
                                                 else
-                                                    if selected_visitors.includes(option._id.toString()) // if already selected by another select
+
+                                                    //- if already selected by another select
+                                                    if selected_visitors.includes(option._id.toString())
                                                         option(value=option._id disabled)=option.leadTeacherName
                                                     else
                                                         option(value=option._id)=option.leadTeacherName
@@ -198,14 +256,19 @@ block content
                                 - visitor_count++ // increment the count of the visitor fields
                     // VISITOR FIELDS END HERE
 
-                if customFields // check if the custom fields are required
+                //- check if the custom fields are required
+                if customFields
                     // CUSTOM FIELDS START HERE
                     p
                         b='Custom Fields:'
                         a.btn.btn-primary(href="javascript:void(0)" onclick="addCustomField()") Add Custom Field
                     div#customFields
-                    if customFieldsValues // if there are any custom fields input for this entity
-                        each fieldValue in customFieldsValues // iterate through the custom fields entered for the entity
+
+                    //- if there are any custom fields input for this entity
+                    if customFieldsValues
+
+                        //- iterate through the custom fields entered for the entity
+                        each fieldValue in customFieldsValues
                             div.row.form-group
                                 div.col
                                     label(for=fieldValue['fieldName'])='Custom Field ' + field_count + ' Name'
@@ -228,28 +291,37 @@ block content
             div.alert.alert-danger(role="alert")=error
             a.btn.btn-primary(href=cancelLink) Return to list
 
-        if customFields // check if the custom fields are required
+        //- check if the custom fields are required
+        if customFields
             script.
                 var field_count = !{field_count}; // count of the custom fields already added
-        if staffFields// check if the staff member fields are required
+
+        //- check if the staff member fields are required
+        if staffFields
             script.
                 $(document).ready(function () {
                     unavailable_staff = unavailable_staff.concat(!{JSON.stringify(selected_staff)});
                 });
                 var staff_count = !{staff_count};// count of the staff member fields already added
-        if visitorFields// check if the visitor fields are required
+
+        //- check if the visitor fields are required
+        if visitorFields
             script.
                 $(document).ready(function () {
                     unavailable_visitors = unavailable_visitors.concat(!{JSON.stringify(selected_visitors)});
                 });
                 var visitor_count = !{visitor_count};// count of the visitor fields already added
-        if equipmentFields// check if the equipment fields are required
+
+        //- check if the equipment fields are required
+        if equipmentFields
             script.
                 $(document).ready(function () {
                     unavailable_equipment = unavailable_equipment.concat(!{JSON.stringify(selected_equipment)});
                 });
                 var equipment_count = !{equipment_count};// count of the equipment fields already added
-        if roomsFields// check if the room fields are required
+
+        //- check if the room fields are required
+        if roomsFields
             script.
                 $(document).ready(function () {
                     unavailable_rooms = unavailable_rooms.concat(!{JSON.stringify(selected_rooms)});

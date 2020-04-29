@@ -14,7 +14,8 @@ block content
 		div.row(style="flex-wrap:nowrap;")
 			div.col-sm(style="padding-right:0")
 				select.form-control#exportSelect(onchange='$("#exportBtn").attr("href","/export?type="+this.value)')
-					each option in exportOptions // iterate through the export options that are available
+					//- iterate through the export options that are available
+					each option in exportOptions
 						option(value=option)=option
 			div.col-sm(style="flex-grow:0;padding-left:0;width:unset")
 				a.btn.btn-primary#exportBtn(href='/export?type=')='Export'

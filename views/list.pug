@@ -2,84 +2,89 @@ extends layout
 
 block content
     script.
-        var original_list = !{JSON.stringify(list)};
-        var filter_list = [];
-        var search_list = [];
-        var filter_applied = false;
-        var search_applied = false;
+        // filter functionality below
 
-        function populateList(list) {
-            $("tbody").empty();
+        var original_list = !{JSON.stringify(list)}; // the list of the entities as they were on loading the page
+        var filter_list = []; // the list after filter is applied
+        var search_list = []; // the list after search is applied
+        var filter_applied = false; // used to check if a filter is applied
+        var search_applied = false; // used to check if a search is applied
 
-            if (list.length > 0) {
-                list.forEach(function (list_element) {
-                    let tr = $("<tr>").appendTo('tbody');
+        function populateList(list) { // function to display the results to the user
+            $("tbody").empty(); // the table body where the entities are going to be inserted
 
-                    for (let index in list_element) {
-                        if (index === "id") {
-                            $("<td>").attr('style', 'font-weight:bold').text(list_element[index]).appendTo(tr);
-                        } else if (index === "name") {
-                            let td = $("<td>").appendTo(tr);
-                            $("<a>").attr('href', "#{viewLink}?id=" + list_element.id).text(list_element[index]).appendTo(td);
-                        } else {
-                            $("<td>").text(list_element[index]).appendTo(tr);
+            if (list.length > 0) { // check if there is anything in the resulting list
+                list.forEach(function (list_element) { // iterate through all the list elements (this will be every row displayed in the table)
+                    let tr = $("<tr>").appendTo('tbody'); // the row for the entity
+
+                    for (let index in list_element) { // iterate through the fields of the list entity/element
+                        if (index === "id") { // check if the field is the ID column
+                            $("<td>").attr('style', 'font-weight:bold').text(list_element[index]).appendTo(tr); // add ID column to the row
+                        } else if (index === "name") { // check if the field is the name of the entity
+                            let td = $("<td>").appendTo(tr); // add the Name column to the row
+                            $("<a>").attr('href', "#{viewLink}?id=" + list_element.id).text(list_element[index]).appendTo(td); // add the name as a link to the Name column
+                        } else { // any other field
+                            $("<td>").text(list_element[index]).appendTo(tr); // add the column to the row
                         }
                     }
 
-                    if("!{deleteLink}" !== "undefined" || "!{editLink}" !== "undefined"){
-                        let td = $("<td>").appendTo(tr);
+                    if("!{deleteLink}" !== "undefined" || "!{editLink}" !== "undefined"){ // check if edit or delete links are allowed for this user
+                        let td = $("<td>").appendTo(tr); // add the options (edit or delete) column to the row
 
-                        if ("!{editLink}" !== "undefined") {
+                        if ("!{editLink}" !== "undefined") { // check if edit link is set
                             let edit_a = $("<a>")
                                 .attr("class", "options-btn")
                                 .attr("href", "#{editLink}?id=" + list_element.id)
-                                .attr("onclick", "return confirm('Are you sure you want to delete this entity?')").appendTo(td);
-                            $("<i>").attr("class", "material-icons md-18").text("edit").appendTo(edit_a)
+                                .attr("onclick", "return confirm('Are you sure you want to delete this entity?')").appendTo(td); // add edit link to the column
+                            $("<i>").attr("class", "material-icons md-18").text("edit").appendTo(edit_a); // add edit icon to the edit link
                         }
-                        if("!{deleteLink}" !== "undefined"){
+                        if("!{deleteLink}" !== "undefined"){ // check if delete link is set
                             let delete_a = $("<a>")
                               .attr("class","options-btn")
                               .attr("href","#{deleteLink}?id="+list_element.id)
-                              .attr("onclick","return confirm('Are you sure you want to delete this entity?')").appendTo(td);
-                            $("<i>").attr("class","material-icons md-18").text("delete").appendTo(delete_a)
+                              .attr("onclick","return confirm('Are you sure you want to delete this entity?')").appendTo(td); // add delete link to the column
+                            $("<i>").attr("class","material-icons md-18").text("delete").appendTo(delete_a); // add delete icon to the delete link
                         }
                     }
                 });
-            } else {
-                let tr = $("<tr>").appendTo('tbody');
-                $("<td>").attr('colspan', #{columns.length}).attr('align','center').text("No results to show").appendTo(tr);
+            } else { // no entities to be displayed
+                let tr = $("<tr>").appendTo('tbody'); // row to be appended to the table body
+                $("<td>").attr('colspan', #{columns.length}).attr('align','center').text("No results to show").appendTo(tr); // add a column that will span through all the columns
             }
         }
 
-        function searchFilter() {
-            const input = $("#searchBox").val();
-            let inner_list = original_list;
+        function searchFilter() { // apply search filter
+            const input = $("#searchBox").val(); // the input that has been entered in the search box
+            let inner_list = original_list; // the original list without a filter
 
-            function filterOutResults(object) {
-                return object.id.toLowerCase().includes(input.toLowerCase()) || object.name.toLowerCase().includes(input.toLowerCase());
+            function filterOutResults(object) { // filter out results that do not contain the string entered
+                return object.id.toLowerCase().includes(input.toLowerCase()) || object.name.toLowerCase().includes(input.toLowerCase()); // check if id or name contains the string
             }
 
-            if(filter_applied) inner_list = filter_list;
+            if(filter_applied) inner_list = filter_list; // check if filter is applied, if applied then the list to search in would be the list resulting from the filter
 
-            if (input !== "") {
-            	search_applied = true;
+            if (input !== "") { // check if the input is not empty
+            	search_applied = true; // the search is applied
 
-                inner_list = inner_list.filter(filterOutResults);
+                inner_list = inner_list.filter(filterOutResults); // filter out the list with results containing the string
 
-                search_list = original_list.filter(filterOutResults);
-            } else search_applied = false;
+                search_list = original_list.filter(filterOutResults); // apply the search to the original list (in case the filter is not applied)
+            } else search_applied = false; // there is nothing entered in the input box so search is not applied
 
-            populateList(inner_list);
+            populateList(inner_list); // populate the list with the results
         }
+
+    //- check if the filter is used to filter events
     if filter == "Events"
         script.
-            function applyFilter(){
-            	filter_applied = true;
+            function applyFilter(){ // apply the filter to the list
+            	filter_applied = true; // the filter is applied
 
-            	let list_to_filter = original_list;
+            	let list_to_filter = original_list; // the original list without a search applied
 
-                if(search_applied) list_to_filter = search_list;
+                if(search_applied) list_to_filter = search_list; // check if search is applied, if applied then the list to filter would be the list resulting from the search
 
+                // Get values entered from the filter input fields
                 let spacesMin = $("#rangeSpacesMin").val();
                 let spacesMax = $("#rangeSpacesMax").val();
                 let visitorsMin = $("#rangeVisitorsMin").val();
@@ -88,10 +93,10 @@ block content
                 let dateTo = $("#rangeDateTo").val();
                 let eventTypeSelected = $("#eventTypeSelectedFilter").val();
 
-                let type = !{JSON.stringify(type)};
-                let filterLink = type === "allList" ? "../filter" : "../../filter";
+                let type = !{JSON.stringify(type)}; // the type of the filter that can be applied
+                let filterLink = type === "allList" ? "../filter" : "../../filter"; // the filter link
 
-                $.post(filterLink, {
+                $.post(filterLink, { // fetch the results from the filter route
                     spacesMin:spacesMin,
                     spacesMax:spacesMax,
                     visitorsMin:visitorsMin,
@@ -102,125 +107,23 @@ block content
                     list:list_to_filter,
                     originalList:original_list,
                     type:type
-                }, function (data) {
-                    populateList(data.list);
-                    filter_list = data.filterList;
+                }, function (data) { // when the route is executed successfully
+                    populateList(data.list); // populate the list with the results
+                    filter_list = data.filterList; // the filtered list
                 });
             }
-    else if filter == "Equipment"
+
         script.
-            function applyFilter(){
-            	filter_applied = true;
+            function resetFilter(){ // reset the filter for the list
+            	filter_applied = false; // filter is not applied anymore
 
-                function filterOutResults(object){
-                	var result = true;
-
-                	let qtyMin = $("#rangeQtyMin").val();
-                    let qtyMax = $("#rangeQtyMax").val();
-
-                	if(qtyMin && qtyMin >= object.quantity){
-                      result = false;
-                    }
-                	if(qtyMax && qtyMax <= object.quantity){
-                      result = false;
-                    }
-
-                	return result;
+                if(search_applied){ // check if search is applied
+                	searchFilter(); // apply only the search filter
+                } else { // search filter is not applied
+                	populateList(original_list); // populate the list with the original list
                 }
 
-                filter_list = original_list.filter(filterOutResults);
-
-                if(search_applied){
-                	populateList(search_list.filter(filterOutResults));
-                } else {
-                	populateList(filter_list);
-                }
-            }
-    else if filter == "Rooms"
-        script.
-            function applyFilter(){
-            	filter_applied = true;
-
-                function filterOutResults(object){
-                	var result = true;
-
-                	let capacityMin = $("#rangeCapacityMin").val();
-                    let capacityMax = $("#rangeCapacityMax").val();
-
-                	if(capacityMin && capacityMin >= object.capacity){
-                      result = false;
-                    }
-                	if(capacityMax && capacityMax <= object.capacity){
-                      result = false;
-                    }
-
-                	return result;
-                }
-
-                filter_list = original_list.filter(filterOutResults);
-
-                if (search_applied) {
-                    populateList(search_list.filter(filterOutResults));
-                } else {
-                    populateList(filter_list);
-                }
-            }
-    else if filter == "Staff"
-        script.
-            function applyFilter(){
-                filter_applied = true;
-
-                let list_to_filter = original_list;
-
-                if(search_applied) list_to_filter = search_list;
-
-                $.post("../filter", {
-                    staffRole:$("#staffRoleSelect").val(),
-                    list:list_to_filter,
-                    originalList:original_list,
-                    type:!{JSON.stringify(type)}
-                }, function (data) {
-                    populateList(data.list);
-                    filter_list = data.filterList;
-                });
-            }
-    else if filter == "Visitors"
-        script.
-            function applyFilter(){
-                filter_applied = true;
-
-                function filterOutResults(object){
-                	var result = true;
-
-                	let institutionSelect = $("#visitorInstitutionSelect").val();
-
-                	if(!object.institutionName.includes(institutionSelect)){
-                      result = false;
-                    }
-
-                	return result;
-                }
-
-                filter_list = original_list.filter(filterOutResults);
-
-                if (search_applied) {
-                    populateList(search_list.filter(filterOutResults));
-                } else {
-                    populateList(filter_list);
-                }
-            }
-
-    if filter == "Events"
-        script.
-            function resetFilter(){
-            	filter_applied = false;
-
-                if(search_applied){
-                	searchFilter();
-                } else {
-                	populateList(original_list);
-                }
-
+                // Reset all the fields to the initial values
                 $("#rangeSpacesMin").val("");
                 $("#rangeSpacesMax").val("");
                 $("#rangeVisitorsMin").val("");
@@ -229,68 +132,187 @@ block content
                 $("#rangeDateTo").val("");
                 $("#eventTypeSelectedFilter").prop('selectedIndex',0);
             }
+
+    //- check if the filter is used to filter equipment
     else if filter == "Equipment"
         script.
-            function resetFilter(){
-            	filter_applied = false;
+            function applyFilter(){ // apply the filter to the list
+            	filter_applied = true; // the filter is applied
 
-                if(search_applied){
-                	searchFilter();
-                } else {
-                	populateList(original_list);
+                function filterOutResults(object){ // check which objects satisfy the filter
+                	var result = true; // by default the object should not be filtered out
+
+                    // Get the input from the filter input fields
+                	let qtyMin = $("#rangeQtyMin").val();
+                    let qtyMax = $("#rangeQtyMax").val();
+
+                	if(qtyMin && qtyMin >= object.quantity){ // check if quantity minimum is set and if it is bigger than the quantity of the object
+                      result = false; // filter out the object
+                    }
+                	if(qtyMax && qtyMax <= object.quantity){ // check if quantity maximum is set and if it is smaller than the quantity of the object
+                      result = false; // filter out the object
+                    }
+
+                	return result; // if the object should be filtered out or not
                 }
 
+                filter_list = original_list.filter(filterOutResults); // apply filter to the original list
+
+                if(search_applied){ // check if search is applied, if applied then the list to filter would be the list resulting from the search and the filter
+                	populateList(search_list.filter(filterOutResults)); // populate the list with the results from the search and the filter
+                } else { // search is not applied
+                	populateList(filter_list); // populate the list with the results only from the filter
+                }
+            }
+        script.
+            function resetFilter(){ // reset the filter for the list
+            	filter_applied = false; // filter is not applied anymore
+
+                if(search_applied){ // check if search is applied, if applied then the result would be the list resulting from the search
+                	searchFilter(); // apply the search to the original list
+                } else { // search is not applied
+                	populateList(original_list); // populate with the original list
+                }
+
+                // Reset all the fields to the initial values
                 $("#rangeQtyMin").val("");
                 $("#rangeQtyMax").val("");
             }
+
+    //- check if the filter is used to filter rooms
     else if filter == "Rooms"
         script.
-            function resetFilter(){
-            	filter_applied = false;
+            function applyFilter(){ // apply the filter to the list
+            	filter_applied = true; // the filter is applied
 
-                if(search_applied){
-                	searchFilter();
-                } else {
-                	populateList(original_list);
+                function filterOutResults(object){ // check which objects satisfy the filter
+                	var result = true; // by default the object should not be filtered out
+
+                    // Get the input from the filter input fields
+                	let capacityMin = $("#rangeCapacityMin").val();
+                    let capacityMax = $("#rangeCapacityMax").val();
+
+                	if(capacityMin && capacityMin >= object.capacity){ // check if capacity minimum is set and if it is bigger than the capacity of the object
+                      result = false; // filter out the object
+                    }
+                	if(capacityMax && capacityMax <= object.capacity){ // check if the capacity maximum is set and if it is smaller than the capacity of the object
+                      result = false; // filter out the object
+                    }
+
+                	return result; // if the object should be filter out or not
                 }
 
+                filter_list = original_list.filter(filterOutResults); // apply filter to the original list
+
+                if (search_applied) { // check if search is applied, if applied then the list to filter would be the list resulting from the search
+                    populateList(search_list.filter(filterOutResults)); // populate the list with the results from the search and the filter
+                } else { // search is not applied
+                    populateList(filter_list); // populate the list with the results only from the filter
+                }
+            }
+        script.
+            function resetFilter(){ // reset the filter for the list
+            	filter_applied = false; // filter is not applied anymore
+
+                if(search_applied){ // check if search is applied, if applied then the result would be the list resulting from the search
+                	searchFilter(); // apply the search to the original list
+                } else { // search is not applied
+                	populateList(original_list); // populate with the original list
+                }
+
+                // Reset all the fields to the initial values
                 $("#rangeCapacityMin").val("");
                 $("#rangeCapacityMax").val("");
             }
+
+    //- check if the filter is used to filter staff members
     else if filter == "Staff"
         script.
-            function resetFilter(){
-            	filter_applied = false;
+            function applyFilter(){ // apply the filter to the list
+                filter_applied = true; // the filter is applied // the filter is applied
 
-                if(search_applied){
-                	searchFilter();
-                } else {
-                	populateList(original_list);
+                let list_to_filter = original_list; // the original list without the search applied
+
+                if(search_applied) list_to_filter = search_list; // check if search is applied, if applied then the list to filter would be the list resulting from the search
+
+                $.post("../filter", { // fetch the results from the filter route
+                    staffRole:$("#staffRoleSelect").val(),
+                    list:list_to_filter,
+                    originalList:original_list,
+                    type:!{JSON.stringify(type)}
+                }, function (data) { // when the route is executed successfully
+                    populateList(data.list); // populate the list with the results
+                    filter_list = data.filterList; // the filtered list
+                });
+            }
+        script.
+            function resetFilter(){ // reset the filter for the list
+            	filter_applied = false; // filter is not applied anymore
+
+                if(search_applied){ // check if search is applied, if applied then the result would be the list resulting from the search
+                	searchFilter(); // apply the search to the original list
+                } else { // search is not applied
+                	populateList(original_list); // populate with the original list
                 }
 
+                // Reset all the fields to the initial values
                 $("#staffRoleSelect").prop('selectedIndex',0);
             }
+
+    //- check if the filter is used to filter visitors
     else if filter == "Visitors"
         script.
-            function resetFilter(){
-                filter_applied = false;
+            function applyFilter(){ // apply the filter to the list
+                filter_applied = true; // the filter is applied
 
-                if(search_applied){
-                	searchFilter();
+                function filterOutResults(object){ // check which objects satisfy the filter
+                	var result = true; // by default the object should not be filtered out
+
+                    // Get the input from the filter input fields
+                	let institutionSelect = $("#visitorInstitutionSelect").val();
+
+                	if(!object.institutionName.includes(institutionSelect)){ // check if the object institution name matches the institution selected
+                      result = false; // filter out object
+                    }
+
+                	return result; // if the object should be filtered out or not
+                }
+
+                filter_list = original_list.filter(filterOutResults); // apply filter to the original list
+
+                if (search_applied) { // check if search is applied, if applied then the list to filter would be the list resulting from the search
+                    populateList(search_list.filter(filterOutResults));  // populate the list with the results from the filter and the search
                 } else {
-                	populateList(original_list);
+                    populateList(filter_list); // populate the list with the results only from the filter
+                }
+            }
+        script.
+            function resetFilter(){ // reset the filter for the list
+                filter_applied = false; // filter is not applied anymore
+
+                if(search_applied){ // check if search is applied, if applied then the result would be the list resulting from the search
+                	searchFilter(); // apply the search to the original list
+                } else { // search is not applied
+                	populateList(original_list); // populate with the original list
                 }
 
                 // TODO: reset field
             }
     .container
+        // TITLE STARTS HERE
         h3.title=title
+        hr
+        // TITLE ENDS HERE
+
+        //- check if adding is allowed for the user
         if addLink
             a.btn.btn-success(href=addLink style="margin:5px;") Add New
 
+        //- check if filter is allowed for the user
         if filter
             button.btn.btn-link#filterBtn Filter
 
+        //- check if export is allowed for the user
         if exportLink
             a.btn.btn-primary(href=exportLink style='margin-top:5px;float:right') Export
 
@@ -301,11 +323,12 @@ block content
                 div.col-sm(style="flex-grow:0;padding-left:0;width:unset")
                     button.btn.btn-primary(onclick="searchFilter()") Search
 
-
+        // FILTER STARTS HERE
         div#filter(style="display:none;")
             h5="Filter Data"
             hr
 
+            //- queries for the events list
             if filter == "Events"
                 div#rangeSpaces
                     h6="Spaces Available"
@@ -351,6 +374,7 @@ block content
                                 option(value=event_type._id)=event_type.eventTypeName
                 hr
 
+            //- queries for equipment list
             if filter == "Equipment"
                 div#rangeQuantity
                     h6="Quantity"
@@ -363,6 +387,7 @@ block content
                             input.form-control#rangeQtyMax(type="number")
                 hr
 
+            //- queries for rooms list
             if filter == "Rooms"
                 div#rangeCapacity
                     h6="Capacity"
@@ -375,20 +400,26 @@ block content
                             input.form-control#rangeCapacityMax(type="number")
                 hr
 
+            //- queries for staff members list
             if filter == "Staff"
                 div#staffRoleFilter
                     h6="Staff Role"
                     select.form-control#staffRoleSelect
                         option(selected)="Select Staff Role"
+
+                        //- iterate through all the staff roles in the database
                         each staff_role in staffRoles
                             option(value=staff_role)=staff_role
                 hr
 
+            //- queries for visitors list
             if filter == "Visitors"
                 div#visitorInstitutionFilter
                     h6="Visitor Institution"
                     select.form-control#visitorInstitutionSelect
                         option(selected)="Select Visitor Institution"
+
+                        //- iterate through all the visitor institutions
                         each visitor_institution in visitorInstitutions
                             option(value=visitor_institution)=visitor_institution
                 hr
@@ -397,42 +428,60 @@ block content
             center
                 button.btn.btn-primary(onclick="applyFilter()")="Apply Filter"
                 button.btn.btn-primary(onclick="resetFilter()")="Reset Filter"
+        // FILTER ENDS HERE
 
+        // LIST STARTS HERE
         table.table
             thead
                 tr
+                    //- the header of the table
                     each column in columns
                         th(scope='col')=column
             tbody
+                //- check if the list is empty error
                 if error
                     tr
                         td(colspan=columns.length align="center")=error
+
+                //- iterate through all the elements that have to be displayed in the list
                 each item in list
                     tr
+
+                        //- iterate through the fields that have to be added to the row
                         each info,index in item
+
+                            //- if the field is the ID column
                             if index==="id"
                                 td(style="font-weight:bold")=info
+
+                            //- if the field is the Name column
                             else if index==="name"
                                 td
                                     a(href=viewLink+"?id="+item.id)=info
                             else
                                 td=info
+
+                        //- check if the edit or delete buttons are allowed for the user
                         if deleteLink || editLink
                             td
+                                //- check if the list is not archive, because editing is not allowed there
                                 if editLink && type !== "archive"
                                     a.options-btn(href=editLink+"?id="+item.id)
                                         i.material-icons.md-18 edit
+
+                                //- check if the delete button is allowed for the entities
                                 if deleteLink
                                     a.options-btn(href=deleteLink+"?id="+item.id onclick="return confirm('Are you sure you want to delete this entity?')")
                                         i.material-icons.md-18 delete
+        // LIST ENDS HERE
 
     script.
-        $("#filterBtn").on('click', function (event) {
-            let filter_container = $("#filter");
+        $("#filterBtn").on('click', function (event) { // when clicked on the "Filter" button
+            let filter_container = $("#filter"); // the filter container (query selector)
 
-            if (filter_container.css('display') == 'none') {
-                filter_container.css('display', 'block');
-            } else {
-                filter_container.css('display', 'none');
+            if (filter_container.css('display') == 'none') { // check if the container is hidden
+                filter_container.css('display', 'block'); // if hidden then display it
+            } else { // container is not hidden
+                filter_container.css('display', 'none'); // hide the container
             }
         });

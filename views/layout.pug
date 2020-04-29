@@ -7,7 +7,8 @@ html
         meta(name="theme-color" content="#021F71")
         link(rel='stylesheet', href='/bootstrap/dist/css/bootstrap.css')
 
-        if title == 'Calendar' // check if the page to be rendered is containing calendar (include the javascript needed)
+        //- check if the page to be rendered is containing calendar (include the javascript needed)
+        if title == 'Calendar'
             link(rel='stylesheet', href='/@fullcalendar/core/main.min.css')
             link(rel='stylesheet', href='/@fullcalendar/daygrid/main.min.css')
 
@@ -28,44 +29,57 @@ html
             // MENU START HERE
             #menu.collapse.navbar-collapse(style="z-index:2")
                 ul.navbar-nav.mr-auto
-                    if user // check if user is logged in
-                        if user.permission >= 1 // user registered and changed initial password
+                    //- check if user is logged in
+                    if user
+                        //- user registered and changed initial password
+                        if user.permission >= 1
                             li.nav-item
                                 a.nav-link(href='/welcome') Home
                             li.nav-item
                                 a.nav-link(href='/calendar') Calendar
 
-                        if user.permission >= 30 // user is an Outreach coordinator
+                        //- user is an Outreach coordinator
+                        if user.permission >= 30
                             li.nav-item
                                 a.nav-link(href='/export') Export
 
-                        if user.permission >= 10 // user is a staff member
+                        //- user is a staff member
+                        if user.permission >= 10
                             hr
                             span(style="color:gray")="Users"
 
-                        if user.permission >= 10 // user is a staff member
+                        //- user is a staff member
+                        if user.permission >= 10
                             li.nav-item
                                 a.nav-link(href='/users/list-users') Staff
-                        if user.permission >= 30 // user is an Outreach coordinator
+
+                        //- user is an Outreach coordinator
+                        if user.permission >= 30
                             li.nav-item
                                 a.nav-link(href='/roles/list-roles') Staff Roles
-                        if user.permission >= 10 // user is a staff member
+
+                        //- user is a staff member
+                        if user.permission >= 10
                             li.nav-item
                                 a.nav-link(href='/visitors/list-visitors') Visitors
 
 
                         hr
                         span(style="color:gray")="Events"
-                        if user.permission >= 10 // user is a staff member
+                        //- user is a staff member
+                        if user.permission >= 10
                             li.nav-item
                                 a.nav-link(href='/events/list-events') Events
                             li.nav-item
                                 a.nav-link(href='/events/archive/list-events') Archive
-                        if user.permission >= 1 // user registered and changed initial password
+
+                        //- user registered and changed initial password
+                        if user.permission >= 1
                             li.nav-item
                                 a.nav-link(href='/events/participate-events-list') Attending
 
-                        if user.permission >= 30 // user is an Outreach coordinator
+                        //- user is an Outreach coordinator
+                        if user.permission >= 30
                             hr
                             span(style="color:gray")="Elements"
 
@@ -78,10 +92,14 @@ html
 
                         hr
                         span(style="color:gray")="Personal"
-                        if user.permission >= 10 // user is a staff member
+
+                        //- user is a staff member
+                        if user.permission >= 10
                             li.nav-item
                                 a.nav-link(href='/users/edit-user?id='+user._id) Your Profile
-                        else if user.permission === 1 // user is a visitor
+
+                        //- user is a visitor
+                        else if user.permission === 1
                             li.nav-item
                                 a.nav-link(href='/visitors/edit-visitor?id='+user._id) Your Profile
                         li.nav-item

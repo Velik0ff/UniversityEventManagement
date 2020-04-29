@@ -196,7 +196,7 @@ function renderChangePassword(res, user, error, message, reset_pass) {
 		fields: fields,
 		submitButton: !message ? {title: "Submit"} : null,
 		formAction: !message ? "/change-password" : null,
-		linkButton: message ? {title: "Login", link: '/'} : null,
+		linkButton: message ? {title: "Log in", link: '/'} : null,
 		user: user
 	});
 	/* End Render Template */
