@@ -90,7 +90,7 @@ function renderEdit(res,req,room){
 		customFields: true,
 		submitButtonText:"Save",
 		actionLink: '/rooms/' + editLink,
-		cancelLink: viewLink + '?id=' + room._id,
+		cancelLink: viewLink + '?id=' + room.id,
 		user:req.user
 	});
 	/* End Render Template */
@@ -347,7 +347,7 @@ router.post('/'+addLink, function(req, res) {
 				error_msg = validationErr(error); // validation error
 			}
 
-			renderAdd(res,req,room); // render add-edit
+			renderAdd(res,req,room_object); // render add-edit
 		});
 		/* End Insert new room */
 	} else { // Insufficient permission level

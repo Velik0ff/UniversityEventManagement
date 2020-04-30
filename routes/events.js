@@ -816,7 +816,7 @@ router.post('/' + editLink, function (req, res) {
 		Event.findOne({_id: req.body.id}, async function (errFindEvent, event) { // fetch event from database
 			if (!errFindEvent && event) { // check if event has been found or an error occurred
 				let equipment_use = await genFunctions.getEquipmentInfo(event.equipment); // get the equipment info used for the event
-				let event_type = await genFunctions.getEventType(event.eventTypeID); // get event type info selected for the event
+				let event_type = await genFunctions.getEventType(event.eventTypeID); // get event type info for the event
 				let staff_use = await genFunctions.getStaffInfo(event.staffChosen); // get staff members info that are chosen for the event
 				let visitor_attending = await genFunctions.getVisitorInfo(event.visitors); // get visitors info that are chosen for the event
 				let visitors = await genFunctions.getAllVisitor(); // get all visitors information from the database
@@ -824,6 +824,7 @@ router.post('/' + editLink, function (req, res) {
 				let rooms = await genFunctions.getAllRooms(); // get all rooms information from the database
 				let staff = await genFunctions.getAllStaff(); // get all staff members information from the database
 				let eventTypes = await genFunctions.getAllEventTypes(); // get all the event types from the database
+				let valid_date = true; // used to validate the dates for the event
 
 				let promisesUpdate = []; // all updates that have to be resolved
 				let repostedEquip = []; // store reposted equipment here
@@ -844,6 +845,18 @@ router.post('/' + editLink, function (req, res) {
 					let numberOfVisitors = 0; // count number of visitors
 
 					if (req.body.date) { // if the date of the event is input
+						/* Validate event type */
+						if(req.body.eventType) { // if the event type is input
+							promisesUpdate.push(new Promise(function (resolve) { // add the promise to the promises array
+								genFunctions.getEventType(req.body.eventType).then(function (ev_type) { // get event type info selected for the event
+									if (ev_type) event_type = ev_type; // assign the event type if the event type is found
+
+									resolve(); // resolve the promise for the update
+								});
+							}));
+						}
+						/* End Validate event type */
+
 						posted_rooms.forEach(function (room) { // iterate through posted rooms array
 							promisesUpdate.push(new Promise(function (resolve) { // add the promise to the promises array
 								Room.findOne({_id: room._id}, function (errRoomFind, roomFindDoc) { // fetch room from database
@@ -1153,6 +1166,12 @@ router.post('/' + editLink, function (req, res) {
 					});
 					/* End Iterate through posted equipment */
 
+					/* Validate dates */
+					if(req.body.endDate){
+						if(Date.parse(req.body.endDate) < Date.parse(req.body.date)) valid_date = false;
+					}
+					/* End Validate dates */
+
 					// when all promises for updates are finished
 					Promise.all(promisesUpdate).then(function () {
 						let event_object = { // event object to store the information as it is into the database (needed later for rendering)
@@ -1169,13 +1188,14 @@ router.post('/' + editLink, function (req, res) {
 							let event_object_update = { // update to be executed object
 								$set: {
 									eventName: event_object.eventName,
+									eventDescription: event_object.eventDescription,
 									equipment: posted_equipment,
 									rooms: posted_rooms,
 									eventTypeID: event_type._id,
 									staffChosen: posted_staff_use,
-									date: event.date,
-									endDate: event.endDate,
-									location: event.location,
+									date: event_object.date,
+									endDate: event_object.endDate,
+									location: event_object.location,
 									visitors: posted_visitors
 								}
 							};
@@ -1237,7 +1257,11 @@ router.post('/' + editLink, function (req, res) {
 									});
 									/* End Notifications and emails */
 
-									message = "Successfully updated event: " + event.eventName;
+									if(valid_date) { // check if the event has a valid date
+										message = "Successfully updated event: " + event.eventName; // success message
+									} else { // event does not have a valid date
+										error_msg = "Event updated but selected dates are invalid, please check them and update again."; // error for invalid dates selected
+									}
 								} else { // error while fetching event from database
 									console.log(errEventUpdate);
 									error_msg = "Unknown error occurred, please try again.";
@@ -1391,6 +1415,20 @@ router.post('/' + addLink, async function (req, res) {
 		let equipmentNotUpdatedNames = []; // array of the equipment names that are not updated
 		let roomNotUpdated = []; // array of the room ids that are not updated
 		let roomNotUpdatedNames = []; // array of the room names that are not updated
+		let event_type = null; // to check if the event type has been set
+		let valid_date = true; // used to validate the dates for the event
+
+		/* Validate event type */
+		if(req.body.eventType) { // if the event type is input
+			promises.push(new Promise(function (resolve) { // add the promise to the promises array
+				genFunctions.getEventType(req.body.eventType).then(function (ev_type) { // get event type info selected for the event
+					if (ev_type) event_type = ev_type; // assign the event type if the event type is found
+
+					resolve(); // resolve the promise for the update
+				});
+			}));
+		}
+		/* End Validate event type */
 
 		/* Update equipment quantity */
 		equipment_use.forEach(function(equip){
@@ -1471,6 +1509,12 @@ router.post('/' + addLink, async function (req, res) {
 		});
 		/* End Validate rooms */
 
+		/* Validate dates */
+		if(req.body.endDate){
+			if(Date.parse(req.body.endDate) < Date.parse(req.body.date)) valid_date = false;
+		}
+		/* End Validate dates */
+
 		visitor_attending.forEach(function (visitor) { // iterate through all the selected visitors
 			visitor.groupSize && visitor.groupSize > 0 ? numberOfVisitors = numberOfVisitors + visitor.groupSize : ""; // increment the number of visitors
 		});
@@ -1479,7 +1523,7 @@ router.post('/' + addLink, async function (req, res) {
 
 		// when all updates are resolved
 		Promise.all(promises).then(function () {
-			if (!(equipmentNotUpdated.length > 0) && !(roomNotUpdated.length > 0)) { // check if there is equipment that is not updated
+			if (!(equipmentNotUpdated.length > 0) && !(roomNotUpdated.length > 0)) { // check if there is equipment or rooms that is not updated or event type is not selected
 				let new_event = new Event({ // object to be inserted into the database
 					eventName: req.body.eventName,
 					eventDescription: req.body.description,
@@ -1495,7 +1539,7 @@ router.post('/' + addLink, async function (req, res) {
 
 				/* Insert new event */
 				new_event.save(function (error, eventDoc) { // insert object to database
-					if (!error) {
+					if (!error && event_type && valid_date) {
 						/* Update rooms */
 						rooms_use.forEach(function(room){ // iterate through all the rooms chosen
 							Room.updateOne({_id: room._id}, // update room
@@ -1561,6 +1605,18 @@ router.post('/' + addLink, async function (req, res) {
 						renderAdd(res,req,staff_use,equipment_use,rooms_use,visitor_attending).then().catch(); // render add-edit
 					} else {
 						error_msg = validationErr(error); // validation error
+
+						/* Error for not selected event type */
+						if(!event_type){
+							error_msg = "Event type not selected, please add through the event type section in the burger menu."
+						}
+						/* End Error for not selected event type */
+
+						/* Error for not selected event type */
+						if(!valid_date){
+							error_msg = "Dates entered are not valid, please check if they are right."
+						}
+						/* End Error for not selected event type */
 
 						renderAdd(res,req,staff_use,equipment_use,rooms_use,visitor_attending).then().catch(); // render add-edit
 					}

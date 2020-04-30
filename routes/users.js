@@ -102,8 +102,11 @@ function renderEdit(res, req, user) {
 	let fields = [{name: "ID", type: "text", identifier: "id", readonly: true},
 		{name: "Name", type: "text", identifier: "fullName"},
 		{name: "Email", type: "email", identifier: "email"},
-		{name: "Phone", type: "tel", identifier: "phone"},
-		{name: "Role", type: "select", identifier: "role"}];
+		{name: "Phone", type: "tel", identifier: "phone"}];
+
+	if(req.user.permission >= 30){ // check if the user is an Outreach coordinator
+		fields.push({name: "Role", type: "select", identifier: "role"}); // add the ability to edit role
+	}
 
 	getStaffRoles().then(function (roles) { // fetch the staff member roles from the database
 		/* Render Template */
@@ -114,7 +117,7 @@ function renderEdit(res, req, user) {
 			message: message,
 			item: {
 				id: user._id,
-				name: user.fullName,
+				fullName: user.fullName,
 				email: user.email,
 				phone: user.phone,
 				role: user.role
@@ -152,7 +155,7 @@ function renderAdd(res, req, user) {
 			error: error_msg,
 			message: message,
 			item: {
-				name: user && error_msg ? user.name : "",
+				fullName: user && error_msg ? user.fullName : "",
 				email: user && error_msg ? user.email : "",
 				phone: user && error_msg ? user.phone : "",
 				role: user  && error_msg ? user.role : ""
@@ -169,7 +172,6 @@ function renderAdd(res, req, user) {
 		resetErrorMessage(); // reset messages
 	});
 }
-
 /* End Functions */
 
 /**
@@ -302,7 +304,7 @@ router.post('/' + addLink, function (req, res) {
 			/* Assign the staff member fields from the posted fields */
 			// Initial permissions of the staff members are -1 until they change their initial password
 			let user_object = { // the temporary staff member object
-				fullName: req.body.name,
+				fullName: req.body.fullName,
 				email: req.body.email,
 				password: password_to_insert,
 				role: role,
@@ -413,7 +415,7 @@ router.post('/' + editLink, function (req, res) {
 					// set the updates that have to be done to the staff member
 					updates = {
 						$set: {
-							fullName: req.body.name,
+							fullName: req.body.fullName,
 							email: req.body.email,
 							role: role,
 							permission: role_permission,
@@ -422,18 +424,18 @@ router.post('/' + editLink, function (req, res) {
 					};
 				} else { // this does not update the staff member permission because he or she has not changed her initial password
 					// set the updates that have to be done to the staff member
-					updates = {$set: {fullName: req.body.name, email: req.body.email, role: role, phone: req.body.phone}};
+					updates = {$set: {fullName: req.body.fullName, email: req.body.email, role: role, phone: req.body.phone}};
 				}
 			} else { // the user edits his own profile
 				// set the updates that have to be done to the staff member
-				updates = {$set: {fullName: req.body.name, email: req.body.email, phone: req.body.phone}};
+				updates = {$set: {fullName: req.body.fullName, email: req.body.email, phone: req.body.phone}};
 			}
 
 			/* Assign the staff member fields from the posted fields */
 			let user = {
-				id: req.body.id,
+				_id: req.body.id,
 				email: req.body.email,
-				fullName: req.body.name,
+				fullName: req.body.fullName,
 				phone: req.body.phone,
 				role: role
 			};

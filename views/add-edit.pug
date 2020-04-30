@@ -78,7 +78,7 @@ block content
                                     //- iterate through all the event types from the database
                                     each option in eventTypes
                                         //- if the event type is selected
-                                        if selectedEventType == option._id
+                                        if selectedEventType.toString() === option._id.toString() || selectedEventType._id.toString() === option._id.toString()
                                             option(value=option._id selected)=option.eventTypeName
                                         else
                                             option(value=option._id)=option.eventTypeName

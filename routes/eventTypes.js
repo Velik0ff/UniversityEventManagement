@@ -100,8 +100,7 @@ function renderEdit(res,req,eventType){
  */
 function renderAdd(res,req,eventType){
 	// fields that have to be entered
-	let fields = [{name: "ID", type: "text", identifier: "id", readonly: true},
-		{name: "Name", type: "text", identifier: "eventTypeName"}];
+	let fields = [{name: "Name", type: "text", identifier: "eventTypeName"}];
 
 	/* Render Template */
 	res.render('add-edit', {
