@@ -16,8 +16,8 @@ mongoose.set('useUnifiedTopology', true); // new Server Discover and Monitoring 
 
 mongoose.connect('mongodb://localhost/event_system',{
 	auth: {
-		user: 'UniAdmin2019',
-		password: 'Uni@Liverpool@2019'
+		user: '',
+		password: ''
 	},
 	useNewUrlParser: true
 }); // connect to db
